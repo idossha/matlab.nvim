@@ -148,24 +148,33 @@ function M.toggle_cell_fold()
     return
   end
   
-  -- Check if the cell is already folded
-  local is_folded = false
-  for i = start_line, end_line do
-    if vim.fn.foldclosed(i) > 0 then
-      is_folded = true
-      break
-    end
-  end
+  -- Check if the cell is already folded by checking its first line
+  local is_folded = vim.fn.foldclosed(start_line + 1) > 0
   
   if is_folded then
-    -- If folded, unfold it
-    vim.cmd(start_line .. "," .. end_line .. " normal! zO")
-    vim.notify("Cell unfolded", vim.log.levels.INFO)
+    -- If folded, unfold it using try-catch to avoid errors when no folds exist
+    pcall(function()
+      -- Use a targeted unfold approach that's less error-prone
+      for i = start_line, end_line do
+        if vim.fn.foldclosed(i) > 0 then
+          vim.cmd(i .. " normal! zo")
+        end
+      end
+    end)
+    
+    -- Only notify if notifications aren't set to minimal
+    if not require('matlab.config').get('minimal_notifications') then
+      vim.notify("Cell unfolded", vim.log.levels.INFO)
+    end
   else
     -- If not folded, fold it - but leave the cell marker (%%...) line visible
     if start_line > 0 then
       vim.cmd((start_line+1) .. "," .. end_line .. " fold")
-      vim.notify("Cell folded", vim.log.levels.INFO)
+      
+      -- Only notify if notifications aren't set to minimal
+      if not require('matlab.config').get('minimal_notifications') then
+        vim.notify("Cell folded", vim.log.levels.INFO)
+      end
     end
   end
 end
@@ -177,30 +186,43 @@ function M.toggle_all_cell_folds()
   
   -- Check if any cells are folded
   for _, cell in ipairs(all_cells) do
-    local cell_key = cell.start .. "_" .. cell.ending
-    if M.folded_cells[cell_key] then
-      any_folded = true
-      break
-    end
-  end
-  
-  -- If any are folded, unfold all; otherwise fold all
-  if any_folded then
-    -- Unfold all
-    for _, cell in ipairs(all_cells) do
-      local cell_key = cell.start .. "_" .. cell.ending
-      if M.folded_cells[cell_key] then
-        vim.cmd(cell.start .. "," .. cell.ending .. "foldopen")
-        M.folded_cells[cell_key] = nil
+    for i = cell.start, cell.ending do
+      if vim.fn.foldclosed(i) > 0 then
+        any_folded = true
+        break
       end
     end
+    if any_folded then break end
+  end
+  
+  if any_folded then
+    -- Unfold all cells
+    pcall(function()
+      for _, cell in ipairs(all_cells) do
+        for i = cell.start, cell.ending do
+          if vim.fn.foldclosed(i) > 0 then
+            vim.cmd(i .. " normal! zo")
+          end
+        end
+      end
+    end)
+    
+    -- Only notify if notifications aren't set to minimal
+    if not require('matlab.config').get('minimal_notifications') then
+      vim.notify("All cells unfolded", vim.log.levels.INFO)
+    end
   else
-    -- Fold all
+    -- Fold all cells
     for _, cell in ipairs(all_cells) do
-      local cell_key = cell.start .. "_" .. cell.ending
       -- Don't fold the cell marker line
-      vim.cmd(cell.start+1 .. "," .. cell.ending .. "fold")
-      M.folded_cells[cell_key] = true
+      if cell.start < cell.ending then
+        vim.cmd((cell.start+1) .. "," .. cell.ending .. " fold")
+      end
+    end
+    
+    -- Only notify if notifications aren't set to minimal
+    if not require('matlab.config').get('minimal_notifications') then
+      vim.notify("All cells folded", vim.log.levels.INFO)
     end
   end
 end
