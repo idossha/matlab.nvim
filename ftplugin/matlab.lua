@@ -24,8 +24,13 @@ if config.get('default_mappings') then
   vim.keymap.set('n', '<Leader>d', '<Cmd>MatlabDoc<CR>', { buffer = true, desc = 'Show MATLAB documentation' })
 
   -- Workspace
-  vim.keymap.set('n', '<Leader>w', '<Cmd>MatlabWorkspace<CR>', { buffer = true, desc = 'Show MATLAB workspace' })
+  vim.keymap.set('n', '<Leader>w', '<Cmd>MatlabToggleWorkspace<CR>', { buffer = true, desc = 'Toggle MATLAB workspace window' })
+  vim.keymap.set('n', '<Leader>ww', '<Cmd>MatlabWorkspace<CR>', { buffer = true, desc = 'Show MATLAB workspace in tmux' })
   vim.keymap.set('n', '<Leader>wc', '<Cmd>MatlabClearWorkspace<CR>', { buffer = true, desc = 'Clear MATLAB workspace' })
   vim.keymap.set('n', '<Leader>ws', '<Cmd>MatlabSaveWorkspace<CR>', { buffer = true, desc = 'Save MATLAB workspace' })
   vim.keymap.set('n', '<Leader>wl', '<Cmd>MatlabLoadWorkspace<CR>', { buffer = true, desc = 'Load MATLAB workspace' })
+  
+  -- Cell folding
+  vim.keymap.set('n', 'za', '<Cmd>MatlabToggleCellFold<CR>', { buffer = true, desc = 'Toggle current MATLAB cell fold' })
+  vim.keymap.set('n', 'zA', '<Cmd>MatlabToggleAllCellFolds<CR>', { buffer = true, desc = 'Toggle all MATLAB cell folds' })
 end

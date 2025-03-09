@@ -65,6 +65,15 @@ function M.setup(opts)
     cells.execute_to_cell()
   end, {})
   
+  -- Cell folding commands
+  vim.api.nvim_create_user_command('MatlabToggleCellFold', function()
+    cells.toggle_cell_fold()
+  end, {})
+  
+  vim.api.nvim_create_user_command('MatlabToggleAllCellFolds', function()
+    cells.toggle_all_cell_folds()
+  end, {})
+  
   -- Workspace commands
   vim.api.nvim_create_user_command('MatlabWorkspace', function()
     workspace.show()

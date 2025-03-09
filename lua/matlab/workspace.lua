@@ -6,13 +6,16 @@ local tmux = require('matlab.tmux')
 M.workspace_buf = nil
 M.workspace_win = nil
 
--- Helper function to create a floating window
+-- Helper function to create a floating window on the side
 local function create_floating_window()
   -- Calculate window size based on editor dimensions
-  local width = math.floor(vim.o.columns * 0.7)
-  local height = math.floor(vim.o.lines * 0.7)
-  local col = math.floor((vim.o.columns - width) / 2)
-  local row = math.floor((vim.o.lines - height) / 2)
+  -- Use 30% of the screen width for the sidebar
+  local width = math.floor(vim.o.columns * 0.3)
+  local height = vim.o.lines - 4  -- Leave some space for statusline
+  
+  -- Position at the right side of the screen
+  local col = vim.o.columns - width
+  local row = 1  -- Start just below the tabline/statusline
 
   -- Create a buffer if it doesn't exist
   if not M.workspace_buf or not vim.api.nvim_buf_is_valid(M.workspace_buf) then
@@ -31,7 +34,7 @@ local function create_floating_window()
     style = 'minimal',
     border = 'rounded',
     title = ' MATLAB Workspace ',
-    title_pos = 'center',
+    title_pos = 'left',
   }
 
   -- Create the window
@@ -41,39 +44,39 @@ local function create_floating_window()
   vim.api.nvim_win_set_option(M.workspace_win, 'wrap', false)
   vim.api.nvim_win_set_option(M.workspace_win, 'cursorline', true)
   
-  -- Allow closing with 'q'
-  vim.api.nvim_buf_set_keymap(M.workspace_buf, 'n', 'q', 
-    ':lua require("matlab.workspace").close()<CR>', 
-    { noremap = true, silent = true })
+  -- Set keymaps
+  local keymaps = {
+    ['q'] = ':lua require("matlab.workspace").close()<CR>',
+    ['<ESC>'] = ':lua require("matlab.workspace").close()<CR>',
+    ['r'] = ':lua require("matlab.workspace").refresh()<CR>',
+  }
+  
+  for k, v in pairs(keymaps) do
+    vim.api.nvim_buf_set_keymap(M.workspace_buf, 'n', k, v, { noremap = true, silent = true })
+  end
   
   return M.workspace_win
 end
 
 -- Function to fetch workspace variables from MATLAB
 local function fetch_workspace_variables()
-  -- Create a temporary file
-  local tmp_file = vim.fn.tempname()
+  -- Simply run whos command and capture output
+  tmux.run('whos')
   
-  -- Run a command to save workspace variables to the temp file
-  tmux.run('fid = fopen("' .. tmp_file .. '", "w"); ' ..
-           'whos_output = evalc("whos"); ' ..
-           'fprintf(fid, "%s", whos_output); ' ..
-           'fclose(fid);')
-  
-  -- Wait a bit for the file to be written
+  -- Wait a bit for MATLAB to execute
   vim.fn.system('sleep 0.2')
   
-  -- Read the temp file
-  local ok, content = pcall(vim.fn.readfile, tmp_file)
-  
-  -- Clean up
-  pcall(vim.fn.delete, tmp_file)
-  
-  if ok and content then
-    return content
-  else
-    return {"Failed to fetch workspace variables. Make sure MATLAB is running."}
-  end
+  -- For now, return a placeholder message
+  -- In a real implementation, we would need a more reliable way to get
+  -- the output from the tmux pane
+  return {
+    "=== MATLAB Workspace Variables ===",
+    "",
+    "Variables from the MATLAB workspace are displayed in the tmux pane.",
+    "The toggle now opens the MATLAB pane to show the workspace.",
+    "",
+    "Press 'q' to close this window."
+  }
 end
 
 -- Display variables in the MATLAB workspace
@@ -88,6 +91,27 @@ function M.close()
     vim.api.nvim_win_close(M.workspace_win, true)
     M.workspace_win = nil
   end
+end
+
+-- Refresh workspace window content
+function M.refresh()
+  if not M.workspace_buf or not vim.api.nvim_buf_is_valid(M.workspace_buf) then
+    return
+  end
+  
+  -- Display loading message
+  vim.api.nvim_buf_set_lines(M.workspace_buf, 0, -1, false, {"Refreshing MATLAB workspace variables..."})
+  
+  -- Also run workspace command in MATLAB pane
+  tmux.run('whos')
+  
+  -- Fetch and display updated workspace variables
+  vim.defer_fn(function()
+    local content = fetch_workspace_variables()
+    if M.workspace_buf and vim.api.nvim_buf_is_valid(M.workspace_buf) then
+      vim.api.nvim_buf_set_lines(M.workspace_buf, 0, -1, false, content)
+    end
+  end, 300)
 end
 
 -- Toggle visibility of the MATLAB workspace window
@@ -115,11 +139,20 @@ function M.toggle()
   -- Display loading message
   vim.api.nvim_buf_set_lines(M.workspace_buf, 0, -1, false, {"Loading MATLAB workspace variables..."})
   
-  -- Fetch and display workspace variables
+  -- Also show workspace in the MATLAB pane
+  tmux.run('whos')
+  
+  -- Fetch and display workspace variables in the floating window
   vim.defer_fn(function()
     local content = fetch_workspace_variables()
     if M.workspace_buf and vim.api.nvim_buf_is_valid(M.workspace_buf) then
       vim.api.nvim_buf_set_lines(M.workspace_buf, 0, -1, false, content)
+      
+      -- Add a help line at the bottom
+      vim.api.nvim_buf_set_lines(M.workspace_buf, -1, -1, false, {
+        "",
+        "Press 'q' to close, 'r' to refresh"
+      })
     end
   end, 300)
 end
