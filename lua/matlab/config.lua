@@ -8,6 +8,9 @@ M.defaults = {
   auto_start = true,
   default_mappings = true,
   debug = false,         -- Enable debug logging
+  minimal_notifications = false, -- Only show important notifications (server start/stop and errors)
+  tmux_pane_direction = 'right', -- Position of the tmux pane ('right', 'below')
+  tmux_pane_focus = true,       -- Make tmux pane visible when created
 }
 
 -- User configuration

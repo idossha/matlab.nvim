@@ -12,9 +12,11 @@ function M.setup(opts)
   -- Initialize configuration
   config.setup(opts)
   
-  -- Show message on first load
+  -- Show message on first load only if minimal notifications are disabled
   vim.schedule(function()
-    vim.notify("matlab.nvim loaded successfully. Use :MatlabStartServer to start MATLAB.", vim.log.levels.INFO)
+    if not config.get('minimal_notifications') then
+      vim.notify("matlab.nvim loaded successfully. Use :MatlabStartServer to start MATLAB.", vim.log.levels.INFO)
+    end
   end)
   
   -- Create user commands
@@ -66,6 +68,10 @@ function M.setup(opts)
   -- Workspace commands
   vim.api.nvim_create_user_command('MatlabWorkspace', function()
     workspace.show()
+  end, {})
+  
+  vim.api.nvim_create_user_command('MatlabToggleWorkspace', function()
+    workspace.toggle()
   end, {})
   
   vim.api.nvim_create_user_command('MatlabClearWorkspace', function()

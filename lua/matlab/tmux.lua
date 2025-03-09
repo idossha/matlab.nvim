@@ -9,7 +9,7 @@ M.server_pane = nil
 function M.exists()
   -- First check if the tmux command is available
   if vim.fn.executable('tmux') ~= 1 then
-    vim.notify('tmux command not found. Please make sure tmux is installed.', vim.log.levels.ERROR)
+    M.notify('tmux command not found. Please make sure tmux is installed.', vim.log.levels.ERROR)
     return false
   end
   
@@ -18,9 +18,9 @@ function M.exists()
     -- Additional check: try running tmux directly to see if it works
     local tmux_version = vim.fn.system('tmux -V')
     if vim.v.shell_error == 0 then
-      vim.notify('tmux is installed, but you are not inside a tmux session. Please start tmux first.', vim.log.levels.ERROR)
+      M.notify('tmux is installed, but you are not inside a tmux session. Please start tmux first.', vim.log.levels.ERROR)
     else
-      vim.notify('matlab.nvim cannot run without tmux.', vim.log.levels.ERROR)
+      M.notify('matlab.nvim cannot run without tmux.', vim.log.levels.ERROR)
     end
     return false
   end
@@ -54,6 +54,32 @@ function M.execute(command)
   end
   
   return output
+end
+
+-- Helper function to control notifications based on user preferences
+function M.notify(message, level)
+  -- Always show errors
+  if level == vim.log.levels.ERROR then
+    vim.notify(message, level)
+    return
+  end
+  
+  -- For debug messages, only show if debug is enabled
+  if level == vim.log.levels.DEBUG and not config.get('debug') then
+    return
+  end
+  
+  -- For INFO/WARN, only show if minimal_notifications is disabled
+  if level ~= vim.log.levels.DEBUG and config.get('minimal_notifications') then
+    -- Allow server start/stop notifications
+    if message:match("MATLAB server") then
+      vim.notify(message, level)
+    end
+    return
+  end
+  
+  -- Default: show the notification
+  vim.notify(message, level)
 end
 
 -- Check if the pane exists
@@ -145,8 +171,8 @@ end
 function M.find_matlab_executable()
   local function check_and_notify(path)
     if vim.fn.filereadable(path) == 1 then
-      vim.notify('Found MATLAB at: ' .. path, vim.log.levels.INFO)
-      vim.notify('Update your configuration with: require("matlab").setup({executable = "' .. path .. '"})', vim.log.levels.INFO)
+      M.notify('Found MATLAB at: ' .. path, vim.log.levels.INFO)
+      M.notify('Update your configuration with: require("matlab").setup({executable = "' .. path .. '"})', vim.log.levels.INFO)
       return path
     end
     return nil
@@ -214,7 +240,7 @@ function M.check_matlab_executable()
   end
   
   -- Couldn't find MATLAB - provide helpful error with OS-specific suggestions
-  vim.notify('MATLAB executable not found: ' .. executable, vim.log.levels.ERROR)
+  M.notify('MATLAB executable not found: ' .. executable, vim.log.levels.ERROR)
   
   local help_msg
   if vim.fn.has('mac') == 1 then
@@ -227,7 +253,7 @@ function M.check_matlab_executable()
     help_msg = 'require("matlab").setup({executable = "/path/to/matlab"})'
   end
   
-  vim.notify('Please specify the full path to MATLAB in your config: ' .. help_msg, vim.log.levels.WARN)
+  M.notify('Please specify the full path to MATLAB in your config: ' .. help_msg, vim.log.levels.WARN)
   return false
 end
 
@@ -256,7 +282,7 @@ end
 -- Start the MATLAB server
 function M.start_server(auto_start, startup_command)
   if config.get('debug') then
-    vim.notify('Starting MATLAB server (auto_start=' .. tostring(auto_start) .. ')', vim.log.levels.INFO)
+    M.notify('Starting MATLAB server (auto_start=' .. tostring(auto_start) .. ')', vim.log.levels.INFO)
   end
   
   -- Check for tmux environment (includes command existence check)
@@ -266,7 +292,7 @@ function M.start_server(auto_start, startup_command)
 
   -- Check if autostart is enabled
   if auto_start and not config.get('auto_start') then
-    vim.notify('Auto-start is disabled in config', vim.log.levels.DEBUG)
+    M.notify('Auto-start is disabled in config', vim.log.levels.DEBUG)
     return
   end
   
@@ -278,50 +304,67 @@ function M.start_server(auto_start, startup_command)
   if not M.get_server_pane() then
     -- Create new pane, start matlab in it and save its id
     local project_root = M.get_project_root()
-    vim.notify('Project root: ' .. project_root, vim.log.levels.DEBUG)
+    M.notify('Project root: ' .. project_root, vim.log.levels.DEBUG)
     local startup_cmd = 'cd ' .. vim.fn.shellescape(project_root) .. ';'
     
     -- Add command to startup if provided
     if startup_command then
       startup_cmd = startup_cmd .. startup_command .. ';'
-      vim.notify('Adding startup command: ' .. startup_command, vim.log.levels.DEBUG)
+      M.notify('Adding startup command: ' .. startup_command, vim.log.levels.DEBUG)
     end
 
     local executable = config.get('executable')
-    vim.notify('Using MATLAB executable: ' .. executable, vim.log.levels.DEBUG)
+    M.notify('Using MATLAB executable: ' .. executable, vim.log.levels.DEBUG)
     
     -- Build the MATLAB startup command with platform-specific adjustments
     local mlcmd = 'clear && ' .. M.build_matlab_command(executable, startup_cmd)
     
     -- Create tmux split with the MATLAB command
-    local cmd = 'split-window -dhPF "#{session_id}:#{window_id}.#{pane_id}" ' .. vim.fn.shellescape(mlcmd)
+    local split_flags = ""
     
-    vim.notify('Creating MATLAB pane with command: ' .. cmd, vim.log.levels.DEBUG)
+    -- Set pane direction based on configuration
+    local direction = config.get('tmux_pane_direction')
+    if direction == 'right' then
+      split_flags = "-h" -- horizontal split (side by side)
+    else
+      split_flags = "-v" -- vertical split (top/bottom)
+    end
+    
+    -- Add -d flag if we don't want to focus the new pane
+    if not config.get('tmux_pane_focus') then
+      split_flags = split_flags .. "d"
+    end
+    
+    local cmd = 'split-window ' .. split_flags .. 'PF "#{session_id}:#{window_id}.#{pane_id}" ' .. vim.fn.shellescape(mlcmd)
+    
+    M.notify('Creating MATLAB pane with command: ' .. cmd, vim.log.levels.DEBUG)
     local result = M.execute(cmd)
-    vim.notify('Tmux command result: ' .. vim.inspect(result), vim.log.levels.DEBUG)
+    M.notify('Tmux command result: ' .. vim.inspect(result), vim.log.levels.DEBUG)
     
     M.server_pane = result:gsub('[^%%$@%.:0-9]', '')
-    vim.notify('Extracted pane ID: ' .. tostring(M.server_pane), vim.log.levels.DEBUG)
+    M.notify('Extracted pane ID: ' .. tostring(M.server_pane), vim.log.levels.DEBUG)
 
     if M.pane_exists() then
-      vim.notify('MATLAB server started.', vim.log.levels.INFO)
+      M.notify('MATLAB server started.', vim.log.levels.INFO)
     else
-      vim.notify('Something went wrong starting the MATLAB server.', vim.log.levels.ERROR)
-      vim.notify('Check that MATLAB is properly installed and the executable path is correct.', vim.log.levels.WARN)
-      vim.notify('Current executable path: ' .. executable, vim.log.levels.WARN)
+      M.notify('Something went wrong starting the MATLAB server.', vim.log.levels.ERROR)
+      M.notify('Check that MATLAB is properly installed and the executable path is correct.', vim.log.levels.WARN)
+      M.notify('Current executable path: ' .. executable, vim.log.levels.WARN)
       return
     end
 
     -- Set pane size
     local panel_size = config.get('panel_size')
-    vim.notify('Setting panel size to: ' .. panel_size, vim.log.levels.DEBUG)
+    M.notify('Setting panel size to: ' .. panel_size, vim.log.levels.DEBUG)
     M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -x " .. vim.fn.shellescape(panel_size))
 
-    -- Zoom current pane
-    vim.notify('Zooming current pane', vim.log.levels.DEBUG)
-    M.execute('resize-pane -Z')
+    -- Zoom current pane if we don't want the MATLAB pane to be visible
+    if not config.get('tmux_pane_focus') then
+      M.notify('Zooming current pane', vim.log.levels.DEBUG)
+      M.execute('resize-pane -Z')
+    end
   else
-    vim.notify('MATLAB server pane already exists', vim.log.levels.DEBUG)
+    M.notify('MATLAB server pane already exists', vim.log.levels.DEBUG)
   end
 end
 
@@ -332,6 +375,7 @@ function M.stop_server()
   end
 
   if M.get_server_pane() then
+    M.notify('Stopping MATLAB server.', vim.log.levels.INFO)
     M.run('quit')
     M.server_pane = nil
   end
