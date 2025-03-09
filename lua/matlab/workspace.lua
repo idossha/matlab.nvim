@@ -273,6 +273,24 @@ function M.get_workspace_vars(callback)
   f:write(script)
   f:close()
   
+  -- Check if MATLAB executable exists
+  local has_executable = vim.fn.executable(config.matlab_executable) == 1
+  
+  if not has_executable then
+    vim.notify(
+      string.format(
+        "MATLAB executable '%s' not found. Please check your configuration:\n" ..
+        "1. Make sure MATLAB is installed\n" ..
+        "2. Update your config with: require('matlab').setup({ matlab_executable = '/path/to/matlab' })\n" ..
+        "3. Or add MATLAB to your system PATH",
+        config.matlab_executable
+      ),
+      vim.log.levels.ERROR
+    )
+    callback({})
+    return
+  end
+
   -- Run MATLAB with the script
   local command = config.matlab_executable
   local args = {"-nosplash", "-nodesktop", "-r", "run('" .. script_file .. "')"}
