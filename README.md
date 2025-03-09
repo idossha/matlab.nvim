@@ -56,33 +56,56 @@ require('matlab').setup({
 })
 ```
 
-### Important Note About MATLAB Path
+### MATLAB Executable Detection
 
-If you're getting the error "Something went wrong starting the MATLAB server", it likely means the plugin can't find your MATLAB executable. You should specify the full path to your MATLAB executable:
+The plugin will automatically attempt to find your MATLAB installation by searching common installation paths based on your operating system. If found, it will use that installation for the current session and suggest updating your configuration.
 
-For macOS:
+However, if you're getting the error "Something went wrong starting the MATLAB server", it's best to explicitly specify the full path to your MATLAB executable:
+
+**For macOS:**
 ```lua
 require('matlab').setup({
-  executable = '/Applications/MATLAB_R2023b.app/bin/matlab',  -- Adjust according to your version
+  executable = '/Applications/MATLAB_R2024a.app/bin/matlab',  -- Adjust according to your version
   -- other options...
 })
 ```
 
-For Linux:
+**For Linux:**
 ```lua
 require('matlab').setup({
-  executable = '/usr/local/MATLAB/R2023b/bin/matlab',  -- Adjust according to your installation
+  executable = '/usr/local/MATLAB/R2024a/bin/matlab',  -- Adjust according to your installation
   -- other options...
 })
 ```
 
-For Windows:
+**For Windows:**
 ```lua
 require('matlab').setup({
-  executable = 'C:\\Program Files\\MATLAB\\R2023b\\bin\\matlab.exe',  -- Adjust according to your installation
+  executable = 'C:\\Program Files\\MATLAB\\R2024a\\bin\\matlab.exe',  -- Adjust according to your installation
   -- other options...
 })
 ```
+
+#### Finding Your MATLAB Path
+
+If you're not sure where MATLAB is installed:
+
+**macOS**:
+1. Open Finder
+2. Navigate to Applications folder
+3. Look for "MATLAB_R####x.app" (where #### is the year and x is a or b)
+4. The executable is located at `/Applications/MATLAB_R####x.app/bin/matlab`
+
+**Linux**:
+1. Run `which matlab` in your terminal to see if it's in your PATH
+2. Common installation directories include:
+   - `/usr/local/MATLAB/R####x/bin/matlab`
+   - `/opt/MATLAB/R####x/bin/matlab`
+   - `~/MATLAB/R####x/bin/matlab`
+
+**Windows**:
+1. Check Program Files folder: `C:\Program Files\MATLAB\R####x\bin\matlab.exe`
+2. Or for 32-bit MATLAB on 64-bit Windows: `C:\Program Files (x86)\MATLAB\R####x\bin\matlab.exe`
 
 ## Usage
 

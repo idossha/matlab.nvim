@@ -107,38 +107,115 @@ function M.get_project_root()
   return dir
 end
 
+-- Find MATLAB executable across different OS versions
+function M.find_matlab_executable()
+  local function check_and_notify(path)
+    if vim.fn.filereadable(path) == 1 then
+      vim.notify('Found MATLAB at: ' .. path, vim.log.levels.INFO)
+      vim.notify('Update your configuration with: require("matlab").setup({executable = "' .. path .. '"})', vim.log.levels.INFO)
+      return path
+    end
+    return nil
+  end
+
+  -- Generate a list of possible MATLAB versions
+  local versions = {}
+  local current_year = tonumber(os.date('%Y'))
+  for year = current_year, current_year - 5, -1 do
+    table.insert(versions, 'R' .. year .. 'a')
+    table.insert(versions, 'R' .. year .. 'b')
+  end
+  
+  -- Generate platform-specific MATLAB paths
+  local matlab_paths = {}
+  
+  -- macOS paths
+  if vim.fn.has('mac') == 1 then
+    for _, version in ipairs(versions) do
+      table.insert(matlab_paths, '/Applications/MATLAB_' .. version .. '.app/bin/matlab')
+    end
+  -- Linux paths
+  elseif vim.fn.has('unix') == 1 and not vim.fn.has('mac') == 1 then
+    for _, version in ipairs(versions) do
+      table.insert(matlab_paths, '/usr/local/MATLAB/' .. version .. '/bin/matlab')
+      table.insert(matlab_paths, '/opt/MATLAB/' .. version .. '/bin/matlab')
+      table.insert(matlab_paths, vim.fn.expand('~/MATLAB/' .. version .. '/bin/matlab'))
+    end
+  -- Windows paths
+  elseif vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
+    for _, version in ipairs(versions) do
+      table.insert(matlab_paths, 'C:\\Program Files\\MATLAB\\' .. version .. '\\bin\\matlab.exe')
+      table.insert(matlab_paths, 'C:\\Program Files (x86)\\MATLAB\\' .. version .. '\\bin\\matlab.exe')
+    end
+  end
+  
+  -- Check each path
+  for _, path in ipairs(matlab_paths) do
+    local found = check_and_notify(path)
+    if found then
+      return found
+    end
+  end
+  
+  return nil
+end
+
 -- Check if MATLAB executable exists
 function M.check_matlab_executable()
   local executable = config.get('executable')
   
-  -- If it's a full path, check if the file exists
+  -- If it's a valid executable, we're good
   if vim.fn.executable(executable) == 1 then
     return true
   end
   
-  -- On macOS, also check common MATLAB installation locations
-  if vim.fn.has('mac') == 1 then
-    local common_paths = {
-      '/Applications/MATLAB_R2023b.app/bin/matlab',
-      '/Applications/MATLAB_R2023a.app/bin/matlab',
-      '/Applications/MATLAB_R2022b.app/bin/matlab',
-      '/Applications/MATLAB_R2022a.app/bin/matlab',
-      '/Applications/MATLAB_R2021b.app/bin/matlab',
-      '/Applications/MATLAB_R2021a.app/bin/matlab',
-    }
-    
-    for _, path in ipairs(common_paths) do
-      if vim.fn.filereadable(path) == 1 then
-        vim.notify('Found MATLAB at: ' .. path, vim.log.levels.INFO)
-        vim.notify('Update your configuration with: require("matlab").setup({executable = "' .. path .. '"})', vim.log.levels.INFO)
-        return false
-      end
-    end
+  -- Try to find MATLAB in common locations
+  local found_matlab = M.find_matlab_executable()
+  
+  -- If we found it, suggest using that path
+  if found_matlab then
+    -- Store it so this session works
+    config.options.executable = found_matlab
+    return true
   end
   
+  -- Couldn't find MATLAB - provide helpful error with OS-specific suggestions
   vim.notify('MATLAB executable not found: ' .. executable, vim.log.levels.ERROR)
-  vim.notify('Please specify the full path to MATLAB in your config: require("matlab").setup({executable = "/path/to/matlab"})', vim.log.levels.WARN)
+  
+  local help_msg
+  if vim.fn.has('mac') == 1 then
+    help_msg = 'require("matlab").setup({executable = "/Applications/MATLAB_R2024a.app/bin/matlab"})'
+  elseif vim.fn.has('unix') == 1 then
+    help_msg = 'require("matlab").setup({executable = "/usr/local/MATLAB/R2024a/bin/matlab"})'
+  elseif vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
+    help_msg = 'require("matlab").setup({executable = "C:\\\\Program Files\\\\MATLAB\\\\R2024a\\\\bin\\\\matlab.exe"})'
+  else
+    help_msg = 'require("matlab").setup({executable = "/path/to/matlab"})'
+  end
+  
+  vim.notify('Please specify the full path to MATLAB in your config: ' .. help_msg, vim.log.levels.WARN)
   return false
+end
+
+-- Check if a system command is available
+function M.command_exists(cmd)
+  if type(cmd) ~= "string" then return false end
+  local _, _, code = os.execute(cmd .. " --version > /dev/null 2>&1")
+  return code == 0
+end
+
+-- Build platform-specific MATLAB startup command
+function M.build_matlab_command(executable, startup_cmd)
+  local base_command = executable .. ' -nodesktop -nosplash'
+  
+  -- Different platforms have different command line argument formats
+  if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
+    -- Windows uses /r instead of -r
+    return base_command .. ' /r ' .. vim.fn.shellescape(startup_cmd)
+  else
+    -- macOS and Linux use -r
+    return base_command .. ' -r ' .. vim.fn.shellescape(startup_cmd)
+  end
 end
 
 -- Start the MATLAB server
@@ -148,7 +225,13 @@ function M.start_server(auto_start, startup_command)
   end
   
   if not M.exists() then
-    vim.notify('Tmux environment not detected', vim.log.levels.DEBUG)
+    vim.notify('Tmux environment not detected. Please run Neovim inside tmux.', vim.log.levels.ERROR)
+    return
+  end
+
+  -- Check if tmux command is available
+  if not M.command_exists("tmux") then
+    vim.notify('Tmux command not found. Please make sure tmux is installed.', vim.log.levels.ERROR)
     return
   end
 
@@ -177,7 +260,11 @@ function M.start_server(auto_start, startup_command)
 
     local executable = config.get('executable')
     vim.notify('Using MATLAB executable: ' .. executable, vim.log.levels.DEBUG)
-    local mlcmd = 'clear && ' .. executable .. ' -nodesktop -nosplash -r ' .. vim.fn.shellescape(startup_cmd)
+    
+    -- Build the MATLAB startup command with platform-specific adjustments
+    local mlcmd = 'clear && ' .. M.build_matlab_command(executable, startup_cmd)
+    
+    -- Create tmux split with the MATLAB command
     local cmd = 'split-window -dhPF "#{session_id}:#{window_id}.#{pane_id}" ' .. vim.fn.shellescape(mlcmd)
     
     vim.notify('Creating MATLAB pane with command: ' .. cmd, vim.log.levels.DEBUG)

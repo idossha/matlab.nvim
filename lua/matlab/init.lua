@@ -12,6 +12,11 @@ function M.setup(opts)
   -- Initialize configuration
   config.setup(opts)
   
+  -- Show message on first load
+  vim.schedule(function()
+    vim.notify("matlab.nvim loaded successfully. Use :MatlabStartServer to start MATLAB.", vim.log.levels.INFO)
+  end)
+  
   -- Create user commands
   vim.api.nvim_create_user_command('MatlabRun', function(args)
     commands.run(args.args ~= '' and args.args or nil)
