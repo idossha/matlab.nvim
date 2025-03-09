@@ -69,10 +69,11 @@ function M.notify(message, level)
     return
   end
   
-  -- For INFO/WARN, only show if minimal_notifications is disabled
-  if level ~= vim.log.levels.DEBUG and config.get('minimal_notifications') then
-    -- Allow server start/stop notifications
-    if message:match("MATLAB server") then
+  -- When minimal_notifications is enabled, only show server start/stop
+  if config.get('minimal_notifications') then
+    -- Only allow server start/stop notifications
+    if message == 'MATLAB server started.' or 
+       message == 'Stopping MATLAB server.' then
       vim.notify(message, level)
     end
     return
@@ -355,8 +356,18 @@ function M.start_server(auto_start, startup_command)
 
     -- Set pane size
     local panel_size = config.get('panel_size')
-    M.notify('Setting panel size to: ' .. panel_size, vim.log.levels.DEBUG)
-    M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -x " .. vim.fn.shellescape(panel_size))
+    local panel_size_type = config.get('panel_size_type')
+    
+    M.notify('Setting panel size to: ' .. panel_size .. 
+             (panel_size_type == 'percentage' and '%' or ' columns'), vim.log.levels.DEBUG)
+    
+    if panel_size_type == 'percentage' then
+      -- Use percentage of the screen
+      M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -p " .. vim.fn.shellescape(panel_size))
+    else
+      -- Use fixed width
+      M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -x " .. vim.fn.shellescape(panel_size))
+    end
 
     -- Zoom current pane if we don't want the MATLAB pane to be visible
     if not config.get('tmux_pane_focus') then

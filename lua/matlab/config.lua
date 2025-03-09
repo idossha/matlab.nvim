@@ -4,7 +4,8 @@ local M = {}
 -- Default configuration
 M.defaults = {
   executable = 'matlab',  -- MATLAB executable (can be full path if MATLAB is not in PATH)
-  panel_size = 120,
+  panel_size = 50,        -- Size in percentage (%) of the terminal width
+  panel_size_type = 'percentage', -- 'percentage' or 'fixed' (fixed = columns)
   auto_start = true,
   default_mappings = true,
   debug = false,         -- Enable debug logging
