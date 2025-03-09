@@ -2,6 +2,9 @@
 
 A modern Neovim plugin for MATLAB integration with tmux. This plugin provides enhanced integration between Neovim, MATLAB, and tmux, making your MATLAB development workflow more efficient.
 
+This plugin is inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab-vim) but rewritten in Lua for Neovim with a modular architecture and enhanced functionality.
+
+
 ![MATLAB.nvim Demo](https://raw.githubusercontent.com/wiki/idossha/matlab.nvim/images/demo.gif)
 
 ## Features
@@ -77,8 +80,8 @@ You can customize matlab.nvim by passing options to the setup function:
 
 ```lua
 require('matlab').setup({
-  -- Path to MATLAB executable (can be full path)
-  executable = 'matlab',            
+  -- Path to MATLAB executable (should be full path)
+  executable = '/path/to/matlab',            
   
   -- UI options
   panel_size = 50,                  -- Size of the tmux pane (in percentage)
@@ -147,25 +150,6 @@ If you're not sure where MATLAB is installed:
 1. Check Program Files folder: `C:\Program Files\MATLAB\R####x\bin\matlab.exe`
 2. Or for 32-bit MATLAB on 64-bit Windows: `C:\Program Files (x86)\MATLAB\R####x\bin\matlab.exe`
 
-## Usage
-
-### Quick Start for New Users
-
-1. Make sure you have tmux installed and are running Neovim inside a tmux session
-2. Install the plugin using your preferred package manager
-3. Configure the plugin with your MATLAB executable path:
-   ```lua
-   require('matlab').setup({
-     executable = '/path/to/your/matlab',  -- Set this to your actual MATLAB path
-     minimal_notifications = true,         -- Reduce notification noise
-   })
-   ```
-4. Open any MATLAB file (.m) in Neovim - a MATLAB console will appear in a tmux pane
-5. Use the following key mappings:
-   - `<Leader>r` to run the entire file
-   - `<Leader>rc` to run just the current cell (section between %% markers)
-   - `za` to fold/unfold the current cell
-   - `<Leader>w` to toggle the workspace viewer
 
 ### Common Tasks
 
@@ -242,4 +226,4 @@ MIT
 
 ## Acknowledgments
 
-This plugin is inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab-vim) but rewritten in Lua for Neovim with a modular architecture and enhanced functionality.
+
