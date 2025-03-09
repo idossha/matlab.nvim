@@ -23,41 +23,6 @@ function M.execute_code(code, callback)
     return
   end
   
-  -- Create a temporary file for the code
-  local code_file = vim.fn.tempname() .. '.m'
-  local f = io.open(code_file, 'w')
-  f:write(code)
-  f:close()
-  
-  -- Create a temporary file for the output
-  local output_file = vim.fn.tempname() .. '.txt'
-  
-  -- Create a MATLAB script to run the code and capture output
-  local script_file = vim.fn.tempname() .. '.m'
-  local script = [[
-    % Redirect output to file
-    diary(']] .. output_file .. [[');
-    
-    % Execute the code
-    try
-      run(']] .. code_file .. [[');
-      disp('MATLAB_NVIM_SUCCESS');
-    catch e
-      disp('MATLAB_NVIM_ERROR');
-      disp(e.message);
-    end
-    
-    % Close the diary
-    diary off;
-    
-    % Exit MATLAB
-    exit;
-  ]]
-  
-  local f = io.open(script_file, 'w')
-  f:write(script)
-  f:close()
-  
   -- Check if MATLAB executable exists
   local has_executable = vim.fn.executable(config.matlab_executable) == 1
   
@@ -75,16 +40,69 @@ function M.execute_code(code, callback)
     return
   end
 
-  -- Run MATLAB with the script
-  local command = config.matlab_executable
-  local args = {"-nosplash", "-nodesktop", "-r", "run('" .. script_file .. "')"}
+  -- Create a temporary file for the code
+  local code_file = vim.fn.tempname() .. '.m'
+  local f = io.open(code_file, 'w')
+  if not f then
+    vim.notify("Failed to create temporary file for MATLAB code", vim.log.levels.ERROR)
+    return
+  end
+  f:write(code)
+  f:close()
+  
+  -- Create a temporary file for the output
+  local output_file = vim.fn.tempname() .. '.txt'
+  
+  -- Create a MATLAB script to run the code and capture output
+  local script_file = vim.fn.tempname() .. '.m'
+  local script = [[
+    % Redirect output to file
+    diary(']] .. output_file .. [[');
+    
+    % Display startup message to confirm MATLAB is running
+    disp('MATLAB_NVIM_STARTED');
+    
+    % Execute the code
+    try
+      run(']] .. code_file .. [[');
+      disp('MATLAB_NVIM_SUCCESS');
+    catch e
+      disp('MATLAB_NVIM_ERROR');
+      disp(e.message);
+    end
+    
+    % Explicitly write to the output file to ensure it exists
+    fid = fopen(']] .. output_file .. [[', 'a');
+    if fid > 0
+        fprintf(fid, 'MATLAB execution completed\n');
+        fclose(fid);
+    end
+    
+    % Close the diary
+    diary off;
+    
+    % Exit MATLAB
+    exit;
+  ]]
+  
+  local f = io.open(script_file, 'w')
+  if not f then
+    vim.notify("Failed to create temporary script file", vim.log.levels.ERROR)
+    return
+  end
+  f:write(script)
+  f:close()
+  
+  -- Print debug info to help diagnose issues
+  vim.notify("Executing MATLAB with: " .. config.matlab_executable, vim.log.levels.INFO)
+  vim.notify("Script file: " .. script_file, vim.log.levels.DEBUG)
   
   -- Create a floating window to show progress
   local progress_buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(progress_buf, 0, -1, false, {"Executing MATLAB code...", ""})
+  vim.api.nvim_buf_set_lines(progress_buf, 0, -1, false, {"Executing MATLAB code...", "", "Command: " .. config.matlab_executable, "Press 'q' to cancel"})
   
-  local width = 50
-  local height = 4
+  local width = 60
+  local height = 6
   local ui = vim.api.nvim_list_uis()[1]
   
   local progress_win = vim.api.nvim_open_win(progress_buf, false, {
@@ -99,11 +117,104 @@ function M.execute_code(code, callback)
     title_pos = 'center',
   })
   
+  -- Add keymap to cancel execution
+  vim.api.nvim_buf_set_keymap(progress_buf, 'n', 'q', '', {
+    callback = function()
+      if job then
+        job:shutdown()
+      end
+      if vim.api.nvim_win_is_valid(progress_win) then
+        vim.api.nvim_win_close(progress_win, true)
+      end
+      if vim.api.nvim_buf_is_valid(progress_buf) then
+        vim.api.nvim_buf_delete(progress_buf, { force = true })
+      end
+      vim.notify("MATLAB execution cancelled", vim.log.levels.INFO)
+    end,
+    noremap = true,
+    silent = true,
+  })
+  
+  -- Set a timer to update the progress window
+  local start_time = vim.loop.now()
+  local timer = vim.loop.new_timer()
+  local dots = 0
+  
+  timer:start(500, 500, vim.schedule_wrap(function()
+    if not vim.api.nvim_win_is_valid(progress_win) then
+      timer:stop()
+      return
+    end
+    
+    dots = (dots + 1) % 4
+    local dot_str = string.rep(".", dots)
+    local elapsed = math.floor((vim.loop.now() - start_time) / 1000)
+    
+    vim.api.nvim_buf_set_lines(progress_buf, 0, 1, false, {"Executing MATLAB code" .. dot_str})
+    vim.api.nvim_buf_set_lines(progress_buf, 1, 2, false, {"Time elapsed: " .. elapsed .. "s"})
+  end))
+  
+  -- Set timeout for MATLAB execution (30 seconds)
+  local timeout = vim.loop.new_timer()
+  timeout:start(30000, 0, vim.schedule_wrap(function()
+    if job then
+      vim.notify("MATLAB execution timeout after 30 seconds. You may need to manually kill the MATLAB process.", vim.log.levels.ERROR)
+      job:shutdown()
+      
+      if vim.api.nvim_win_is_valid(progress_win) then
+        vim.api.nvim_win_close(progress_win, true)
+      end
+      
+      if vim.api.nvim_buf_is_valid(progress_buf) then
+        vim.api.nvim_buf_delete(progress_buf, { force = true })
+      end
+      
+      -- Clean up temporary files
+      os.remove(code_file)
+      os.remove(script_file)
+      -- Don't remove output_file as it might be useful for debugging
+    end
+    
+    timer:stop()
+    timeout:stop()
+  end))
+
+  -- Run MATLAB with the script
+  local command = config.matlab_executable
+  -- Use simpler arguments that are more reliable
+  local args = {"-nosplash", "-nodesktop", "-batch", "run('" .. script_file .. "')"} 
+  
+  -- For macOS, we might need a different approach
+  if vim.fn.has('mac') == 1 then
+    args = {"-nosplash", "-nodesktop", "-r", "try, run('" .. script_file .. "'); catch e, disp(e.message); end; exit"}
+  end
+  
   -- Run MATLAB in the background
-  Job:new({
+  local job = Job:new({
     command = command,
     args = args,
+    on_stdout = function(_, data)
+      if data then
+        -- Update progress window with output
+        if vim.api.nvim_win_is_valid(progress_win) then
+          vim.api.nvim_buf_set_lines(progress_buf, 3, 4, false, {"Latest output: " .. data})
+        end
+        
+        if data:find("MATLAB_NVIM_STARTED") then
+          vim.notify("MATLAB process started successfully", vim.log.levels.INFO)
+        end
+      end
+    end,
+    on_stderr = function(_, data)
+      if data and data ~= "" then
+        vim.notify("MATLAB stderr: " .. data, vim.log.levels.WARN)
+      end
+    end,
     on_exit = function(_, exit_code)
+      -- Stop timers
+      timer:stop()
+      timeout:stop()
+      
       -- Close progress window
       if vim.api.nvim_win_is_valid(progress_win) then
         vim.api.nvim_win_close(progress_win, true)
@@ -114,49 +225,69 @@ function M.execute_code(code, callback)
       end
       
       -- Read the output file
-      if exit_code == 0 then
-        local output = ""
-        local success = true
+      local output = ""
+      local success = false
+      
+      local output_handle = io.open(output_file, 'r')
+      if output_handle then
+        output = output_handle:read("*all") or ""
+        output_handle:close()
         
-        local output_handle = io.open(output_file, 'r')
-        if output_handle then
-          output = output_handle:read("*all")
-          output_handle:close()
-          
-          -- Check for success or error
-          if output:find("MATLAB_NVIM_ERROR") then
-            success = false
-          end
-        else
+        -- Check for success or error
+        if output:find("MATLAB_NVIM_SUCCESS") then
+          success = true
+          vim.notify("MATLAB execution completed successfully", vim.log.levels.INFO)
+        elseif output:find("MATLAB_NVIM_ERROR") then
           success = false
-          output = "Failed to read MATLAB output"
-        end
-        
-        -- Clean up temporary files
-        os.remove(code_file)
-        os.remove(script_file)
-        os.remove(output_file)
-        
-        if callback then
-          callback(success, output)
+          vim.notify("MATLAB execution failed with errors", vim.log.levels.ERROR)
         else
-          if success then
-            -- Show output in a floating window
-            M.show_output(output)
-          else
-            vim.notify("MATLAB execution failed:\n" .. output, vim.log.levels.ERROR)
-          end
+          -- If we can't find either marker, check the exit code
+          success = (exit_code == 0)
+          vim.notify("MATLAB execution completed with exit code: " .. exit_code, vim.log.levels.INFO)
         end
       else
-        vim.notify("MATLAB execution failed", vim.log.levels.ERROR)
-        
-        -- Clean up temporary files
-        os.remove(code_file)
-        os.remove(script_file)
-        os.remove(output_file)
+        if exit_code == 0 then
+          vim.notify("MATLAB execution completed, but output file not found", vim.log.levels.WARN)
+          success = true
+        else
+          vim.notify("MATLAB execution failed (exit code " .. exit_code .. ") and output file not found", vim.log.levels.ERROR)
+          success = false
+          output = "Failed to read MATLAB output (exit code " .. exit_code .. ")"
+        end
       end
+      
+      -- Clean up temporary files
+      os.remove(code_file)
+      os.remove(script_file)
+      -- Keep output_file for debugging if execution failed
+      if success then
+        os.remove(output_file)
+      else
+        vim.notify("Output file saved at: " .. output_file, vim.log.levels.INFO)
+      end
+      
+      if callback then
+        callback(success, output)
+      else
+        if success then
+          -- Show output in a floating window
+          M.show_output(output)
+        else
+          vim.notify("MATLAB execution failed:\n" .. output, vim.log.levels.ERROR)
+        end
+      end
+      
+      -- After execution, refresh workspace if it's open
+      vim.defer_fn(function()
+        local workspace = require('matlab.workspace')
+        workspace.refresh()
+      end, 1000)
     end,
-  }):start()
+  })
+  
+  job:start()
+  
+  return job
 end
 
 -- Show MATLAB output in a floating window
@@ -174,7 +305,7 @@ function M.show_output(output)
   -- Filter out MATLAB_NVIM_SUCCESS line
   local filtered_lines = {}
   for _, line in ipairs(lines) do
-    if line ~= "MATLAB_NVIM_SUCCESS" then
+    if line ~= "MATLAB_NVIM_SUCCESS" and line ~= "MATLAB_NVIM_STARTED" then
       table.insert(filtered_lines, line)
     end
   end
