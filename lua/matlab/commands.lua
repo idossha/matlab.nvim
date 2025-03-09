@@ -140,44 +140,48 @@ function M.execute_code(code, callback)
   local timer = vim.loop.new_timer()
   local dots = 0
   
-  timer:start(500, 500, vim.schedule_wrap(function()
-    if not vim.api.nvim_win_is_valid(progress_win) then
-      timer:stop()
-      return
-    end
-    
-    dots = (dots + 1) % 4
-    local dot_str = string.rep(".", dots)
-    local elapsed = math.floor((vim.loop.now() - start_time) / 1000)
-    
-    vim.api.nvim_buf_set_lines(progress_buf, 0, 1, false, {"Executing MATLAB code" .. dot_str})
-    vim.api.nvim_buf_set_lines(progress_buf, 1, 2, false, {"Time elapsed: " .. elapsed .. "s"})
-  end))
+  timer:start(500, 500, function()
+    vim.schedule(function()
+      if not vim.api.nvim_win_is_valid(progress_win) then
+        timer:stop()
+        return
+      end
+      
+      dots = (dots + 1) % 4
+      local dot_str = string.rep(".", dots)
+      local elapsed = math.floor((vim.loop.now() - start_time) / 1000)
+      
+      vim.api.nvim_buf_set_lines(progress_buf, 0, 1, false, {"Executing MATLAB code" .. dot_str})
+      vim.api.nvim_buf_set_lines(progress_buf, 1, 2, false, {"Time elapsed: " .. elapsed .. "s"})
+    end)
+  end)
   
   -- Set timeout for MATLAB execution (30 seconds)
   local timeout = vim.loop.new_timer()
-  timeout:start(30000, 0, vim.schedule_wrap(function()
-    if job then
-      vim.notify("MATLAB execution timeout after 30 seconds. You may need to manually kill the MATLAB process.", vim.log.levels.ERROR)
-      job:shutdown()
-      
-      if vim.api.nvim_win_is_valid(progress_win) then
-        vim.api.nvim_win_close(progress_win, true)
+  timeout:start(30000, 0, function()
+    vim.schedule(function()
+      if job then
+        vim.notify("MATLAB execution timeout after 30 seconds. You may need to manually kill the MATLAB process.", vim.log.levels.ERROR)
+        job:shutdown()
+        
+        if vim.api.nvim_win_is_valid(progress_win) then
+          vim.api.nvim_win_close(progress_win, true)
+        end
+        
+        if vim.api.nvim_buf_is_valid(progress_buf) then
+          vim.api.nvim_buf_delete(progress_buf, { force = true })
+        end
+        
+        -- Clean up temporary files
+        os.remove(code_file)
+        os.remove(script_file)
+        -- Don't remove output_file as it might be useful for debugging
       end
       
-      if vim.api.nvim_buf_is_valid(progress_buf) then
-        vim.api.nvim_buf_delete(progress_buf, { force = true })
-      end
-      
-      -- Clean up temporary files
-      os.remove(code_file)
-      os.remove(script_file)
-      -- Don't remove output_file as it might be useful for debugging
-    end
-    
-    timer:stop()
-    timeout:stop()
-  end))
+      timer:stop()
+      timeout:stop()
+    end)
+  end)
 
   -- Run MATLAB with the script
   local command = config.matlab_executable
