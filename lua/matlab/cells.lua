@@ -137,40 +137,36 @@ function M.get_all_cells()
   return cells
 end
 
--- Fold or unfold a specific cell
-function M.toggle_cell_fold(cell_idx)
-  if not cell_idx then
-    -- If no cell index provided, find the current cell
-    local current_line = vim.fn.line('.')
-    local all_cells = M.get_all_cells()
-    
-    for i, cell in ipairs(all_cells) do
-      if current_line >= cell.start and current_line <= cell.ending then
-        cell_idx = i
-        break
-      end
-    end
-    
-    if not cell_idx then return end
+-- Fold or unfold the current cell - simpler, more direct implementation
+function M.toggle_cell_fold()
+  -- Find the current cell boundaries
+  local start_line, end_line = M.find_current_cell()
+  
+  -- Ensure we have valid boundaries
+  if not start_line or not end_line or start_line >= end_line then
+    vim.notify("No valid cell found at cursor position", vim.log.levels.WARN)
+    return
   end
   
-  local all_cells = M.get_all_cells()
-  local cell = all_cells[cell_idx]
+  -- Check if the cell is already folded
+  local is_folded = false
+  for i = start_line, end_line do
+    if vim.fn.foldclosed(i) > 0 then
+      is_folded = true
+      break
+    end
+  end
   
-  if not cell then return end
-  
-  -- Generate a unique key for this cell based on its content
-  local cell_key = cell.start .. "_" .. cell.ending
-  
-  -- Toggle fold state
-  if M.folded_cells[cell_key] then
-    -- Unfold
-    vim.cmd(cell.start .. "," .. cell.ending .. "foldopen")
-    M.folded_cells[cell_key] = nil
+  if is_folded then
+    -- If folded, unfold it
+    vim.cmd(start_line .. "," .. end_line .. " normal! zO")
+    vim.notify("Cell unfolded", vim.log.levels.INFO)
   else
-    -- Fold
-    vim.cmd(cell.start+1 .. "," .. cell.ending .. "fold")
-    M.folded_cells[cell_key] = true
+    -- If not folded, fold it - but leave the cell marker (%%...) line visible
+    if start_line > 0 then
+      vim.cmd((start_line+1) .. "," .. end_line .. " fold")
+      vim.notify("Cell folded", vim.log.levels.INFO)
+    end
   end
 end
 

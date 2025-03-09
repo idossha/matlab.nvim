@@ -15,7 +15,7 @@ syn keyword matlabBoolean             true false
 syn keyword matlabTodo                contained TODO NOTE FIXME XXX
 syn match matlabComment               "%.*$" contains=matlabTodo,matlabTab
 syn region matlabBlockComment         start="^\s*%{\s*$" end="^\s*%}\s*$" contains=matlabBlockComment,matlabTodo
-syn match matlabHeadline              "%%.*$" contains=matlabTodo
+syn match matlabHeadline              "^[ \t]*%%.*$" contains=matlabTodo
 
 " Strings and numbers
 syn region matlabString               start=+'+ end=+'+ oneline
