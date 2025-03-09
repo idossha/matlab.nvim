@@ -15,8 +15,34 @@ A modern Neovim plugin for MATLAB integration with tmux. This plugin provides en
 ## Requirements
 
 - Neovim 0.7.0 or later
-- tmux
+- tmux (must be installed and you must run Neovim inside a tmux session)
 - MATLAB
+
+### Tmux Setup
+
+This plugin requires you to run Neovim inside a tmux session. If you're not familiar with tmux, here's a quick start:
+
+1. Install tmux:
+   - macOS: `brew install tmux`
+   - Ubuntu/Debian: `sudo apt install tmux`
+   - CentOS/RHEL: `sudo yum install tmux`
+
+2. Start a tmux session:
+   ```sh
+   tmux
+   ```
+
+3. Inside the tmux session, launch Neovim:
+   ```sh
+   nvim
+   ```
+
+4. Basic tmux commands:
+   - Split horizontally: `Ctrl-b "` 
+   - Split vertically: `Ctrl-b %`
+   - Switch panes: `Ctrl-b arrow-key`
+   - Detach session (without closing): `Ctrl-b d`
+   - Reattach to session: `tmux attach`
 
 ## Installation
 

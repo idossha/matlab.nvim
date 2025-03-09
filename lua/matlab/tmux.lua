@@ -5,20 +5,54 @@ local config = require('matlab.config')
 -- Store the server pane ID
 M.server_pane = nil
 
--- Check if tmux exists
+-- Check if tmux exists and we're in a tmux session
 function M.exists()
-  if vim.env.TMUX == nil or vim.env.TMUX == '' then
-    vim.notify('matlab.nvim cannot run without tmux.', vim.log.levels.ERROR)
+  -- First check if the tmux command is available
+  if vim.fn.executable('tmux') ~= 1 then
+    vim.notify('tmux command not found. Please make sure tmux is installed.', vim.log.levels.ERROR)
     return false
   end
+  
+  -- Check if we're inside a tmux session
+  if vim.env.TMUX == nil or vim.env.TMUX == '' then
+    -- Additional check: try running tmux directly to see if it works
+    local tmux_version = vim.fn.system('tmux -V')
+    if vim.v.shell_error == 0 then
+      vim.notify('tmux is installed, but you are not inside a tmux session. Please start tmux first.', vim.log.levels.ERROR)
+    else
+      vim.notify('matlab.nvim cannot run without tmux.', vim.log.levels.ERROR)
+    end
+    return false
+  end
+  
   return true
 end
 
 -- Execute a tmux command
 function M.execute(command)
   local cmd = 'tmux ' .. command
-  vim.notify('Executing tmux command: ' .. cmd, vim.log.levels.DEBUG)
-  local output = vim.fn.system(cmd)
+  
+  if config.get('debug') then
+    vim.notify('Executing tmux command: ' .. cmd, vim.log.levels.DEBUG)
+  end
+  
+  -- Use pcall to catch any errors in system command execution
+  local success, output = pcall(vim.fn.system, cmd)
+  
+  if not success then
+    vim.notify('Error executing tmux command: ' .. cmd, vim.log.levels.ERROR)
+    vim.notify('Error details: ' .. tostring(output), vim.log.levels.DEBUG)
+    return ""
+  end
+  
+  -- Check shell error code
+  if vim.v.shell_error ~= 0 then
+    if config.get('debug') then
+      vim.notify('Tmux command returned non-zero exit code: ' .. vim.v.shell_error, vim.log.levels.DEBUG)
+      vim.notify('Command output: ' .. output, vim.log.levels.DEBUG)
+    end
+  end
+  
   return output
 end
 
@@ -200,8 +234,9 @@ end
 -- Check if a system command is available
 function M.command_exists(cmd)
   if type(cmd) ~= "string" then return false end
-  local _, _, code = os.execute(cmd .. " --version > /dev/null 2>&1")
-  return code == 0
+  
+  -- Using vim's executable() function is more reliable
+  return vim.fn.executable(cmd) == 1
 end
 
 -- Build platform-specific MATLAB startup command
@@ -224,14 +259,8 @@ function M.start_server(auto_start, startup_command)
     vim.notify('Starting MATLAB server (auto_start=' .. tostring(auto_start) .. ')', vim.log.levels.INFO)
   end
   
+  -- Check for tmux environment (includes command existence check)
   if not M.exists() then
-    vim.notify('Tmux environment not detected. Please run Neovim inside tmux.', vim.log.levels.ERROR)
-    return
-  end
-
-  -- Check if tmux command is available
-  if not M.command_exists("tmux") then
-    vim.notify('Tmux command not found. Please make sure tmux is installed.', vim.log.levels.ERROR)
     return
   end
 
