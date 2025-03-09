@@ -1,199 +1,109 @@
-# MATLAB.nvim
+# matlab.nvim
 
-A Neovim plugin for MATLAB development providing IDE-like features within your favorite editor.
+A modern Neovim plugin for MATLAB integration with tmux. This plugin provides enhanced integration between Neovim, MATLAB, and tmux, making your MATLAB development workflow more efficient.
 
 ## Features
 
-- Visual rendering of MATLAB cells with separation lines
-- Bolded cell titles after "%%"
-- Workspace variable viewer
-- Execute MATLAB code directly from Neovim
-- Navigate between cells
-- MATLAB-specific code completion
+- Automatically launches a MATLAB console in a tmux split
+- Run MATLAB scripts directly from Neovim
+- Execute MATLAB code cells (sections between %% comments)
+- Set and clear breakpoints
+- Access MATLAB documentation
+- Manage MATLAB workspace
+- Enhanced syntax highlighting
+
+## Requirements
+
+- Neovim 0.7.0 or later
+- tmux
+- MATLAB
 
 ## Installation
-
-### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
-
-```lua
-{
-  'idossha/matlab.nvim',
-  dependencies = {
-    'nvim-lua/plenary.nvim',
-    'MunifTanjim/nui.nvim',
-  },
-  config = function()
-    require('matlab').setup({
-      -- IMPORTANT: Set the path to your MATLAB executable
-      matlab_executable = '/path/to/your/matlab',
-      
-      -- Optional: Other configuration options
-      highlight_cells = true,
-      workspace = {
-        position = 'right',
-        width = 40,
-      },
-    })
-  end,
-  ft = 'matlab',
-}
-```
 
 ### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
 
 ```lua
 use {
   'idossha/matlab.nvim',
-  requires = {
-    'nvim-lua/plenary.nvim',
-    'MunifTanjim/nui.nvim',
-  },
   config = function()
-    require('matlab').setup({
-      -- IMPORTANT: Set the path to your MATLAB executable
-      matlab_executable = '/path/to/your/matlab',
-      
-      -- Optional: Other configuration options
-      highlight_cells = true,
-      workspace = {
-        position = 'right',
-        width = 40,
-      },
-    })
+    require('matlab').setup()
   end
 }
 ```
 
-### Using [vim-plug](https://github.com/junegunn/vim-plug)
+### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
-```vim
-" Required dependencies
-Plug 'nvim-lua/plenary.nvim'
-Plug 'MunifTanjim/nui.nvim'
-Plug 'yourusername/matlab.nvim'
-
-" In your init.vim, after plug#end():
-lua << EOF
-  require('matlab').setup({
-    -- IMPORTANT: Set the path to your MATLAB executable
-    matlab_executable = '/path/to/your/matlab',
-    
-    -- Optional: Other configuration options
-    highlight_cells = true,
-    workspace = {
-      position = 'right',
-      width = 40,
-    },
-  })
-EOF
-```
+```lua
+{
+  'idossha/matlab.nvim',
+  config = function()
+    require('matlab').setup()
+  end
+}
 ```
 
 ## Configuration
 
+You can customize matlab.nvim by passing options to the setup function:
+
 ```lua
 require('matlab').setup({
-  -- MATLAB executable path (IMPORTANT: set this to your MATLAB executable path)
-  matlab_executable = 'matlab',
-  
-  -- Enable cell rendering
-  highlight_cells = true,
-  
-  -- Cell separator appearance
-  cell_separator = {
-    -- Character to use for separator line
-    char = '─',
-    -- Length of the separator line (0 = full width)
-    length = 0,
-  },
-  
-  -- Workspace viewer settings
-  workspace = {
-    -- Enable workspace viewer
-    enable = true,
-    -- Position: 'right', 'left', or 'float'
-    position = 'right',
-    -- Width of the sidebar (when position is 'right' or 'left')
-    width = 40,
-    -- Auto-refresh interval in seconds (0 to disable)
-    refresh_interval = 5,
-  },
-  
-  -- Keymappings
-  mappings = {
-    -- Navigate to next cell
-    next_cell = ']m',
-    -- Navigate to previous cell
-    prev_cell = '[m',
-    -- Execute current cell
-    exec_cell = '<leader>mc',
-    -- Execute entire file
-    exec_file = '<leader>mf',
-    -- Execute current selection
-    exec_selection = '<leader>ms',
-    -- Toggle workspace viewer
-    toggle_workspace = '<leader>mw',
-  },
+  executable = 'matlab',        -- Path to MATLAB executable
+  panel_size = 120,             -- Size of the tmux split
+  auto_start = true,            -- Auto-start MATLAB when opening a .m file
+  default_mappings = true,      -- Enable default keymappings
 })
-```
-
-### Configuring MATLAB Executable Path
-
-The most important configuration option is the `matlab_executable` setting, which must point to your MATLAB executable. If not properly configured, you'll see errors like:
-
-```
-Error executing lua: [...] matlab: Executable not found
-```
-
-#### Common MATLAB Executable Paths
-
-Set the `matlab_executable` to the full path of your MATLAB installation:
-
-**Windows:**
-```lua
-matlab_executable = 'C:/Program Files/MATLAB/R2023b/bin/matlab.exe',
-```
-
-**macOS:**
-```lua
-matlab_executable = '/Applications/MATLAB_R2023b.app/bin/matlab',
-```
-
-**Linux:**
-```lua
-matlab_executable = '/usr/local/MATLAB/R2023b/bin/matlab',
-```
-
-Replace `R2023b` with your actual MATLAB version.
-
-#### Finding Your MATLAB Path
-
-If you're unsure where MATLAB is installed:
-
-1. **Windows**: Open Command Prompt and type `where matlab`
-2. **macOS/Linux**: Open Terminal and type `which matlab`
-3. Or search for the MATLAB executable in common installation directories
-
-If MATLAB is already in your system PATH, you can leave the default setting.
-
-#### Troubleshooting
-
-If you still encounter "Executable not found" errors:
-
-1. Verify MATLAB works from the command line by running `matlab -nodesktop`
-2. Try using the absolute path to the MATLAB startup script or batch file
-3. Ensure proper permissions to execute MATLAB from Neovim
-4. Check for any special characters in the path that might need escaping
 ```
 
 ## Usage
 
-- Place your cursor within a MATLAB cell and press `<leader>mc` to execute it
-- Navigate between cells with `[m` and `]m`
-- Toggle workspace viewer with `<leader>mw`
-- Execute entire file with `<leader>mf`
-- Select code and execute it with `<leader>ms`
+- Open any MATLAB file (.m) with Neovim inside tmux. A MATLAB console will automatically open inside a hidden tmux split.
+- Use `:MatlabRun` to execute the current file
+- Use `:MatlabRunCell` to execute the current cell (code section between %% markers)
+- Use `:MatlabBreakpoint` to set a breakpoint at the current line
+- Use `:MatlabDoc` to display documentation for the function under the cursor
+- Use `:MatlabWorkspace` to see variables in the MATLAB workspace
+
+## Default Keymappings
+
+When `default_mappings` is enabled, the following keymaps are available in MATLAB files:
+
+| Mapping    | Command                 | Description                           |
+|------------|-------------------------|---------------------------------------|
+| `<Leader>r`  | `:MatlabRun`            | Run current MATLAB script             |
+| `<Leader>rc` | `:MatlabRunCell`        | Run current MATLAB cell               |
+| `<Leader>rt` | `:MatlabRunToCell`      | Run up to current MATLAB cell         |
+| `<Leader>s`  | `:MatlabBreakpoint`     | Set breakpoint at current line        |
+| `<Leader>c`  | `:MatlabClearBreakpoint`| Clear breakpoint in current file      |
+| `<Leader>C`  | `:MatlabClearBreakpoints`| Clear all breakpoints                |
+| `<Leader>d`  | `:MatlabDoc`            | Show documentation for word under cursor |
+| `<Leader>w`  | `:MatlabWorkspace`      | Show MATLAB workspace                 |
+| `<Leader>wc` | `:MatlabClearWorkspace` | Clear MATLAB workspace                |
+| `<Leader>ws` | `:MatlabSaveWorkspace`  | Save MATLAB workspace                 |
+| `<Leader>wl` | `:MatlabLoadWorkspace`  | Load MATLAB workspace                 |
+
+## Commands
+
+| Command                  | Description                              |
+|--------------------------|------------------------------------------|
+| `:MatlabRun [command]`   | Run current file or specified command    |
+| `:MatlabRunCell`         | Run current cell                         |
+| `:MatlabRunToCell`       | Run code from start to current cell      |
+| `:MatlabBreakpoint`      | Set breakpoint at current line           |
+| `:MatlabClearBreakpoint` | Clear breakpoint in current file         |
+| `:MatlabClearBreakpoints`| Clear all breakpoints                    |
+| `:MatlabDoc`             | Show documentation for word under cursor |
+| `:MatlabStartServer`     | Start MATLAB server                      |
+| `:MatlabStopServer`      | Stop MATLAB server                       |
+| `:MatlabWorkspace`       | Show MATLAB workspace                    |
+| `:MatlabClearWorkspace`  | Clear MATLAB workspace                   |
+| `:MatlabSaveWorkspace`   | Save MATLAB workspace                    |
+| `:MatlabLoadWorkspace`   | Load MATLAB workspace                    |
 
 ## License
 
 MIT
+
+## Acknowledgments
+
+This plugin is inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab-vim) but rewritten in Lua for Neovim with a modular architecture and enhanced functionality.
