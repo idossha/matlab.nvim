@@ -3,10 +3,11 @@ local M = {}
 
 -- Default configuration
 M.defaults = {
-  executable = 'matlab',
+  executable = 'matlab',  -- MATLAB executable (can be full path if MATLAB is not in PATH)
   panel_size = 120,
   auto_start = true,
   default_mappings = true,
+  debug = false,         -- Enable debug logging
 }
 
 -- User configuration

@@ -48,10 +48,39 @@ You can customize matlab.nvim by passing options to the setup function:
 
 ```lua
 require('matlab').setup({
-  executable = 'matlab',        -- Path to MATLAB executable
+  executable = 'matlab',        -- Path to MATLAB executable (can be full path like '/Applications/MATLAB_R2023b.app/bin/matlab')
   panel_size = 120,             -- Size of the tmux split
   auto_start = true,            -- Auto-start MATLAB when opening a .m file
   default_mappings = true,      -- Enable default keymappings
+  debug = false,                -- Enable debug logging
+})
+```
+
+### Important Note About MATLAB Path
+
+If you're getting the error "Something went wrong starting the MATLAB server", it likely means the plugin can't find your MATLAB executable. You should specify the full path to your MATLAB executable:
+
+For macOS:
+```lua
+require('matlab').setup({
+  executable = '/Applications/MATLAB_R2023b.app/bin/matlab',  -- Adjust according to your version
+  -- other options...
+})
+```
+
+For Linux:
+```lua
+require('matlab').setup({
+  executable = '/usr/local/MATLAB/R2023b/bin/matlab',  -- Adjust according to your installation
+  -- other options...
+})
+```
+
+For Windows:
+```lua
+require('matlab').setup({
+  executable = 'C:\\Program Files\\MATLAB\\R2023b\\bin\\matlab.exe',  -- Adjust according to your installation
+  -- other options...
 })
 ```
 
