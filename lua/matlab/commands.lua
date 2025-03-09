@@ -50,35 +50,40 @@ function M.execute_code(code, callback)
   f:write(code)
   f:close()
   
-  -- Create a temporary file for the output
-  local output_file = vim.fn.tempname() .. '.txt'
+  -- Create a temporary file for the output - use the /tmp directory explicitly 
+  -- which is more likely to be writable by MATLAB
+  local output_file = "/tmp/matlab_nvim_output_" .. os.time() .. ".txt"
   
   -- Create a MATLAB script to run the code and capture output
   local script_file = vim.fn.tempname() .. '.m'
   local script = [[
-    % Redirect output to file
-    diary(']] .. output_file .. [[');
+    % Create output file and write directly to it with full path
+    fid = fopen(']] .. output_file .. [[', 'w');
+    if fid < 0
+        error('Cannot open output file for writing: ]] .. output_file .. [[');
+    end
     
-    % Display startup message to confirm MATLAB is running
-    disp('MATLAB_NVIM_STARTED');
+    fprintf(fid, 'MATLAB_NVIM_STARTED\n');
+    fprintf(fid, 'Working directory: %s\n', pwd);
     
-    % Execute the code
     try
+      % Execute the code
       run(']] .. code_file .. [[');
-      disp('MATLAB_NVIM_SUCCESS');
+      fprintf(fid, 'MATLAB_NVIM_SUCCESS\n');
     catch e
-      disp('MATLAB_NVIM_ERROR');
-      disp(e.message);
+      fprintf(fid, 'MATLAB_NVIM_ERROR\n');
+      fprintf(fid, 'Error: %s\n', e.message);
     end
     
-    % Explicitly write to the output file to ensure it exists
-    fid = fopen(']] .. output_file .. [[', 'a');
-    if fid > 0
-        fprintf(fid, 'MATLAB execution completed\n');
-        fclose(fid);
-    end
+    fprintf(fid, 'MATLAB execution completed\n');
+    fclose(fid);
     
-    % Close the diary
+    % Also try to use diary as a backup method
+    diary(']] .. output_file .. [[.diary');
+    disp('MATLAB_NVIM_STARTED');
+    disp('Working directory:');
+    pwd
+    disp('Execution completed');
     diary off;
     
     % Exit MATLAB
@@ -188,9 +193,14 @@ function M.execute_code(code, callback)
   -- Use simpler arguments that are more reliable
   local args = {"-nosplash", "-nodesktop", "-batch", "run('" .. script_file .. "')"} 
   
-  -- For macOS, we might need a different approach
+  -- For macOS, we need a different approach
   if vim.fn.has('mac') == 1 then
-    args = {"-nosplash", "-nodesktop", "-r", "try, run('" .. script_file .. "'); catch e, disp(e.message); end; exit"}
+    -- On macOS, use the -batch mode which is more reliable with file I/O
+    args = {"-nosplash", "-nodesktop", "-batch", "run('" .. script_file .. "')"}
+    
+    -- Print more detailed diagnostic info
+    vim.notify("Using macOS-specific MATLAB arguments: " .. table.concat(args, " "), vim.log.levels.INFO)
+    vim.notify("Output file path: " .. output_file, vim.log.levels.INFO)
   end
   
   -- Run MATLAB in the background
@@ -237,7 +247,18 @@ function M.execute_code(code, callback)
         local output = ""
         local success = false
         
+        vim.notify("Looking for output file: " .. output_file, vim.log.levels.INFO)
+        
+        -- Try both the direct output file and the diary backup
         local output_handle = io.open(output_file, 'r')
+        if not output_handle then
+          -- Try the diary file as backup
+          output_handle = io.open(output_file .. ".diary", 'r')
+          if output_handle then
+            vim.notify("Using diary backup file instead", vim.log.levels.INFO)
+          end
+        end
+        
         if output_handle then
           output = output_handle:read("*all") or ""
           output_handle:close()
@@ -255,9 +276,20 @@ function M.execute_code(code, callback)
             vim.notify("MATLAB execution completed with exit code: " .. exit_code, vim.log.levels.INFO)
           end
         else
+          -- No output file found
           if exit_code == 0 then
-            vim.notify("MATLAB execution completed, but output file not found", vim.log.levels.WARN)
+            -- Try to list files in the temp directory to see what's there
+            local ls_cmd = "ls -la /tmp | grep matlab_nvim"
+            local handle = io.popen(ls_cmd)
+            local ls_result = ""
+            if handle then
+              ls_result = handle:read("*a")
+              handle:close()
+            end
+            
+            vim.notify("MATLAB execution completed, but output file not found. Files in /tmp:\n" .. ls_result, vim.log.levels.WARN)
             success = true
+            output = "MATLAB execution completed but no output was captured."
           else
             vim.notify("MATLAB execution failed (exit code " .. exit_code .. ") and output file not found", vim.log.levels.ERROR)
             success = false
