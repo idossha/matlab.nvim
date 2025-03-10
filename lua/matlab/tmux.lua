@@ -439,10 +439,10 @@ function M.start_server(auto_start, startup_command)
     
     if panel_size_type == 'percentage' then
       -- Use percentage of the screen
-      M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -p " .. vim.fn.shellescape(panel_size))
+      M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -p " .. tostring(panel_size))
     else
       -- Use fixed width
-      M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -x " .. vim.fn.shellescape(panel_size))
+      M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -x " .. tostring(panel_size))
     end
 
     -- Zoom current pane if we don't want the MATLAB pane to be visible

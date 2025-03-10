@@ -16,11 +16,8 @@ end
 -- Enhanced debug function that respects configuration settings
 local function debug_info(message, force)
   -- Only print messages if debug is enabled or it's a forced message
-  if config.get('debug') or force then
-    -- Only show notifications if minimal_notifications is false or it's a forced message
-    if not config.get('minimal_notifications') or force then
-      vim.notify("MATLAB: " .. message, vim.log.levels.INFO)
-    end
+  if (config.get('debug') or force) and (not config.get('minimal_notifications') or force) then
+    vim.notify("MATLAB: " .. message, vim.log.levels.INFO)
   end
   
   -- Always log to a file for debugging (regardless of settings)
