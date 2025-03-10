@@ -17,6 +17,9 @@ This plugin is inspired by [MortenStabenau/matlab-vim](https://github.com/Morten
 - Access MATLAB documentation
 - View MATLAB workspace in a floating window
 - Enhanced syntax highlighting with bold cell headers
+- Reliable tmux pane sizing and management
+- Space leader key compatibility
+- Minimal notification mode for distraction-free workflow
 
 ## Requirements
 
@@ -122,6 +125,8 @@ require('matlab').setup({
 
 The plugin will automatically attempt to find your MATLAB installation by searching common installation paths based on your operating system. If found, it will use that installation for the current session and suggest updating your configuration.
 
+The automatic detection searches for recent MATLAB versions (up to 5 years back) in standard installation directories.
+
 However, if you're getting the error "Something went wrong starting the MATLAB server", it's best to explicitly specify the full path to your MATLAB executable:
 
 **For macOS:**
@@ -176,6 +181,7 @@ If you're not sure where MATLAB is installed:
   - Open any MATLAB file (.m) with Neovim inside tmux
   - Use `<Leader>mr` or `:MatlabRun` to execute the current file
   - Use `<Leader>mc` or `:MatlabRunCell` to execute the current cell (code section between %% markers)
+  - Use `<Leader>mt` or `:MatlabRunToCell` to execute all code from the beginning to the current cell
 
 - **Working with Cells**:
   - MATLAB cells are sections of code separated by `%%` comment lines
@@ -185,7 +191,8 @@ If you're not sure where MATLAB is installed:
 
 - **Debugging**:
   - Use `<Leader>mb` or `:MatlabBreakpoint` to set a breakpoint at the current line
-  - Use `<Leader>md` or `:MatlabClearBreakpoint` to clear a breakpoint
+  - Use `<Leader>md` or `:MatlabClearBreakpoint` to clear a breakpoint in the current file
+  - Use `<Leader>mD` or `:MatlabClearBreakpoints` to clear all breakpoints
   - Run your code with `<Leader>mr` or `:MatlabRun` to hit the breakpoints
 
 - **Documentation**:
@@ -196,8 +203,16 @@ If you're not sure where MATLAB is installed:
   - Use `<Leader>mw` or `:MatlabToggleWorkspace` to view variables in a side panel
   - Press `r` in the workspace window to refresh variables
   - Use `<Leader>mx` or `:MatlabClearWorkspace` to clear all variables
+  - Use `<Leader>ms` or `:MatlabSaveWorkspace` to save your MATLAB workspace
+  - Use `<Leader>ml` or `:MatlabLoadWorkspace` to load a saved workspace
+
+- **UI & Customization**:
+  - Use `:MatlabDebugUI` to check your current UI settings
+  - Control notification verbosity with the `minimal_notifications` option
+  - Customize tmux pane size and position with `panel_size` and `tmux_pane_direction`
 
 - **Customizing Keymappings**:
+  - Full support for Space as leader key with proper handling of key conflicts
   - You can customize all keymappings through the `mappings` table in your setup
   - Use the `prefix` option to change the common prefix for all mappings
   - Example: To use comma as a prefix and change the run key to 'e':
