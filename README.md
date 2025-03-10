@@ -155,49 +155,49 @@ If you're not sure where MATLAB is installed:
 
 - **Running Code**: 
   - Open any MATLAB file (.m) with Neovim inside tmux
-  - Use `:MatlabRun` to execute the current file
-  - Use `:MatlabRunCell` to execute the current cell (code section between %% markers)
+  - Use `<Leader>mr` or `:MatlabRun` to execute the current file
+  - Use `<Leader>mc` or `:MatlabRunCell` to execute the current cell (code section between %% markers)
 
 - **Working with Cells**:
   - MATLAB cells are sections of code separated by `%%` comment lines
-  - Use `za` to fold/unfold the current cell
-  - Use `zA` to fold/unfold all cells
-  - Use `:MatlabRunCell` to execute only the current cell
+  - Use `<Leader>mf` to fold/unfold the current cell
+  - Use `<Leader>mF` to fold/unfold all cells
+  - Use `<Leader>mc` or `:MatlabRunCell` to execute only the current cell
 
 - **Debugging**:
-  - Use `:MatlabBreakpoint` to set a breakpoint at the current line
-  - Use `:MatlabClearBreakpoint` to clear a breakpoint
-  - Run your code with `:MatlabRun` to hit the breakpoints
+  - Use `<Leader>mb` or `:MatlabBreakpoint` to set a breakpoint at the current line
+  - Use `<Leader>md` or `:MatlabClearBreakpoint` to clear a breakpoint
+  - Run your code with `<Leader>mr` or `:MatlabRun` to hit the breakpoints
 
 - **Documentation**:
   - Place cursor on any MATLAB function
-  - Use `:MatlabDoc` to display documentation for it
+  - Use `<Leader>mh` or `:MatlabDoc` to display documentation for it
 
 - **Workspace Management**:
-  - Use `:MatlabToggleWorkspace` to view variables in a side panel
+  - Use `<Leader>mw` or `:MatlabToggleWorkspace` to view variables in a side panel
   - Press `r` in the workspace window to refresh variables
-  - Use `:MatlabClearWorkspace` to clear all variables
+  - Use `<Leader>mx` or `:MatlabClearWorkspace` to clear all variables
 
 ## Default Keymappings
 
-When `default_mappings` is enabled, the following keymaps are available in MATLAB files:
+When `default_mappings` is enabled, the following keymaps are available in MATLAB files. All mappings start with `<Leader>m` followed by a second key:
 
 | Mapping      | Command                  | Description                            |
 |--------------|--------------------------|----------------------------------------|
-| `<Leader>r`  | `:MatlabRun`             | Run current MATLAB script              |
-| `<Leader>rc` | `:MatlabRunCell`         | Run current MATLAB cell                |
-| `<Leader>rt` | `:MatlabRunToCell`       | Run up to current MATLAB cell          |
-| `<Leader>s`  | `:MatlabBreakpoint`      | Set breakpoint at current line         |
-| `<Leader>c`  | `:MatlabClearBreakpoint` | Clear breakpoint in current file       |
-| `<Leader>C`  | `:MatlabClearBreakpoints`| Clear all breakpoints                  |
-| `<Leader>d`  | `:MatlabDoc`             | Show documentation for word under cursor |
-| `<Leader>w`  | `:MatlabToggleWorkspace` | Toggle workspace floating window       |
-| `<Leader>ww` | `:MatlabWorkspace`       | Show MATLAB workspace in tmux pane     |
-| `<Leader>wc` | `:MatlabClearWorkspace`  | Clear MATLAB workspace                 |
-| `<Leader>ws` | `:MatlabSaveWorkspace`   | Save MATLAB workspace                  |
-| `<Leader>wl` | `:MatlabLoadWorkspace`   | Load MATLAB workspace                  |
-| `za`         | `:MatlabToggleCellFold`  | Toggle current cell fold               |
-| `zA`         | `:MatlabToggleAllCellFolds` | Toggle all cell folds               |
+| `<Leader>mr` | `:MatlabRun`             | Run current MATLAB script              |
+| `<Leader>mc` | `:MatlabRunCell`         | Run current MATLAB cell                |
+| `<Leader>mt` | `:MatlabRunToCell`       | Run up to current MATLAB cell          |
+| `<Leader>mb` | `:MatlabBreakpoint`      | Set breakpoint at current line         |
+| `<Leader>md` | `:MatlabClearBreakpoint` | Clear breakpoint in current file       |
+| `<Leader>mD` | `:MatlabClearBreakpoints`| Clear all breakpoints                  |
+| `<Leader>mh` | `:MatlabDoc`             | Show documentation for word under cursor |
+| `<Leader>mw` | `:MatlabToggleWorkspace` | Toggle workspace floating window       |
+| `<Leader>mW` | `:MatlabWorkspace`       | Show MATLAB workspace in tmux pane     |
+| `<Leader>mx` | `:MatlabClearWorkspace`  | Clear MATLAB workspace                 |
+| `<Leader>ms` | `:MatlabSaveWorkspace`   | Save MATLAB workspace                  |
+| `<Leader>ml` | `:MatlabLoadWorkspace`   | Load MATLAB workspace                  |
+| `<Leader>mf` | `:MatlabToggleCellFold`  | Toggle current cell fold               |
+| `<Leader>mF` | `:MatlabToggleAllCellFolds` | Toggle all cell folds               |
 
 ## Commands
 
