@@ -5,6 +5,73 @@ local config = require('matlab.config')
 -- Store the server pane ID
 M.server_pane = nil
 
+-- Custom notification function that can be set from init.lua
+local external_notify_fn = nil
+
+-- Function to set the notification function from outside
+function M.set_notify_function(fn)
+  external_notify_fn = fn
+end
+
+-- Enhanced notification function with better control over what's displayed
+function M.notify(message, level, force)
+  level = level or vim.log.levels.INFO
+  
+  -- Use external notification function if available
+  if external_notify_fn and type(external_notify_fn) == "function" then
+    external_notify_fn(message, level, force)
+    return
+  end
+  
+  -- Always show errors
+  if level == vim.log.levels.ERROR then
+    vim.notify(message, level)
+    return
+  end
+  
+  -- For debug messages, only show if debug is enabled
+  if level == vim.log.levels.DEBUG and not config.get('debug') then
+    -- Still log to file even if not showing notification
+    local log_file = io.open(vim.fn.stdpath('cache') .. '/matlab_nvim.log', 'a')
+    if log_file then
+      log_file:write(os.date("%Y-%m-%d %H:%M:%S") .. " [DEBUG] - " .. message .. "\n")
+      log_file:close()
+    end
+    return
+  end
+  
+  -- When minimal_notifications is enabled, only show important messages
+  if config.get('minimal_notifications') and not force then
+    -- Only allow certain important notifications
+    local important_messages = {
+      'MATLAB server started.',
+      'Stopping MATLAB server.',
+      'MATLAB executable not found'
+    }
+    
+    local is_important = false
+    for _, important_msg in ipairs(important_messages) do
+      if message:find(important_msg) then
+        is_important = true
+        break
+      end
+    end
+    
+    if not is_important then
+      -- Log to file instead of notifying
+      local log_file = io.open(vim.fn.stdpath('cache') .. '/matlab_nvim.log', 'a')
+      if log_file then
+        log_file:write(os.date("%Y-%m-%d %H:%M:%S") .. " - " .. message .. "\n")
+        log_file:close()
+      end
+      return
+    end
+  end
+  
+  -- Default: show the notification
+  vim.notify(message, level)
+end
+
 -- Check if tmux exists and we're in a tmux session
 function M.exists()
   -- First check if the tmux command is available
@@ -33,54 +100,27 @@ function M.execute(command)
   local cmd = 'tmux ' .. command
   
   if config.get('debug') then
-    vim.notify('Executing tmux command: ' .. cmd, vim.log.levels.DEBUG)
+    M.notify('Executing tmux command: ' .. cmd, vim.log.levels.DEBUG)
   end
   
   -- Use pcall to catch any errors in system command execution
   local success, output = pcall(vim.fn.system, cmd)
   
   if not success then
-    vim.notify('Error executing tmux command: ' .. cmd, vim.log.levels.ERROR)
-    vim.notify('Error details: ' .. tostring(output), vim.log.levels.DEBUG)
+    M.notify('Error executing tmux command: ' .. cmd, vim.log.levels.ERROR, true)
+    M.notify('Error details: ' .. tostring(output), vim.log.levels.DEBUG)
     return ""
   end
   
   -- Check shell error code
   if vim.v.shell_error ~= 0 then
     if config.get('debug') then
-      vim.notify('Tmux command returned non-zero exit code: ' .. vim.v.shell_error, vim.log.levels.DEBUG)
-      vim.notify('Command output: ' .. output, vim.log.levels.DEBUG)
+      M.notify('Tmux command returned non-zero exit code: ' .. vim.v.shell_error, vim.log.levels.DEBUG)
+      M.notify('Command output: ' .. output, vim.log.levels.DEBUG)
     end
   end
   
   return output
-end
-
--- Helper function to control notifications based on user preferences
-function M.notify(message, level)
-  -- Always show errors
-  if level == vim.log.levels.ERROR then
-    vim.notify(message, level)
-    return
-  end
-  
-  -- For debug messages, only show if debug is enabled
-  if level == vim.log.levels.DEBUG and not config.get('debug') then
-    return
-  end
-  
-  -- When minimal_notifications is enabled, only show server start/stop
-  if config.get('minimal_notifications') then
-    -- Only allow server start/stop notifications
-    if message == 'MATLAB server started.' or 
-       message == 'Stopping MATLAB server.' then
-      vim.notify(message, level)
-    end
-    return
-  end
-  
-  -- Default: show the notification
-  vim.notify(message, level)
 end
 
 -- Check if the pane exists
@@ -241,7 +281,7 @@ function M.check_matlab_executable()
   end
   
   -- Couldn't find MATLAB - provide helpful error with OS-specific suggestions
-  M.notify('MATLAB executable not found: ' .. executable, vim.log.levels.ERROR)
+  M.notify('MATLAB executable not found: ' .. executable, vim.log.levels.ERROR, true)
   
   local help_msg
   if vim.fn.has('mac') == 1 then
@@ -254,7 +294,7 @@ function M.check_matlab_executable()
     help_msg = 'require("matlab").setup({executable = "/path/to/matlab"})'
   end
   
-  M.notify('Please specify the full path to MATLAB in your config: ' .. help_msg, vim.log.levels.WARN)
+  M.notify('Please specify the full path to MATLAB in your config: ' .. help_msg, vim.log.levels.WARN, true)
   return false
 end
 
@@ -280,10 +320,43 @@ function M.build_matlab_command(executable, startup_cmd)
   end
 end
 
+-- Validate UI settings to ensure they're valid
+function M.validate_ui_settings()
+  -- Validate panel size
+  local panel_size = config.get('panel_size')
+  if type(panel_size) ~= "number" or panel_size <= 0 then
+    M.notify('Invalid panel_size: ' .. tostring(panel_size) .. '. Using default of 50', vim.log.levels.WARN)
+    config.options.panel_size = 50
+  end
+  
+  -- Validate panel size type
+  local panel_size_type = config.get('panel_size_type')
+  if panel_size_type ~= 'percentage' and panel_size_type ~= 'fixed' then
+    M.notify('Invalid panel_size_type: ' .. tostring(panel_size_type) .. '. Using "percentage"', vim.log.levels.WARN)
+    config.options.panel_size_type = 'percentage'
+  end
+  
+  -- Validate pane direction
+  local direction = config.get('tmux_pane_direction')
+  if direction ~= 'right' and direction ~= 'below' then
+    M.notify('Invalid tmux_pane_direction: ' .. tostring(direction) .. '. Using "right"', vim.log.levels.WARN)
+    config.options.tmux_pane_direction = 'right'
+  end
+  
+  -- Log current settings if debug is enabled
+  if config.get('debug') then
+    M.notify('UI Settings:', vim.log.levels.DEBUG)
+    M.notify('- panel_size: ' .. tostring(config.get('panel_size')), vim.log.levels.DEBUG)
+    M.notify('- panel_size_type: ' .. tostring(config.get('panel_size_type')), vim.log.levels.DEBUG)
+    M.notify('- tmux_pane_direction: ' .. tostring(config.get('tmux_pane_direction')), vim.log.levels.DEBUG)
+    M.notify('- tmux_pane_focus: ' .. tostring(config.get('tmux_pane_focus')), vim.log.levels.DEBUG)
+  end
+end
+
 -- Start the MATLAB server
 function M.start_server(auto_start, startup_command)
   if config.get('debug') then
-    M.notify('Starting MATLAB server (auto_start=' .. tostring(auto_start) .. ')', vim.log.levels.INFO)
+    M.notify('Starting MATLAB server (auto_start=' .. tostring(auto_start) .. ')', vim.log.levels.DEBUG)
   end
   
   -- Check for tmux environment (includes command existence check)
@@ -301,6 +374,9 @@ function M.start_server(auto_start, startup_command)
   if not M.check_matlab_executable() then
     return
   end
+
+  -- Validate UI settings before using them
+  M.validate_ui_settings()
 
   if not M.get_server_pane() then
     -- Create new pane, start matlab in it and save its id
@@ -336,7 +412,7 @@ function M.start_server(auto_start, startup_command)
       split_flags = split_flags .. "d"
     end
     
-    local cmd = 'split-window ' .. split_flags .. 'PF "#{session_id}:#{window_id}.#{pane_id}" ' .. vim.fn.shellescape(mlcmd)
+    local cmd = 'split-window ' .. split_flags .. ' -PF "#{session_id}:#{window_id}.#{pane_id}" ' .. vim.fn.shellescape(mlcmd)
     
     M.notify('Creating MATLAB pane with command: ' .. cmd, vim.log.levels.DEBUG)
     local result = M.execute(cmd)
@@ -346,10 +422,10 @@ function M.start_server(auto_start, startup_command)
     M.notify('Extracted pane ID: ' .. tostring(M.server_pane), vim.log.levels.DEBUG)
 
     if M.pane_exists() then
-      M.notify('MATLAB server started.', vim.log.levels.INFO)
+      M.notify('MATLAB server started.', vim.log.levels.INFO, true)
     else
-      M.notify('Something went wrong starting the MATLAB server.', vim.log.levels.ERROR)
-      M.notify('Check that MATLAB is properly installed and the executable path is correct.', vim.log.levels.WARN)
+      M.notify('Something went wrong starting the MATLAB server.', vim.log.levels.ERROR, true)
+      M.notify('Check that MATLAB is properly installed and the executable path is correct.', vim.log.levels.WARN, true)
       M.notify('Current executable path: ' .. executable, vim.log.levels.WARN)
       return
     end
@@ -386,7 +462,7 @@ function M.stop_server()
   end
 
   if M.get_server_pane() then
-    M.notify('Stopping MATLAB server.', vim.log.levels.INFO)
+    M.notify('Stopping MATLAB server.', vim.log.levels.INFO, true)
     M.run('quit')
     M.server_pane = nil
   end

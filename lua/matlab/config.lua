@@ -1,4 +1,5 @@
 -- Configuration for matlab.nvim
+-- lua/matlab/config.lua
 local M = {}
 
 -- Default configuration

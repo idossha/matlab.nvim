@@ -13,12 +13,17 @@ if not config_status then
   return
 end
 
--- Enhanced debug function with better visibility
-local function debug_info(message)
-  -- Always print during initialization
-  vim.notify("MATLAB: " .. message, vim.log.levels.INFO)
+-- Enhanced debug function that respects configuration settings
+local function debug_info(message, force)
+  -- Only print messages if debug is enabled or it's a forced message
+  if config.get('debug') or force then
+    -- Only show notifications if minimal_notifications is false or it's a forced message
+    if not config.get('minimal_notifications') or force then
+      vim.notify("MATLAB: " .. message, vim.log.levels.INFO)
+    end
+  end
   
-  -- Also log to a file for debugging
+  -- Always log to a file for debugging (regardless of settings)
   local log_file = io.open(vim.fn.stdpath('cache') .. '/matlab_nvim.log', 'a')
   if log_file then
     log_file:write(os.date("%Y-%m-%d %H:%M:%S") .. " - " .. message .. "\n")
@@ -26,6 +31,7 @@ local function debug_info(message)
   end
 end
 
+-- Important startup message but doesn't need to be shown to user
 debug_info("MATLAB ftplugin loading for buffer: " .. vim.api.nvim_buf_get_name(0))
 
 -- Get mappings config with better error handling
@@ -105,7 +111,7 @@ if should_setup_mappings then
     if status then
       debug_info("Set mapping: " .. lhs .. " -> " .. rhs)
     else
-      debug_info("Failed to set mapping: " .. lhs .. " - " .. tostring(error))
+      debug_info("Failed to set mapping: " .. lhs .. " - " .. tostring(error), true) -- Force important errors
     end
   end
   
@@ -170,7 +176,7 @@ if should_setup_mappings then
     vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
   end, {})
   
-  -- Check if the mappings were successfully set
+  -- Check if the mappings were successfully set (only log, don't notify)
   vim.defer_fn(function()
     local keymap_count = 0
     for _, map in ipairs(vim.api.nvim_buf_get_keymap(0, 'n')) do
