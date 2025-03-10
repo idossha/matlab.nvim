@@ -178,6 +178,10 @@ If you're not sure where MATLAB is installed:
   - Press `r` in the workspace window to refresh variables
   - Use `<Leader>mx` or `:MatlabClearWorkspace` to clear all variables
 
+- **Keymapping Issues**:
+  - If keymappings aren't working, run `:MatlabApplyKeymappings` to reapply them
+  - This can be useful when working with files that were open before plugin changes
+
 ## Default Keymappings
 
 When `default_mappings` is enabled, the following keymaps are available in MATLAB files. All mappings start with `<Leader>m` followed by a second key:
@@ -219,6 +223,7 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `:MatlabLoadWorkspace`      | Load MATLAB workspace                    |
 | `:MatlabToggleCellFold`     | Toggle current cell fold                 |
 | `:MatlabToggleAllCellFolds` | Toggle all cell folds                    |
+| `:MatlabApplyKeymappings`   | Reapply keymappings to current buffer    |
 
 ## License
 

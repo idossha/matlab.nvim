@@ -95,6 +95,11 @@ function M.setup(opts)
     workspace.load(args.args ~= '' and args.args or nil)
   end, { nargs = '?' })
   
+  -- Command to apply/reapply keymappings to current buffer
+  vim.api.nvim_create_user_command('MatlabApplyKeymappings', function()
+    M.apply_keymappings()
+  end, {})
+  
   -- Set up autocommands
   vim.api.nvim_create_augroup('matlab_nvim', { clear = true })
   
@@ -104,6 +109,9 @@ function M.setup(opts)
     pattern = 'matlab',
     callback = function()
       vim.cmd('MatlabAutoStartServer')
+      
+      -- Apply keymappings
+      M.apply_keymappings()
     end,
   })
   
@@ -114,6 +122,44 @@ function M.setup(opts)
       vim.cmd('MatlabStopServer')
     end,
   })
+end
+
+-- Function to apply keymappings to the current buffer
+function M.apply_keymappings()
+  if vim.bo.filetype ~= 'matlab' then
+    vim.notify("Current buffer is not a MATLAB file", vim.log.levels.WARN)
+    return
+  end
+  
+  if config.get('default_mappings') then
+    -- Run commands
+    vim.keymap.set('n', '<Leader>mr', '<Cmd>MatlabRun<CR>', { buffer = true, desc = 'Run MATLAB script' })
+    vim.keymap.set('n', '<Leader>mc', '<Cmd>MatlabRunCell<CR>', { buffer = true, desc = 'Run current MATLAB cell' })
+    vim.keymap.set('n', '<Leader>mt', '<Cmd>MatlabRunToCell<CR>', { buffer = true, desc = 'Run to current MATLAB cell' })
+  
+    -- Breakpoints
+    vim.keymap.set('n', '<Leader>mb', '<Cmd>MatlabBreakpoint<CR>', { buffer = true, desc = 'Set MATLAB breakpoint' })
+    vim.keymap.set('n', '<Leader>md', '<Cmd>MatlabClearBreakpoint<CR>', { buffer = true, desc = 'Clear MATLAB breakpoint' })
+    vim.keymap.set('n', '<Leader>mD', '<Cmd>MatlabClearBreakpoints<CR>', { buffer = true, desc = 'Clear all MATLAB breakpoints' })
+  
+    -- Documentation
+    vim.keymap.set('n', '<Leader>mh', '<Cmd>MatlabDoc<CR>', { buffer = true, desc = 'Show MATLAB documentation' })
+  
+    -- Workspace
+    vim.keymap.set('n', '<Leader>mw', '<Cmd>MatlabToggleWorkspace<CR>', { buffer = true, desc = 'Toggle MATLAB workspace window' })
+    vim.keymap.set('n', '<Leader>mW', '<Cmd>MatlabWorkspace<CR>', { buffer = true, desc = 'Show MATLAB workspace in tmux' })
+    vim.keymap.set('n', '<Leader>mx', '<Cmd>MatlabClearWorkspace<CR>', { buffer = true, desc = 'Clear MATLAB workspace' })
+    vim.keymap.set('n', '<Leader>ms', '<Cmd>MatlabSaveWorkspace<CR>', { buffer = true, desc = 'Save MATLAB workspace' })
+    vim.keymap.set('n', '<Leader>ml', '<Cmd>MatlabLoadWorkspace<CR>', { buffer = true, desc = 'Load MATLAB workspace' })
+    
+    -- Cell folding
+    vim.keymap.set('n', '<Leader>mf', '<Cmd>MatlabToggleCellFold<CR>', { buffer = true, desc = 'Toggle current MATLAB cell fold' })
+    vim.keymap.set('n', '<Leader>mF', '<Cmd>MatlabToggleAllCellFolds<CR>', { buffer = true, desc = 'Toggle all MATLAB cell folds' })
+    
+    vim.notify("MATLAB keymappings applied to current buffer", vim.log.levels.INFO)
+  else
+    vim.notify("Default mappings are disabled in configuration", vim.log.levels.WARN)
+  end
 end
 
 -- Export submodules
