@@ -96,6 +96,25 @@ require('matlab').setup({
   -- Notification options
   minimal_notifications = false,    -- Only show important notifications
   debug = false,                    -- Enable debug logging
+  
+  -- Keymap customization
+  mappings = {
+    prefix = '<Leader>m',           -- Common prefix for all MATLAB mappings
+    run = 'r',                      -- Run MATLAB script
+    run_cell = 'c',                 -- Run current MATLAB cell
+    run_to_cell = 't',              -- Run to current MATLAB cell
+    breakpoint = 'b',               -- Set breakpoint at current line
+    clear_breakpoint = 'd',         -- Clear breakpoint in current file
+    clear_breakpoints = 'D',        -- Clear all breakpoints
+    doc = 'h',                      -- Show documentation for word under cursor
+    toggle_workspace = 'w',         -- Toggle workspace floating window
+    show_workspace = 'W',           -- Show MATLAB workspace in tmux pane
+    clear_workspace = 'x',          -- Clear MATLAB workspace
+    save_workspace = 's',           -- Save MATLAB workspace
+    load_workspace = 'l',           -- Load MATLAB workspace
+    toggle_cell_fold = 'f',         -- Toggle current cell fold
+    toggle_all_cell_folds = 'F',    -- Toggle all cell folds
+  }
 })
 ```
 
@@ -178,9 +197,19 @@ If you're not sure where MATLAB is installed:
   - Press `r` in the workspace window to refresh variables
   - Use `<Leader>mx` or `:MatlabClearWorkspace` to clear all variables
 
-- **Keymapping Issues**:
-  - If keymappings aren't working, run `:MatlabApplyKeymappings` to reapply them
-  - This can be useful when working with files that were open before plugin changes
+- **Customizing Keymappings**:
+  - You can customize all keymappings through the `mappings` table in your setup
+  - Use the `prefix` option to change the common prefix for all mappings
+  - Example: To use comma as a prefix and change the run key to 'e':
+    ```lua
+    require('matlab').setup({
+      mappings = {
+        prefix = ',',  -- Use comma as prefix
+        run = 'e',     -- Run script with ,e
+        -- other mappings remain default...
+      }
+    })
+    ```
 
 ## Default Keymappings
 
