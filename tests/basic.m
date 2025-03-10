@@ -4,11 +4,6 @@
 
 % This is a comment
 
-% This is another comment
-
-% This is a comment
-
-% This is a comment
 a = 1;
 b = 2;
 c = a + b;
@@ -17,9 +12,6 @@ c = a + b;
 
 % This is a comment
 
-% This is another comment
-
-% This is a comment
 d = 3;
 e = 4;
 f = d + e;

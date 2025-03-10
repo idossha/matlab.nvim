@@ -223,7 +223,3 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 ## License
 
 MIT
-
-## Acknowledgments
-
-
