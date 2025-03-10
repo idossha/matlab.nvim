@@ -11,8 +11,8 @@ local workspace = require('matlab.workspace')
 local function notify(message, level, force)
   level = level or vim.log.levels.INFO
   
-  -- Only show if minimal_notifications is false or this is a forced/important message
-  if not config.get('minimal_notifications') or force or level >= vim.log.levels.WARN then
+  -- Only show if minimal_notifications is false or this is a critical error
+  if not config.get('minimal_notifications') or force or level == vim.log.levels.ERROR then
     vim.notify(message, level)
   end
   

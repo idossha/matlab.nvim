@@ -40,9 +40,9 @@ function M.notify(message, level, force)
     return
   end
   
-  -- When minimal_notifications is enabled, only show important messages
+  -- When minimal_notifications is enabled, only show explicitly forced messages
   if config.get('minimal_notifications') and not force then
-    -- Only allow certain important notifications
+    -- Stricter filter for important notifications
     local important_messages = {
       'MATLAB server started.',
       'Stopping MATLAB server.',
@@ -51,7 +51,7 @@ function M.notify(message, level, force)
     
     local is_important = false
     for _, important_msg in ipairs(important_messages) do
-      if message:find(important_msg) then
+      if message:find(important_msg, 1, true) then -- Use exact matching
         is_important = true
         break
       end
@@ -430,20 +430,35 @@ function M.start_server(auto_start, startup_command)
       return
     end
 
-    -- Set pane size
+    -- Set pane size with delay to ensure it's applied correctly
     local panel_size = config.get('panel_size')
     local panel_size_type = config.get('panel_size_type')
     
     M.notify('Setting panel size to: ' .. panel_size .. 
              (panel_size_type == 'percentage' and '%' or ' columns'), vim.log.levels.DEBUG)
     
-    if panel_size_type == 'percentage' then
-      -- Use percentage of the screen
-      M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -p " .. tostring(panel_size))
-    else
-      -- Use fixed width
-      M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -x " .. tostring(panel_size))
-    end
+    -- Add a delay to ensure tmux pane is ready before resizing
+    vim.defer_fn(function()
+      if M.server_pane and M.pane_exists() then
+        if panel_size_type == 'percentage' then
+          -- Use percentage of the screen
+          M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -p " .. tostring(panel_size))
+          
+          -- Double-check after a brief delay in case the first resize didn't take
+          vim.defer_fn(function()
+            M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -p " .. tostring(panel_size))
+          end, 200)
+        else
+          -- Use fixed width
+          M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -x " .. tostring(panel_size))
+          
+          -- Double-check after a brief delay
+          vim.defer_fn(function()
+            M.execute("resize-pane -t " .. vim.fn.shellescape(M.server_pane) .. " -x " .. tostring(panel_size))
+          end, 200)
+        end
+      end
+    end, 500) -- 500ms delay to ensure tmux pane is fully created
 
     -- Zoom current pane if we don't want the MATLAB pane to be visible
     if not config.get('tmux_pane_focus') then
