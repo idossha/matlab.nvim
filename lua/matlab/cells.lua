@@ -1,3 +1,4 @@
+-- /lua/matlab/cells.lua
 -- Cell execution functionality for matlab.nvim
 local M = {}
 local tmux = require('matlab.tmux')

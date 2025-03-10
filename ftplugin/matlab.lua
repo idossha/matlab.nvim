@@ -1,4 +1,4 @@
--- Save this as ftplugin/matlab.lua (replacing your current version)
+-- ftplugin/matlab.lua
 
 -- Only load this plugin once per buffer
 if vim.b.did_ftplugin_matlab_nvim then
@@ -36,8 +36,8 @@ local function get_safe_mappings()
   local user_mappings = {}
   
   -- Try to get user mappings safely
-  local status, result = pcall(function() 
-    return config.get('mappings') 
+  local status, result = pcall(function()
+    return config.get('mappings')
   end)
   
   if status and type(result) == 'table' then
