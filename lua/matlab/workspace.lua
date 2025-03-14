@@ -75,7 +75,9 @@ local function fetch_workspace_variables()
   local temp_file = os.tmpname()
   
   -- Use disp and diary to capture the output of whos
-  tmux.run('diary(\'' .. temp_file .. '\'); disp(\'=== MATLAB Workspace Variables ===\'); whos; diary off;')
+  -- Use 'evalc' to suppress output to the MATLAB console
+  -- Pass true for skip_interrupt and skip_output
+  tmux.run('diary(\'' .. temp_file .. '\'); evalc(\'disp(\\\'=== MATLAB Workspace Variables ===\\\'); whos\'); diary off;', true, true)
   
   -- Wait a bit for MATLAB to execute and write the file
   vim.fn.system('sleep 0.5')
@@ -108,7 +110,7 @@ local function fetch_workspace_variables()
     "=== MATLAB Workspace Variables ===",
     "",
     "Could not retrieve workspace variables.",
-    "Variables are displayed in the tmux pane.",
+    "The MATLAB session might be busy or unresponsive.",
     "",
     "Press 'q' to close this window, 'r' to refresh"
   }
@@ -117,7 +119,6 @@ end
 -- Display variables in the MATLAB workspace
 function M.show()
   tmux.run('whos')
-  tmux.open_pane()
 end
 
 -- Close the workspace window

@@ -164,7 +164,7 @@ function M.open_pane()
 end
 
 -- Run a command in the MATLAB pane
-function M.run(command, skip_interrupt)
+function M.run(command, skip_interrupt, skip_output)
   local target = M.get_server_pane()
 
   if target then
@@ -176,6 +176,12 @@ function M.run(command, skip_interrupt)
     local cmd = vim.fn.escape(command, '"')
     local r = M.execute("send-keys -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(cmd))
     M.execute("send-keys -t " .. vim.fn.shellescape(target) .. " Enter")
+    
+    -- If not skipping output, open the pane to show results
+    if not skip_output then
+      M.open_pane()
+    end
+    
     return r
   else
     vim.ui.select({'Yes', 'No'}, {

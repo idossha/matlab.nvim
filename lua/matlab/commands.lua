@@ -23,7 +23,6 @@ function M.run(command)
     return
   end
 
-  tmux.open_pane()
   if command then
     tmux.run(command)
   else
