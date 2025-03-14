@@ -5,7 +5,7 @@ A modern Neovim plugin for MATLAB integration with tmux. This plugin provides en
 This plugin is inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab-vim) but rewritten in Lua for Neovim with a modular architecture and enhanced functionality.
 
 The plugin is far from complete, but based on some brief internet search, it seems to be the only MATLAB plugin for Neovim. 
-Contributions are more than welcome.
+**Contributions are more than welcome.**
 
 ![Demo of Neovim MATLAB Plugin](docs/example.gif)
 
