@@ -13,6 +13,7 @@ M.defaults = {
   minimal_notifications = true, -- Only show important notifications (server start/stop and errors)
   tmux_pane_direction = 'right', -- Position of the tmux pane ('right', 'below')
   tmux_pane_focus = true,       -- Make tmux pane visible when created
+  force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist
   
   -- Default keymappings with leader-m prefix
   mappings = {
@@ -31,6 +32,7 @@ M.defaults = {
     load_workspace = 'l',  -- Load MATLAB workspace
     toggle_cell_fold = 'f', -- Toggle current cell fold
     toggle_all_cell_folds = 'F', -- Toggle all cell folds
+    open_in_gui = 'g',     -- Open current script in MATLAB GUI
   }
 }
 

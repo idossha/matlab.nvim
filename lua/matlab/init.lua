@@ -24,10 +24,36 @@ local function notify(message, level, force)
   end
 end
 
+-- Define the breakpoint sign
+local function define_signs()
+  vim.fn.sign_define('matlab_breakpoint', {
+    text = '●',
+    texthl = 'DiagnosticSignError',
+    linehl = '',
+    numhl = ''
+  })
+end
+
 -- Setup function
 function M.setup(opts)
+  -- Set default options
+  local defaults = {
+    force_nogui_with_breakpoints = true, -- Prevent GUI from opening when breakpoints exist
+  }
+  
+  -- Merge with user options
+  opts = opts or {}
+  for k, v in pairs(defaults) do
+    if opts[k] == nil then
+      opts[k] = v
+    end
+  end
+  
   -- Initialize configuration
   config.setup(opts)
+  
+  -- Define signs for breakpoints
+  define_signs()
   
   -- Show message on first load only if minimal notifications are disabled
   vim.schedule(function()
@@ -68,6 +94,11 @@ function M.setup(opts)
   
   vim.api.nvim_create_user_command('MatlabClearBreakpoints', function()
     commands.clear_breakpoint(true)
+  end, {})
+  
+  -- New command to open in MATLAB GUI
+  vim.api.nvim_create_user_command('MatlabOpenInGUI', function()
+    commands.open_in_gui()
   end, {})
   
   vim.api.nvim_create_user_command('MatlabDoc', function()

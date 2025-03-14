@@ -64,6 +64,7 @@ local function get_safe_mappings()
     load_workspace = 'l',
     toggle_cell_fold = 'f',
     toggle_all_cell_folds = 'F',
+    open_in_gui = 'g',
   }
   
   -- Merge with defaults
@@ -135,6 +136,9 @@ if should_setup_mappings then
   safe_map(actual_prefix .. mappings.toggle_cell_fold, '<Cmd>MatlabToggleCellFold<CR>', 'Toggle current MATLAB cell fold')
   safe_map(actual_prefix .. mappings.toggle_all_cell_folds, '<Cmd>MatlabToggleAllCellFolds<CR>', 'Toggle all MATLAB cell folds')
 
+  -- Open in MATLAB GUI
+  safe_map(actual_prefix .. mappings.open_in_gui, '<Cmd>MatlabOpenInGUI<CR>', 'Open in MATLAB GUI')
+
   -- Always add a fallback mapping that doesn't depend on leader
   safe_map(',mr', '<Cmd>MatlabRun<CR>', 'Run MATLAB script (fallback)')
   
@@ -152,6 +156,7 @@ if should_setup_mappings then
     table.insert(lines, "- " .. display_prefix .. mappings.clear_breakpoint .. " : Clear breakpoint")
     table.insert(lines, "- " .. display_prefix .. mappings.clear_breakpoints .. " : Clear all breakpoints")
     table.insert(lines, "- " .. display_prefix .. mappings.doc .. " : Show documentation")
+    table.insert(lines, "- " .. display_prefix .. mappings.open_in_gui .. " : Open in MATLAB GUI")
     table.insert(lines, "")
     table.insert(lines, "Fallback mapping: ,mr : Run MATLAB script")
     

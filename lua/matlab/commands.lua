@@ -35,6 +35,9 @@ function M.run(command)
   end
 end
 
+-- Track breakpoints in buffers 
+local breakpoints = {}
+
 -- Set a breakpoint at the current line
 function M.single_breakpoint()
   if not tmux.exists() or not M.is_matlab_script() then
@@ -43,8 +46,31 @@ function M.single_breakpoint()
 
   vim.cmd('write')
   local f = M.get_filename()
-  local cmd = 'dbclear ' .. f .. ';dbstop ' .. f .. ' at ' .. vim.fn.line('.')
-  tmux.run(cmd)
+  local line = vim.fn.line('.')
+  local bufnr = vim.api.nvim_get_current_buf()
+  
+  -- Add visual marker for the breakpoint
+  if not breakpoints[bufnr] then
+    breakpoints[bufnr] = {}
+  end
+  
+  -- Add or toggle breakpoint
+  if breakpoints[bufnr][line] then
+    -- If breakpoint exists at this line, remove it
+    vim.fn.sign_unplace('matlab_breakpoints', {buffer = bufnr, id = breakpoints[bufnr][line]})
+    breakpoints[bufnr][line] = nil
+    -- Clear in MATLAB
+    local cmd = 'dbclear ' .. f .. ' at ' .. line
+    tmux.run(cmd)
+  else
+    -- Add breakpoint
+    local sign_id = math.floor(line + bufnr * 10000) -- Create unique ID from line and buffer
+    vim.fn.sign_place(sign_id, 'matlab_breakpoints', 'matlab_breakpoint', bufnr, {lnum = line})
+    breakpoints[bufnr][line] = sign_id
+    -- Set in MATLAB
+    local cmd = 'dbstop ' .. f .. ' at ' .. line
+    tmux.run(cmd)
+  end
 end
 
 -- Clear breakpoints
@@ -54,10 +80,41 @@ function M.clear_breakpoint(all)
   end
 
   if all then
+    -- Clear all breakpoints across all buffers
+    vim.fn.sign_unplace('matlab_breakpoints')
+    breakpoints = {}
     tmux.run('dbclear all')
   else
+    -- Clear breakpoints in current file
+    local bufnr = vim.api.nvim_get_current_buf()
+    vim.fn.sign_unplace('matlab_breakpoints', {buffer = bufnr})
+    breakpoints[bufnr] = {}
     tmux.run('dbclear ' .. M.get_filename() .. ';')
   end
+end
+
+-- Open current script in MATLAB GUI
+function M.open_in_gui()
+  if not M.is_matlab_script() then
+    return
+  end
+  
+  vim.cmd('write')
+  local filepath = vim.fn.expand('%:p')
+  local executable = require('matlab.config').get('executable')
+  
+  -- Build a system command to open the file directly in MATLAB
+  local cmd
+  if vim.fn.has('mac') == 1 then
+    cmd = executable .. ' -r "edit ' .. filepath .. '"'
+  elseif vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
+    cmd = executable .. ' /r "edit ' .. filepath .. '"'
+  else -- Linux
+    cmd = executable .. ' -r "edit ' .. filepath .. '"'
+  end
+  
+  -- Execute the command in the background
+  vim.fn.jobstart(cmd)
 end
 
 -- Show documentation for the word under cursor

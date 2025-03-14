@@ -314,6 +314,7 @@ end
 
 -- Build platform-specific MATLAB startup command
 function M.build_matlab_command(executable, startup_cmd)
+  -- Always ensure -nodesktop -nosplash flags are added to prevent GUI from showing
   local base_command = executable .. ' -nodesktop -nosplash'
   
   -- Different platforms have different command line argument formats
