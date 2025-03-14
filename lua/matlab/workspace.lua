@@ -71,81 +71,63 @@ local function fetch_workspace_variables()
     }
   end
 
-  -- Create two temporary files: one for capturing output and one for the script
-  local temp_output_file = os.tmpname()
-  local temp_script_file = os.tmpname() .. ".m"
+  -- Simple approach: just run a custom command to get workspace variables silently
+  local temp_file = os.tmpname()
   
-  -- Create a simple MATLAB script file that will save workspace info to our temp file
-  local file = io.open(temp_script_file, "w")
-  if not file then
-    return {
-      "=== MATLAB Workspace Variables ===",
-      "",
-      "Could not create temporary script file.",
-      "Check file permissions.",
-      "",
-      "Press 'q' to close this window, 'r' to refresh"
-    }
-  end
+  -- Create a custom command that doesn't show output in the tmux pane
+  local command = string.format([[
+matlab_nvim_show_workspace('%s');
+  ]], temp_file)
   
-  -- Write a simpler, more reliable script to capture workspace variables
-  local script_content = string.format([[
-fid = fopen('%s', 'w');
-fprintf(fid, '=== MATLAB Workspace Variables ===\n\n');
-vars = whos;
-
-% Create a cell array with the variable info
-rows = {};
-if isempty(vars)
-    rows{1} = 'No variables in workspace.';
-else
-    % Add header
-    rows{1} = '  Name                Size             Bytes  Class        Attributes';
-    rows{2} = '  ----------------------------------------------------------------------';
-    
-    % Process each variable
-    for i = 1:length(vars)
-        v = vars(i);
-        
-        % Format size
-        sizeDims = sprintf('%dx', v.size);
-        sizeDims = sizeDims(1:end-1); % Remove trailing 'x'
-        if isempty(sizeDims), sizeDims = '0x0'; end
-        
-        % Format attributes
-        attrStr = '';
-        if v.global, attrStr = [attrStr 'global ']; end
-        if v.complex, attrStr = [attrStr 'complex ']; end
-        
-        % Create formatted row
-        rows{end+1} = sprintf('  %-19s %-16s %7d  %-12s %s', ...
-                             v.name, sizeDims, v.bytes, v.class, attrStr);
-    end
+  -- First check if our helper function exists, if not, create it
+  local create_helper_cmd = [[
+if ~exist('matlab_nvim_show_workspace', 'file')
+    % Create our helper function if it doesn't exist
+    matlab_nvim_show_workspace_str = sprintf(['function matlab_nvim_show_workspace(filename)\n',...
+    '    %% Save workspace info to file without displaying in console\n',...
+    '    f = fopen(filename, ''w'');\n',...
+    '    fprintf(f, ''=== MATLAB Workspace Variables ===\\n\\n'');\n',...
+    '    w = evalin(''base'', ''whos'');\n',...
+    '    if isempty(w)\n',...
+    '        fprintf(f, ''No variables in workspace.\\n'');\n',...
+    '    else\n',...
+    '        fprintf(f, ''  Name                Size             Bytes  Class        Attributes\\n'');\n',...
+    '        fprintf(f, ''  ----------------------------------------------------------------------\\n'');\n',...
+    '        for i = 1:length(w)\n',...
+    '            v = w(i);\n',...
+    '            %% Format size string\n',...
+    '            sz = sprintf(''%%dx'', v.size);\n',...
+    '            sz = sz(1:end-1);\n',...
+    '            if isempty(sz), sz = ''0x0''; end\n',...
+    '            %% Format attributes\n',...
+    '            attr = '''';\n',...
+    '            if v.global, attr = [attr ''global '']; end\n',...
+    '            if v.complex, attr = [attr ''complex '']; end\n',...
+    '            %% Write the line\n',...
+    '            fprintf(f, ''  %%-19s %%-16s %%7d  %%-12s %%s\\n'', v.name, sz, v.bytes, v.class, attr);\n',...
+    '        end\n',...
+    '    end\n',...
+    '    fclose(f);\n',...
+    'end']);
+    % Write the function to a temporary file and run it to create the function
+    evalc(matlab_nvim_show_workspace_str);
 end
-
-% Write all rows to file
-for i = 1:length(rows)
-    fprintf(fid, '%s\n', rows{i});
-end
-
-% Close the file
-fclose(fid);
-]], temp_output_file)
-
-  file:write(script_content)
-  file:close()
+  ]]
   
-  -- Run the script silently by capturing its output with evalc
-  local matlab_cmd = string.format("evalc('run(\"%s\")'); delete('%s');", temp_script_file, temp_script_file)
-  
-  -- Execute the script using tmux directly but ensure command doesn't show
+  -- First create the helper function if needed
   local target = tmux.get_server_pane()
   if target then
-    -- Send command immediately followed by Enter to hide it
-    local cmd = "send-keys -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(matlab_cmd) .. " C-m"
+    -- Send helper function creation command
+    local cmd = "send-keys -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(create_helper_cmd) .. " C-m"
+    tmux.execute(cmd)
+    
+    -- Wait a bit
+    vim.fn.system('sleep 0.3')
+    
+    -- Now call our helper function to generate the file
+    cmd = "send-keys -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(command) .. " C-m"
     tmux.execute(cmd)
   else
-    os.remove(temp_script_file)
     return {
       "=== MATLAB Workspace Variables ===",
       "",
@@ -155,12 +137,12 @@ fclose(fid);
     }
   end
   
-  -- Wait for MATLAB to execute the script and write the output file
-  vim.fn.system('sleep 1.0')
+  -- Wait for MATLAB to create the file
+  vim.fn.system('sleep 0.5')
   
   -- Read the output file
   local output_lines = {}
-  local file = io.open(temp_output_file, "r")
+  local file = io.open(temp_file, "r")
   
   if file then
     for line in file:lines() do
@@ -168,8 +150,8 @@ fclose(fid);
     end
     file:close()
     
-    -- Remove the temporary output file
-    os.remove(temp_output_file)
+    -- Remove the temporary file
+    os.remove(temp_file)
     
     -- If we got content, return it with help text
     if #output_lines > 0 then
