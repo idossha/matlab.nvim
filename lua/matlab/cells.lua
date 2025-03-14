@@ -4,9 +4,6 @@ local M = {}
 local tmux = require('matlab.tmux')
 local commands = require('matlab.commands')
 
--- Store fold state for cells
-M.folded_cells = {}
-
 -- Find the boundaries of the current cell
 function M.find_current_cell()
   local current_line = vim.fn.line('.')
@@ -226,16 +223,6 @@ function M.toggle_all_cell_folds()
       vim.notify("All cells folded", vim.log.levels.INFO)
     end
   end
-end
-
--- Format the current cell for readability
-function M.format_current_cell()
-  local start_line, end_line = M.find_current_cell()
-  if start_line >= end_line then return end
-  
-  -- Use MATLAB's built-in formatter through the tmux pane
-  -- This is a placeholder that could be implemented in the future
-  vim.notify("Cell formatting is not implemented yet.", vim.log.levels.INFO)
 end
 
 return M

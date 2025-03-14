@@ -74,10 +74,6 @@ function M.setup(opts)
     commands.doc()
   end, {})
   
-  vim.api.nvim_create_user_command('MatlabDocumentation', function()
-    commands.doc()
-  end, {})
-  
   -- Cell execution commands
   vim.api.nvim_create_user_command('MatlabRunCell', function()
     cells.execute_current_cell()

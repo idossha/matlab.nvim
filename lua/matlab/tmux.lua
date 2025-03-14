@@ -436,43 +436,30 @@ function M.start_server(auto_start, startup_command)
       return
     end
 
-    -- Set pane size with delay to ensure it's applied correctly
+    -- Set pane size after MATLAB pane has been created
     local panel_size = config.get('panel_size')
     local panel_size_type = config.get('panel_size_type')
     
     M.notify('Setting panel size to: ' .. panel_size .. 
              (panel_size_type == 'percentage' and '%' or ' columns'), vim.log.levels.DEBUG)
     
-    -- Add a longer delay to ensure tmux pane is fully initialized before resizing
+    -- Add a short delay to ensure tmux pane is initialized
     vim.defer_fn(function()
       if M.server_pane and M.pane_exists() then
-        -- Use a more reliable approach with interpolation
+        -- Build the resize command
         local resize_cmd
-        
         if panel_size_type == 'percentage' then
-          -- Use percentage of the screen
           resize_cmd = string.format("resize-pane -t %s -p %d", 
             vim.fn.shellescape(M.server_pane), panel_size)
         else
-          -- Use fixed width
           resize_cmd = string.format("resize-pane -t %s -x %d", 
             vim.fn.shellescape(M.server_pane), panel_size)
         end
         
-        -- Execute once immediately
+        -- Execute the resize command
         M.execute(resize_cmd)
-        
-        -- Then retry after a delay to ensure it takes effect
-        vim.defer_fn(function()
-          M.execute(resize_cmd)
-          
-          -- One more time with longer delay for stubborn tmux sessions
-          vim.defer_fn(function()
-            M.execute(resize_cmd)
-          end, 500)
-        end, 200)
       end
-    end, 800) -- 800ms delay to ensure tmux pane is fully created and stable
+    end, 500) -- 500ms delay should be sufficient
 
     -- Zoom current pane if we don't want the MATLAB pane to be visible
     if not config.get('tmux_pane_focus') then

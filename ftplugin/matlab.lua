@@ -93,11 +93,6 @@ if should_setup_mappings then
   local prefix = mappings.prefix or '<Leader>m'
   
   debug_info("Setting up MATLAB mappings with prefix: " .. prefix)
-  debug_info("mapleader = '" .. (vim.g.mapleader or '\\') .. "'")
-  
-  -- Check if leader is a space
-  local is_space_leader = vim.g.mapleader == " "
-  debug_info("Space leader: " .. tostring(is_space_leader))
   
   -- Helper function to create a mapping with proper error handling
   local function safe_map(lhs, rhs, desc)
@@ -112,15 +107,8 @@ if should_setup_mappings then
     end
   end
   
-  -- Use explicit space in mappings when leader is space
-  local actual_prefix
-  if is_space_leader then
-    -- Replace <Leader> with an actual space
-    actual_prefix = prefix:gsub("<Leader>", " ")
-    debug_info("Using explicit space prefix: '" .. actual_prefix .. "'")
-  else
-    actual_prefix = prefix
-  end
+  -- Get the actual prefix (Neovim handles <Leader> expansion internally)
+  local actual_prefix = prefix
   
   -- Set all the mappings using the correct prefix
   -- Run commands
@@ -155,7 +143,7 @@ if should_setup_mappings then
     local lines = {"MATLAB key mappings:"}
     
     -- Display prefix in a user-friendly way
-    local display_prefix = is_space_leader and "Space" .. actual_prefix:sub(2) or actual_prefix
+    local display_prefix = vim.g.mapleader == " " and "Space" .. prefix:gsub("<Leader>", "") or prefix
     
     table.insert(lines, "- " .. display_prefix .. mappings.run .. " : Run MATLAB script")
     table.insert(lines, "- " .. display_prefix .. mappings.run_cell .. " : Run current MATLAB cell")
