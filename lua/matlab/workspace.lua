@@ -74,13 +74,22 @@ local function fetch_workspace_variables()
   -- Create a temporary file to store MATLAB output
   local temp_file = os.tmpname()
   
-  -- Use disp and diary to capture the output of whos without displaying in the console
-  -- First turn on the diary to capture output
-  tmux.run('diary(\'' .. temp_file .. '\');', true, true)
-  -- Then run whos command - the output will be captured in the diary file
-  tmux.run('disp(\'=== MATLAB Workspace Variables ===\'); whos;', true, true)
-  -- Turn off diary
-  tmux.run('diary off;', true, true)
+  -- Capture whos output to a string using evalc, then write that string to a file
+  -- This approach prevents any output to the console
+  local matlab_command = string.format([[
+    try
+      fid = fopen('%s', 'w');
+      fprintf(fid, '=== MATLAB Workspace Variables ===\n\n');
+      output = evalc('whos');
+      fprintf(fid, '%%s', output);
+      fclose(fid);
+    catch err
+      warning('Error capturing workspace: %%s', err.message);
+    end
+  ]], temp_file)
+  
+  -- Execute the command with output suppression
+  tmux.run(matlab_command, true, true)
   
   -- Wait a bit for MATLAB to execute and write the file
   vim.fn.system('sleep 0.5')
