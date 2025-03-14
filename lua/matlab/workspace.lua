@@ -58,7 +58,7 @@ local function create_floating_window()
   return M.workspace_win
 end
 
--- Function to fetch workspace variables from MATLAB
+-- Function to fetch workspace variables from MATLAB 
 local function fetch_workspace_variables()
   if not tmux.get_server_pane() then
     return {
@@ -74,17 +74,37 @@ local function fetch_workspace_variables()
   -- Create a temporary file to store MATLAB output
   local temp_file = os.tmpname()
   
-  -- Create a one-line command that won't echo in MATLAB
-  local matlab_command = string.format(
-    "output=evalc('whos');fid=fopen('%s','w');fprintf(fid,'=== MATLAB Workspace Variables ===\\n\\n%%s',output);fclose(fid);", 
-    temp_file
-  )
-  
-  -- Execute the command with output suppression, adding semicolon at the end
-  tmux.run(matlab_command .. ";", true, true)
+  -- Create a special function call that uses MATLAB's 'diary' feature
+  -- but runs it silently using a temporary script file
+  local script_file = os.tmpname() .. ".m"
+  local file = io.open(script_file, "w")
+  if file then
+    file:write(string.format([[
+      %% This is a temporary script to capture workspace variables
+      diary('%s');
+      disp('=== MATLAB Workspace Variables ===');
+      disp('');
+      whos;
+      diary off;
+      %% Delete this file after execution
+      delete('%s');
+    ]], temp_file, script_file))
+    file:close()
+    
+    -- Discard standard output by using evalc
+    local hide_cmd = string.format("evalc('run(\"%s\")');", script_file)
+    
+    -- Run the silent command
+    local target = tmux.get_server_pane()
+    if target then
+      -- Direct tmux command to send keys without showing feedback
+      local cmd = "send-keys -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(hide_cmd) .. " C-m"
+      tmux.execute(cmd)
+    end
+  end
   
   -- Wait a bit for MATLAB to execute and write the file
-  vim.fn.system('sleep 0.5')
+  vim.fn.system('sleep 0.8')
   
   -- Try to read the output file
   local output_lines = {}
