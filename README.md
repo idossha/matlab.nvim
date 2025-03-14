@@ -7,8 +7,7 @@ This plugin is inspired by [MortenStabenau/matlab-vim](https://github.com/Morten
 The plugin is far from complete, but based on some brief internet search, it seems to be the only MATLAB plugin for Neovim. 
 Contributions are more than welcome.
 
-
-![MATLAB.nvim Demo](https://raw.githubusercontent.com/wiki/idossha/matlab.nvim/images/demo.gif)
+![Demo of Neovim MATLAB Plugin](docs/example.gif)
 
 ## Features
 
