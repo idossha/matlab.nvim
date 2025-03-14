@@ -60,22 +60,57 @@ end
 
 -- Function to fetch workspace variables from MATLAB
 local function fetch_workspace_variables()
-  -- Simply run whos command and capture output
-  tmux.run('whos')
+  if not tmux.get_server_pane() then
+    return {
+      "=== MATLAB Not Running ===",
+      "",
+      "No MATLAB session is currently running.",
+      "Start MATLAB with :MatlabStartServer first.",
+      "",
+      "Press 'q' to close this window."
+    }
+  end
+
+  -- Create a temporary file to store MATLAB output
+  local temp_file = os.tmpname()
   
-  -- Wait a bit for MATLAB to execute
-  vim.fn.system('sleep 0.2')
+  -- Use disp and diary to capture the output of whos
+  tmux.run('diary(\'' .. temp_file .. '\'); disp(\'=== MATLAB Workspace Variables ===\'); whos; diary off;')
   
-  -- For now, return a placeholder message
-  -- In a real implementation, we would need a more reliable way to get
-  -- the output from the tmux pane
+  -- Wait a bit for MATLAB to execute and write the file
+  vim.fn.system('sleep 0.5')
+  
+  -- Try to read the output file
+  local output_lines = {}
+  local file = io.open(temp_file, "r")
+  
+  if file then
+    -- Read all lines from the file
+    for line in file:lines() do
+      table.insert(output_lines, line)
+    end
+    file:close()
+    
+    -- Remove the temporary file
+    os.remove(temp_file)
+    
+    -- If we got content, return it
+    if #output_lines > 0 then
+      -- Add help text at the end
+      table.insert(output_lines, "")
+      table.insert(output_lines, "Press 'q' to close this window, 'r' to refresh")
+      return output_lines
+    end
+  end
+  
+  -- Fallback message if we couldn't get the output
   return {
     "=== MATLAB Workspace Variables ===",
     "",
-    "Variables from the MATLAB workspace are displayed in the tmux pane.",
-    "The toggle now opens the MATLAB pane to show the workspace.",
+    "Could not retrieve workspace variables.",
+    "Variables are displayed in the tmux pane.",
     "",
-    "Press 'q' to close this window."
+    "Press 'q' to close this window, 'r' to refresh"
   }
 end
 
@@ -102,16 +137,13 @@ function M.refresh()
   -- Display loading message
   vim.api.nvim_buf_set_lines(M.workspace_buf, 0, -1, false, {"Refreshing MATLAB workspace variables..."})
   
-  -- Also run workspace command in MATLAB pane
-  tmux.run('whos')
-  
   -- Fetch and display updated workspace variables
   vim.defer_fn(function()
     local content = fetch_workspace_variables()
     if M.workspace_buf and vim.api.nvim_buf_is_valid(M.workspace_buf) then
       vim.api.nvim_buf_set_lines(M.workspace_buf, 0, -1, false, content)
     end
-  end, 300)
+  end, 600) -- Increased delay to ensure MATLAB has time to execute
 end
 
 -- Toggle visibility of the MATLAB workspace window
@@ -139,22 +171,13 @@ function M.toggle()
   -- Display loading message
   vim.api.nvim_buf_set_lines(M.workspace_buf, 0, -1, false, {"Loading MATLAB workspace variables..."})
   
-  -- Also show workspace in the MATLAB pane
-  tmux.run('whos')
-  
   -- Fetch and display workspace variables in the floating window
   vim.defer_fn(function()
     local content = fetch_workspace_variables()
     if M.workspace_buf and vim.api.nvim_buf_is_valid(M.workspace_buf) then
       vim.api.nvim_buf_set_lines(M.workspace_buf, 0, -1, false, content)
-      
-      -- Add a help line at the bottom
-      vim.api.nvim_buf_set_lines(M.workspace_buf, -1, -1, false, {
-        "",
-        "Press 'q' to close, 'r' to refresh"
-      })
     end
-  end, 300)
+  end, 600) -- Increased delay to ensure MATLAB has time to execute
 end
 
 -- Clear all variables in the workspace

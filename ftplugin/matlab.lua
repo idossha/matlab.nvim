@@ -147,9 +147,6 @@ if should_setup_mappings then
   safe_map(actual_prefix .. mappings.toggle_cell_fold, '<Cmd>MatlabToggleCellFold<CR>', 'Toggle current MATLAB cell fold')
   safe_map(actual_prefix .. mappings.toggle_all_cell_folds, '<Cmd>MatlabToggleAllCellFolds<CR>', 'Toggle all MATLAB cell folds')
 
-  -- Additional mapping for commonly used functions using just the prefix
-  safe_map(actual_prefix, '<Cmd>MatlabRun<CR>', 'Run MATLAB script (shortcut)')
-  
   -- Always add a fallback mapping that doesn't depend on leader
   safe_map(',mr', '<Cmd>MatlabRun<CR>', 'Run MATLAB script (fallback)')
   
