@@ -16,7 +16,8 @@ Contributions are more than welcome.
 - Run MATLAB scripts directly from Neovim
 - Execute MATLAB code cells (sections between %% comments)
 - Fold/unfold MATLAB cell sections
-- Set and clear breakpoints
+- Visual breakpoint indication with customizable appearance
+- Set and clear breakpoints interactively
 - Access MATLAB documentation
 - View MATLAB workspace in a floating window
 - Enhanced syntax highlighting with bold cell headers
@@ -98,6 +99,15 @@ require('matlab').setup({
   -- Behavior options
   auto_start = true,                -- Auto-start MATLAB when opening a .m file
   default_mappings = true,          -- Enable default keymappings
+  force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist
+  
+  -- Breakpoint visualization
+  breakpoint = {
+    sign_text = '■',                -- Character to use for breakpoint sign
+    sign_hl = 'MatlabBreakpoint',   -- Highlight group for the sign
+    line_hl = 'MatlabBreakpointLine', -- Highlight group for the entire line
+    num_hl = 'MatlabBreakpoint',    -- Highlight group for the line number
+  },
   
   -- Notification options
   minimal_notifications = false,    -- Only show important notifications
@@ -120,6 +130,7 @@ require('matlab').setup({
     load_workspace = 'l',           -- Load MATLAB workspace
     toggle_cell_fold = 'f',         -- Toggle current cell fold
     toggle_all_cell_folds = 'F',    -- Toggle all cell folds
+    open_in_gui = 'g',             -- Open current script in MATLAB GUI
   }
 })
 ```
@@ -193,10 +204,12 @@ If you're not sure where MATLAB is installed:
   - Use `<Leader>mc` or `:MatlabRunCell` to execute only the current cell
 
 - **Debugging**:
-  - Use `<Leader>mb` or `:MatlabBreakpoint` to set a breakpoint at the current line
+  - Use `<Leader>mb` or `:MatlabBreakpoint` to set a breakpoint at the current line (with visual indicator)
   - Use `<Leader>md` or `:MatlabClearBreakpoint` to clear a breakpoint in the current file
   - Use `<Leader>mD` or `:MatlabClearBreakpoints` to clear all breakpoints
   - Run your code with `<Leader>mr` or `:MatlabRun` to hit the breakpoints
+  - By default, MATLAB GUI won't open even when breakpoints are present (`force_nogui_with_breakpoints` option)
+  - Use `<Leader>mg` or `:MatlabOpenInGUI` if you want to open the current script in MATLAB GUI
 
 - **Documentation**:
   - Place cursor on any MATLAB function
@@ -249,6 +262,7 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `<Leader>ml` | `:MatlabLoadWorkspace`   | Load MATLAB workspace                  |
 | `<Leader>mf` | `:MatlabToggleCellFold`  | Toggle current cell fold               |
 | `<Leader>mF` | `:MatlabToggleAllCellFolds` | Toggle all cell folds               |
+| `<Leader>mg` | `:MatlabOpenInGUI`        | Open current script in MATLAB GUI     |
 
 ## License
 

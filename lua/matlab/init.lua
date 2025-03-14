@@ -24,13 +24,21 @@ local function notify(message, level, force)
   end
 end
 
--- Define the breakpoint sign
+-- Define the breakpoint sign with custom highlight groups
 local function define_signs()
+  -- Create a custom highlight group for breakpoints if it doesn't exist
+  vim.api.nvim_command('highlight default MatlabBreakpoint guifg=#ff0000 guibg=#5a0000 ctermfg=196 ctermbg=52 gui=bold cterm=bold')
+  vim.api.nvim_command('highlight default MatlabBreakpointLine guibg=#300000 ctermbg=235')
+  
+  -- Get user breakpoint config
+  local bp_config = config.get('breakpoint') or {}
+  
+  -- Define the sign with the user's custom or default settings
   vim.fn.sign_define('matlab_breakpoint', {
-    text = '●',
-    texthl = 'DiagnosticSignError',
-    linehl = '',
-    numhl = ''
+    text = bp_config.sign_text or '■',
+    texthl = bp_config.sign_hl or 'MatlabBreakpoint',
+    linehl = bp_config.line_hl or 'MatlabBreakpointLine',
+    numhl = bp_config.num_hl or 'MatlabBreakpoint'
   })
 end
 

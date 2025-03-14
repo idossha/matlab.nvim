@@ -14,6 +14,12 @@ M.defaults = {
   tmux_pane_direction = 'right', -- Position of the tmux pane ('right', 'below')
   tmux_pane_focus = true,       -- Make tmux pane visible when created
   force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist
+  breakpoint = {
+    sign_text = '■', -- Character to use for breakpoint sign
+    sign_hl = 'MatlabBreakpoint', -- Highlight group for the sign
+    line_hl = 'MatlabBreakpointLine', -- Highlight group for the entire line
+    num_hl = 'MatlabBreakpoint', -- Highlight group for the line number
+  },
   
   -- Default keymappings with leader-m prefix
   mappings = {
