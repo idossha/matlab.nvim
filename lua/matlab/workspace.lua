@@ -74,22 +74,14 @@ local function fetch_workspace_variables()
   -- Create a temporary file to store MATLAB output
   local temp_file = os.tmpname()
   
-  -- Capture whos output to a string using evalc, then write that string to a file
-  -- This approach prevents any output to the console
-  local matlab_command = string.format([[
-    try
-      fid = fopen('%s', 'w');
-      fprintf(fid, '=== MATLAB Workspace Variables ===\n\n');
-      output = evalc('whos');
-      fprintf(fid, '%%s', output);
-      fclose(fid);
-    catch err
-      warning('Error capturing workspace: %%s', err.message);
-    end
-  ]], temp_file)
+  -- Create a one-line command that won't echo in MATLAB
+  local matlab_command = string.format(
+    "output=evalc('whos');fid=fopen('%s','w');fprintf(fid,'=== MATLAB Workspace Variables ===\\n\\n%%s',output);fclose(fid);", 
+    temp_file
+  )
   
-  -- Execute the command with output suppression
-  tmux.run(matlab_command, true, true)
+  -- Execute the command with output suppression, adding semicolon at the end
+  tmux.run(matlab_command .. ";", true, true)
   
   -- Wait a bit for MATLAB to execute and write the file
   vim.fn.system('sleep 0.5')
