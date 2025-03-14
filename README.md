@@ -250,28 +250,6 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `<Leader>mf` | `:MatlabToggleCellFold`  | Toggle current cell fold               |
 | `<Leader>mF` | `:MatlabToggleAllCellFolds` | Toggle all cell folds               |
 
-## Commands
-
-| Command                     | Description                              |
-|-----------------------------|------------------------------------------|
-| `:MatlabRun [command]`      | Run current file or specified command    |
-| `:MatlabRunCell`            | Run current cell                         |
-| `:MatlabRunToCell`          | Run code from start to current cell      |
-| `:MatlabBreakpoint`         | Set breakpoint at current line           |
-| `:MatlabClearBreakpoint`    | Clear breakpoint in current file         |
-| `:MatlabClearBreakpoints`   | Clear all breakpoints                    |
-| `:MatlabDoc`                | Show documentation for word under cursor |
-| `:MatlabStartServer`        | Start MATLAB server                      |
-| `:MatlabStopServer`         | Stop MATLAB server                       |
-| `:MatlabToggleWorkspace`    | Toggle workspace floating window         |
-| `:MatlabWorkspace`          | Show MATLAB workspace in tmux pane       |
-| `:MatlabClearWorkspace`     | Clear MATLAB workspace                   |
-| `:MatlabSaveWorkspace`      | Save MATLAB workspace                    |
-| `:MatlabLoadWorkspace`      | Load MATLAB workspace                    |
-| `:MatlabToggleCellFold`     | Toggle current cell fold                 |
-| `:MatlabToggleAllCellFolds` | Toggle all cell folds                    |
-| `:MatlabApplyKeymappings`   | Reapply keymappings to current buffer    |
-
 ## License
 
 MIT
