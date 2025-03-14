@@ -71,58 +71,110 @@ local function fetch_workspace_variables()
     }
   end
 
-  -- Create a temporary file to store MATLAB output
-  local temp_file = os.tmpname()
+  -- Create two temporary files: one for capturing output and one for the script
+  local temp_output_file = os.tmpname()
+  local temp_script_file = os.tmpname() .. ".m"
   
-  -- Create a special function call that uses MATLAB's 'diary' feature
-  -- but runs it silently using a temporary script file
-  local script_file = os.tmpname() .. ".m"
-  local file = io.open(script_file, "w")
-  if file then
-    file:write(string.format([[
-      %% This is a temporary script to capture workspace variables
-      diary('%s');
-      disp('=== MATLAB Workspace Variables ===');
-      disp('');
-      whos;
-      diary off;
-      %% Delete this file after execution
-      delete('%s');
-    ]], temp_file, script_file))
-    file:close()
-    
-    -- Discard standard output by using evalc
-    local hide_cmd = string.format("evalc('run(\"%s\")');", script_file)
-    
-    -- Run the silent command
-    local target = tmux.get_server_pane()
-    if target then
-      -- Direct tmux command to send keys without showing feedback
-      local cmd = "send-keys -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(hide_cmd) .. " C-m"
-      tmux.execute(cmd)
-    end
+  -- Create a simple MATLAB script file that will save workspace info to our temp file
+  local file = io.open(temp_script_file, "w")
+  if not file then
+    return {
+      "=== MATLAB Workspace Variables ===",
+      "",
+      "Could not create temporary script file.",
+      "Check file permissions.",
+      "",
+      "Press 'q' to close this window, 'r' to refresh"
+    }
   end
   
-  -- Wait a bit for MATLAB to execute and write the file
-  vim.fn.system('sleep 0.8')
+  -- Write a simple script to get workspace vars and output to file
+  file:write(string.format([[
+% Silent workspace capture script
+fid = fopen('%s', 'w');
+fprintf(fid, '=== MATLAB Workspace Variables ===\n\n');
+vars = whos;
+if isempty(vars)
+    fprintf(fid, 'No variables in workspace.\n');
+else
+    % Print header
+    fprintf(fid, '  Name                            Size                    Bytes  Class     Attributes\n');
+    fprintf(fid, '  ------------------------------------------------------------------------------\n');
+    
+    % Print each variable
+    for i = 1:length(vars)
+        v = vars(i);
+        % Format the size as a string
+        if isempty(v.size)
+            sizestr = '0x0';
+        else
+            sizestr = [num2str(v.size(1)) 'x' num2str(v.size(2))];
+            if length(v.size) > 2
+                % Handle N-dimensional arrays
+                for d = 3:length(v.size)
+                    sizestr = [sizestr 'x' num2str(v.size(d))];
+                end
+            end
+        end
+        
+        % Format attributes
+        attrs = '';
+        if v.global
+            attrs = [attrs 'global '];
+        end
+        if ~isempty(v.persistent) && v.persistent
+            attrs = [attrs 'persistent '];
+        end
+        if v.complex
+            attrs = [attrs 'complex '];
+        end
+        
+        % Print the variable info
+        fprintf(fid, '  %-30s %-20s %10d  %-8s  %s\n', v.name, sizestr, v.bytes, v.class, attrs);
+    end
+end
+fclose(fid);
+  ]], temp_output_file))
+  file:close()
   
-  -- Try to read the output file
+  -- Run the script silently without displaying output in the MATLAB window
+  local matlab_cmd = string.format("run('%s'); delete('%s');", temp_script_file, temp_script_file)
+  
+  -- Execute the script using tmux directly
+  local target = tmux.get_server_pane()
+  if target then
+    -- Use semicolon to suppress MATLAB output and send carriage return
+    local cmd = "send-keys -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(matlab_cmd) .. " C-m"
+    tmux.execute(cmd)
+  else
+    os.remove(temp_script_file)
+    return {
+      "=== MATLAB Workspace Variables ===",
+      "",
+      "Could not connect to MATLAB tmux pane.",
+      "",
+      "Press 'q' to close this window, 'r' to refresh"
+    }
+  end
+  
+  -- Wait for MATLAB to execute the script and write the output file
+  vim.fn.system('sleep 1.0')
+  
+  -- Read the output file
   local output_lines = {}
-  local file = io.open(temp_file, "r")
+  local file = io.open(temp_output_file, "r")
   
   if file then
-    -- Read all lines from the file
     for line in file:lines() do
       table.insert(output_lines, line)
     end
     file:close()
     
-    -- Remove the temporary file
-    os.remove(temp_file)
+    -- Remove the temporary output file
+    os.remove(temp_output_file)
     
-    -- If we got content, return it
+    -- If we got content, return it with help text
     if #output_lines > 0 then
-      -- Add help text at the end
       table.insert(output_lines, "")
       table.insert(output_lines, "Press 'q' to close this window, 'r' to refresh")
       return output_lines
