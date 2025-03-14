@@ -88,62 +88,60 @@ local function fetch_workspace_variables()
     }
   end
   
-  -- Write a simple script to get workspace vars and output to file
-  file:write(string.format([[
-% Silent workspace capture script
+  -- Write a simpler, more reliable script to capture workspace variables
+  local script_content = string.format([[
 fid = fopen('%s', 'w');
 fprintf(fid, '=== MATLAB Workspace Variables ===\n\n');
 vars = whos;
+
+% Create a cell array with the variable info
+rows = {};
 if isempty(vars)
-    fprintf(fid, 'No variables in workspace.\n');
+    rows{1} = 'No variables in workspace.';
 else
-    % Print header
-    fprintf(fid, '  Name                            Size                    Bytes  Class     Attributes\n');
-    fprintf(fid, '  ------------------------------------------------------------------------------\n');
+    % Add header
+    rows{1} = '  Name                Size             Bytes  Class        Attributes';
+    rows{2} = '  ----------------------------------------------------------------------';
     
-    % Print each variable
+    % Process each variable
     for i = 1:length(vars)
         v = vars(i);
-        % Format the size as a string
-        if isempty(v.size)
-            sizestr = '0x0';
-        else
-            sizestr = [num2str(v.size(1)) 'x' num2str(v.size(2))];
-            if length(v.size) > 2
-                % Handle N-dimensional arrays
-                for d = 3:length(v.size)
-                    sizestr = [sizestr 'x' num2str(v.size(d))];
-                end
-            end
-        end
+        
+        % Format size
+        sizeDims = sprintf('%dx', v.size);
+        sizeDims = sizeDims(1:end-1); % Remove trailing 'x'
+        if isempty(sizeDims), sizeDims = '0x0'; end
         
         % Format attributes
-        attrs = '';
-        if v.global
-            attrs = [attrs 'global '];
-        end
-        if ~isempty(v.persistent) && v.persistent
-            attrs = [attrs 'persistent '];
-        end
-        if v.complex
-            attrs = [attrs 'complex '];
-        end
+        attrStr = '';
+        if v.global, attrStr = [attrStr 'global ']; end
+        if v.complex, attrStr = [attrStr 'complex ']; end
         
-        % Print the variable info
-        fprintf(fid, '  %-30s %-20s %10d  %-8s  %s\n', v.name, sizestr, v.bytes, v.class, attrs);
+        % Create formatted row
+        rows{end+1} = sprintf('  %-19s %-16s %7d  %-12s %s', ...
+                             v.name, sizeDims, v.bytes, v.class, attrStr);
     end
 end
+
+% Write all rows to file
+for i = 1:length(rows)
+    fprintf(fid, '%s\n', rows{i});
+end
+
+% Close the file
 fclose(fid);
-  ]], temp_output_file))
+]], temp_output_file)
+
+  file:write(script_content)
   file:close()
   
-  -- Run the script silently without displaying output in the MATLAB window
-  local matlab_cmd = string.format("run('%s'); delete('%s');", temp_script_file, temp_script_file)
+  -- Run the script silently by capturing its output with evalc
+  local matlab_cmd = string.format("evalc('run(\"%s\")'); delete('%s');", temp_script_file, temp_script_file)
   
-  -- Execute the script using tmux directly
+  -- Execute the script using tmux directly but ensure command doesn't show
   local target = tmux.get_server_pane()
   if target then
-    -- Use semicolon to suppress MATLAB output and send carriage return
+    -- Send command immediately followed by Enter to hide it
     local cmd = "send-keys -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(matlab_cmd) .. " C-m"
     tmux.execute(cmd)
   else
