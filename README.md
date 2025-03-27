@@ -1,28 +1,26 @@
 # matlab.nvim
 
-A modern Neovim plugin for MATLAB integration with tmux. This plugin provides enhanced integration between Neovim, MATLAB, and tmux, making your MATLAB development workflow more efficient.
+A modern Neovim plugin for MATLAB integration with tmux. This plugin provides integration between Neovim, MATLAB, and tmux, making your MATLAB development workflow more efficient.
 
 This plugin is inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab-vim) but rewritten in Lua for Neovim with a modular architecture and enhanced functionality.
 
-The plugin is far from complete, but based on some brief internet search, it seems to be the only MATLAB plugin for Neovim. 
+The plugin is far from complete, but based on some internet search, it seems to be the only MATLAB plugin for Neovim. 
 **Contributions are more than welcome.**
 
 ![Demo of Neovim MATLAB Plugin](docs/example.gif)
 
 ## Features
 
-- Automatically launches a MATLAB console in a tmux split
+- Launches a MATLAB console in a tmux split
 - Run MATLAB scripts directly from Neovim
 - Execute MATLAB code cells (sections between %% comments)
 - Fold/unfold MATLAB cell sections
 - Visual breakpoint indication with customizable appearance
-- Set and clear breakpoints interactively
+- Set and clear breakpoints interactively (needs to be fixed)
 - Access MATLAB documentation
 - View MATLAB workspace in a floating window
-- Enhanced syntax highlighting with bold cell headers
-- Reliable tmux pane sizing and management
+- Enhanced syntax highlighting with headers
 - Space leader key compatibility
-- Minimal notification mode for distraction-free workflow
 
 ## Requirements
 
