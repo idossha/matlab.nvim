@@ -222,6 +222,23 @@ function M.setup(opts)
   end
 end
 
+
+-- Add the mat_viewer module
+local mat_viewer = require('matlab.mat_viewer')
+
+-- Initialize mat viewer as part of the setup
+local original_setup = M.setup
+function M.setup(opts)
+  -- Call the original setup function
+  original_setup(opts)
+  
+  -- Initialize the MAT-file viewer
+  mat_viewer.setup()
+end
+
+-- Export the mat_viewer module
+M.mat_viewer = mat_viewer
+
 -- Export submodules
 M.commands = commands
 M.cells = cells
