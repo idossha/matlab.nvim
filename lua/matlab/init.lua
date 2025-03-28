@@ -6,6 +6,7 @@ local tmux = require('matlab.tmux')
 local commands = require('matlab.commands')
 local cells = require('matlab.cells')
 local workspace = require('matlab.workspace')
+local mat_viewer = require('matlab.mat_viewer')
 
 -- Improved notification function that respects settings
 local function notify(message, level, force)
@@ -152,6 +153,18 @@ function M.setup(opts)
     workspace.load(args.args ~= '' and args.args or nil)
   end, { nargs = '?' })
   
+  -- Initialize MAT file viewer
+  mat_viewer.setup()
+  
+  -- MAT file viewer commands
+  vim.api.nvim_create_user_command('MatlabOpenMatFile', function(args)
+    mat_viewer.open_mat_file(args.args)
+  end, { nargs = 1, complete = 'file' })
+  
+  vim.api.nvim_create_user_command('MatlabReloadMatFile', function()
+    mat_viewer.reload_mat_file()
+  end, {})
+  
   -- Debug command to check UI settings
   vim.api.nvim_create_user_command('MatlabDebugUI', function()
     local ui_settings = {
@@ -222,28 +235,12 @@ function M.setup(opts)
   end
 end
 
-
--- Add the mat_viewer module
-local mat_viewer = require('matlab.mat_viewer')
-
--- Initialize mat viewer as part of the setup
-local original_setup = M.setup
-function M.setup(opts)
-  -- Call the original setup function
-  original_setup(opts)
-  
-  -- Initialize the MAT-file viewer
-  mat_viewer.setup()
-end
-
--- Export the mat_viewer module
-M.mat_viewer = mat_viewer
-
 -- Export submodules
 M.commands = commands
 M.cells = cells
 M.workspace = workspace
 M.tmux = tmux
 M.config = config
+M.mat_viewer = mat_viewer
 
 return M

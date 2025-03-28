@@ -1,14 +1,12 @@
 -- lua/matlab/mat_viewer.lua
 local M = {}
 local config = require('matlab.config')
-local utils = require('matlab.utils') -- We'll use it if it exists, or create placeholder functions
 
--- Define utility functions if they don't exist
-if not utils then
-  utils = {}
-  utils.notify = function(message, level)
-    vim.notify("MATLAB MAT-Viewer: " .. message, level or vim.log.levels.INFO)
-  end
+-- Create a utility module if needed
+local utils = {}
+utils.notify = function(message, level)
+  level = level or vim.log.levels.INFO
+  vim.notify("MATLAB MAT-Viewer: " .. message, level)
 end
 
 -- Path to Python script for MAT-file conversion
@@ -19,6 +17,7 @@ local function ensure_script_dir()
   local script_dir = vim.fn.fnamemodify(script_path, ':h')
   if vim.fn.isdirectory(script_dir) ~= 1 then
     vim.fn.mkdir(script_dir, 'p')
+    utils.notify("Created scripts directory", vim.log.levels.INFO)
   end
 end
 
@@ -31,15 +30,12 @@ local function ensure_script_exists()
       file:write([[
 import sys
 import json
-import numpy as np
-import os
-
-# Check if scipy is available
 try:
-    import scipy.io
+    import numpy as np
+    from scipy import io
 except ImportError:
-    print("Error: scipy module is required for MAT file parsing.")
-    print("Please install it with: pip install scipy")
+    print("Error: scipy and numpy modules are required for MAT file parsing.")
+    print("Please install them with: pip install scipy numpy")
     sys.exit(1)
 
 # Custom JSON encoder to handle NumPy types
@@ -61,12 +57,9 @@ def mat_to_text(filename, output_format='json'):
     try:
         # Check if a previous conversion exists
         output_filename = filename + '.json'
-        if os.path.exists(output_filename) and os.path.getmtime(output_filename) > os.path.getmtime(filename):
-            print(f"Using existing converted file: {output_filename}")
-            return output_filename
-            
+        
         # Load the MAT file
-        mat_contents = scipy.io.loadmat(filename)
+        mat_contents = io.loadmat(filename)
         
         # Remove metadata entries (keys that start with '__')
         filtered_contents = {k: v for k, v in mat_contents.items() if not k.startswith('__')}
@@ -134,10 +127,6 @@ function M.convert_mat_file(mat_file)
   
   -- Find the output filename from the script's output
   local output_file = string.match(output, "Successfully converted .* to (.*)")
-  if not output_file then
-    -- Check if we're using an existing conversion
-    output_file = string.match(output, "Using existing converted file: (.*)")
-  end
   
   if output_file then
     output_file = output_file:gsub("^%s*(.-)%s*$", "%1") -- Trim whitespace
@@ -232,6 +221,7 @@ function M.setup()
     callback = function(args)
       -- Stop the normal file reading
       vim.cmd("silent! let &undolevels = &undolevels")
+      
       -- Open the converted version instead
       vim.schedule(function()
         M.open_mat_file(args.match)
