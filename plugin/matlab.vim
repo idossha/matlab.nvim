@@ -8,6 +8,7 @@ let g:loaded_matlab_nvim = 1
 augroup matlab_filetype_detection
   autocmd!
   autocmd BufRead,BufNewFile *.m set filetype=matlab
+  autocmd BufRead,BufNewFile *.mat set filetype=matlab_mat
 augroup END
 
 " Enable debugging if set in init.vim/init.lua

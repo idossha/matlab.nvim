@@ -228,5 +228,6 @@ M.cells = cells
 M.workspace = workspace
 M.tmux = tmux
 M.config = config
+M.matfile = require('matlab.matfile')
 
 return M
