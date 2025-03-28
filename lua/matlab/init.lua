@@ -222,6 +222,17 @@ function M.setup(opts)
   end
 end
 
+
+-- Add a command to view .mat files
+vim.api.nvim_create_user_command('MatlabViewMat', function(opts)
+  local file_path = opts.args
+  if file_path == "" then
+    file_path = vim.fn.expand('%:p')
+  end
+  require('matlab.matfile').view_mat_file(file_path)
+end, {nargs = '?', complete = 'file'})
+
+
 -- Export submodules
 M.commands = commands
 M.cells = cells
