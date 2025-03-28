@@ -3,233 +3,227 @@ local M = {}
 local tmux = require('matlab.tmux')
 local config = require('matlab.config')
 
--- Create a buffer to display .mat file contents
-function M.create_mat_buffer(mat_file_path)
-  -- Create a split window for displaying the .mat contents
-  vim.cmd('vsplit')
-  local bufnr = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_win_set_buf(0, bufnr)
+-- Function to handle .mat file opening
+function M.handle_mat_file()
+  local file_path = vim.fn.expand('%:p')
   
-  -- Set buffer options
-  vim.api.nvim_buf_set_option(bufnr, 'buftype', 'nofile')
-  vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
-  vim.api.nvim_buf_set_option(bufnr, 'filetype', 'matlab_mat_view')
-  vim.api.nvim_buf_set_name(bufnr, 'MAT: ' .. vim.fn.fnamemodify(mat_file_path, ':t'))
+  -- Clear current buffer content
+  vim.api.nvim_buf_set_option(0, 'modifiable', true)
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+    "Loading MATLAB .mat file...",
+    "Please wait, starting MATLAB to analyze the file contents..."
+  })
+  vim.api.nvim_buf_set_option(0, 'modifiable', false)
   
-  return bufnr
+  -- Start a background job to analyze the .mat file
+  vim.schedule(function()
+    -- Ensure MATLAB is running
+    if not tmux.get_server_pane() then
+      tmux.start_server(false)
+    end
+    
+    -- Wait briefly for MATLAB to initialize
+    vim.defer_fn(function()
+      M.analyze_mat_file(file_path)
+    end, 1000)
+  end)
 end
 
--- Load and display the contents of a .mat file
-function M.load_mat_file(file_path)
-  -- Ensure MATLAB is running
-  if not tmux.pane_exists() then
-    tmux.start_server(false)
-  end
+-- Function to analyze the .mat file using MATLAB
+function M.analyze_mat_file(file_path)
+  -- Get the MATLAB command prefix based on OS
+  local matlab_exec = config.get('executable')
   
-  -- Create a temporary script to load and inspect the .mat file
-  local temp_script = os.tmpname() .. '.m'
-  local f = io.open(temp_script, 'w')
+  -- Create MATLAB script to analyze the .mat file
+  local script_content = string.format([[
+  try
+    fprintf(2, '===MAT_FILE_BEGIN===\n');
+    matObj = matfile('%s');
+    varInfo = whos(matObj);
+    
+    % Print file header
+    fprintf(2, 'MAT File: %s\n');
+    fprintf(2, 'Variables: %d\n', length(varInfo));
+    fprintf(2, '====================\n\n');
+    
+    % Print variable information
+    for i = 1:length(varInfo)
+      var = varInfo(i);
+      fprintf(2, '## %s\n', var.name);
+      fprintf(2, 'Type: %s, Size: %s, Bytes: %d\n', var.class, mat2str(var.size), var.bytes);
+      
+      % Try to preview variable based on type
+      try
+        % Load the variable
+        varData = matObj.(var.name);
+        
+        % Handle different variable types
+        if isnumeric(varData) || islogical(varData)
+          % Show numeric preview
+          if numel(varData) <= 25
+            % Small array - show all
+            fprintf(2, 'Value:\n%s\n', mat2str(varData));
+          else
+            % Large array - show a small preview
+            if ismatrix(varData) && min(size(varData)) > 1
+              % 2D+ array - show 3x3 corner
+              previewSize = min([3, size(varData, 1), size(varData, 2)]);
+              previewData = varData(1:previewSize, 1:previewSize);
+              fprintf(2, 'Preview (%dx%d of %s):\n%s\n', ...
+                previewSize, previewSize, mat2str(size(varData)), mat2str(previewData));
+            else
+              % Vector - show first few elements
+              previewData = varData(1:min(5, numel(varData)));
+              fprintf(2, 'Preview (first %d of %d):\n%s\n', ...
+                min(5, numel(varData)), numel(varData), mat2str(previewData));
+            end
+          end
+        elseif ischar(varData)
+          % Text preview
+          if numel(varData) <= 100
+            fprintf(2, 'Value: "%s"\n', varData);
+          else
+            fprintf(2, 'Preview: "%s..."\n', varData(1:97));
+          end
+        elseif isstruct(varData)
+          % Structure preview
+          fields = fieldnames(varData);
+          fprintf(2, 'Structure with fields: ');
+          for j = 1:length(fields)
+            if j > 1, fprintf(2, ', '); end
+            fprintf(2, '%s', fields{j});
+          end
+          fprintf(2, '\n');
+          
+          % If small struct array, show more details
+          if numel(varData) <= 3
+            for j = 1:numel(varData)
+              fprintf(2, '  Element %d:\n', j);
+              for k = 1:length(fields)
+                fieldValue = varData(j).(fields{k});
+                fprintf(2, '    %s: ', fields{k});
+                if isnumeric(fieldValue) && numel(fieldValue) <= 10
+                  fprintf(2, '%s', mat2str(fieldValue));
+                elseif ischar(fieldValue) && numel(fieldValue) <= 30
+                  fprintf(2, '"%s"', fieldValue);
+                else
+                  fprintf(2, '<%s>', class(fieldValue));
+                end
+                fprintf(2, '\n');
+              end
+            end
+          end
+        elseif iscell(varData)
+          % Cell array preview
+          fprintf(2, 'Cell array with %d elements\n', numel(varData));
+          if numel(varData) <= 5
+            for j = 1:numel(varData)
+              fprintf(2, '  Cell %d: ', j);
+              cellContent = varData{j};
+              if isnumeric(cellContent) && numel(cellContent) <= 10
+                fprintf(2, '%s', mat2str(cellContent));
+              elseif ischar(cellContent) && numel(cellContent) <= 30
+                fprintf(2, '"%s"', cellContent);
+              else
+                fprintf(2, '<%s>', class(cellContent));
+              end
+              fprintf(2, '\n');
+            end
+          end
+        else
+          fprintf(2, 'Complex data type, preview not available\n');
+        end
+      catch previewError
+        fprintf(2, 'Could not preview: %s\n', previewError.message);
+      end
+      
+      fprintf(2, '\n');
+    end
+    fprintf(2, '===MAT_FILE_END===\n');
+  catch ex
+    fprintf(2, '===MAT_FILE_BEGIN===\n');
+    fprintf(2, 'Error loading MAT file: %s\n', ex.message);
+    fprintf(2, '===MAT_FILE_END===\n');
+  end
+  exit;
+  ]], file_path:gsub("\\", "\\\\"):gsub("'", "''"), file_path)
+  
+  -- Create a temporary script
+  local temp_dir = vim.fn.tempname()
+  vim.fn.mkdir(temp_dir, "p")
+  local script_path = temp_dir .. '/mat_analyze.m'
+  
+  local f = io.open(script_path, 'w')
   if not f then
     vim.notify('Failed to create temporary script', vim.log.levels.ERROR)
     return
   end
-  
-  -- Write MATLAB code to load and analyze the .mat file
-  f:write(string.format([[
-  try
-    data = load('%s');
-    fields = fieldnames(data);
-    
-    % Open a file for output
-    fid = fopen('%s.out', 'w');
-    
-    % Write header
-    fprintf(fid, 'MAT File: %s\n');
-    fprintf(fid, '===================\n\n');
-    
-    % Iterate through fields
-    for i = 1:length(fields)
-      fieldName = fields{i};
-      fieldValue = data.(fieldName);
-      
-      % Write field info
-      fprintf(fid, '## %s\n', fieldName);
-      
-      % Get size and class
-      sizeStr = mat2str(size(fieldValue));
-      classStr = class(fieldValue);
-      fprintf(fid, 'Type: %s, Size: %s\n', classStr, sizeStr);
-      
-      % Show preview based on data type
-      if isnumeric(fieldValue) || islogical(fieldValue)
-        if numel(fieldValue) <= 25
-          % Show all values for small arrays
-          fprintf(fid, 'Value:\n%s\n', mat2str(fieldValue));
-        else
-          % Show first few values for large arrays
-          if ismatrix(fieldValue) && min(size(fieldValue)) > 1
-            % 2D+ array - show 3x3 preview
-            preview = fieldValue(1:min(3,size(fieldValue,1)), 1:min(3,size(fieldValue,2)));
-            fprintf(fid, 'Preview (3x3):\n%s\n', mat2str(preview));
-          else
-            % 1D array - show first 5
-            preview = fieldValue(1:min(5,numel(fieldValue)));
-            fprintf(fid, 'Preview (first 5):\n%s\n', mat2str(preview));
-          end
-        end
-      elseif ischar(fieldValue)
-        if numel(fieldValue) <= 200
-          fprintf(fid, 'Value: "%s"\n', fieldValue);
-        else
-          fprintf(fid, 'Preview: "%s..."\n', fieldValue(1:197));
-        end
-      elseif isstruct(fieldValue)
-        sFields = fieldnames(fieldValue);
-        fprintf(fid, 'Structure with fields: ');
-        for j = 1:length(sFields)
-          if j > 1, fprintf(fid, ', '); end
-          fprintf(fid, '%s', sFields{j});
-        end
-        fprintf(fid, '\n');
-      elseif iscell(fieldValue)
-        fprintf(fid, 'Cell array\n');
-        if numel(fieldValue) <= 5
-          for j = 1:numel(fieldValue)
-            cellContent = fieldValue{j};
-            fprintf(fid, '  Cell %d: ', j);
-            if isnumeric(cellContent)
-              fprintf(fid, '[%s]', mat2str(cellContent));
-            elseif ischar(cellContent)
-              fprintf(fid, '"%s"', cellContent);
-            else
-              fprintf(fid, '<%s>', class(cellContent));
-            end
-            fprintf(fid, '\n');
-          end
-        else
-          fprintf(fid, 'Preview: %d cells\n', numel(fieldValue));
-        end
-      else
-        fprintf(fid, 'Complex data type\n');
-      end
-      
-      fprintf(fid, '\n');
-    end
-    
-    fclose(fid);
-    exit;
-  catch ex
-    fid = fopen('%s.out', 'w');
-    fprintf(fid, 'Error loading MAT file: %s\n', ex.message);
-    fclose(fid);
-    exit;
-  end
-  ]], 
-  vim.fn.shellescape(file_path):gsub("'", "''"), -- Escape file path for MATLAB string
-  temp_script,
-  file_path,
-  temp_script))
+  f:write(script_content)
   f:close()
   
-  -- Run the script in MATLAB
-  local matlab_cmd = M.build_matlab_command(config.get('executable'), 'run ' .. vim.fn.shellescape(temp_script))
-  os.execute(matlab_cmd)
-  
-  -- Read the output
-  local output_file = temp_script .. '.out'
-  local output_content = {}
-  local output = io.open(output_file, 'r')
-  if output then
-    for line in output:lines() do
-      table.insert(output_content, line)
-    end
-    output:close()
-  else
-    vim.notify('Failed to read MATLAB output', vim.log.levels.ERROR)
-    return
-  end
-  
-  -- Display the output
-  local bufnr = M.create_mat_buffer(file_path)
-  vim.api.nvim_buf_set_option(bufnr, 'modifiable', true)
-  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, output_content)
-  vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
-  
-  -- Clean up temporary files
-  os.remove(temp_script)
-  os.remove(output_file)
-  
-  -- Set up keymaps for the buffer
-  vim.api.nvim_buf_set_keymap(bufnr, 'n', 'q', ':bdelete<CR>', {noremap = true, silent = true})
-  vim.api.nvim_buf_set_keymap(bufnr, 'n', '<CR>', ':lua require("matlab.matfile").inspect_variable()<CR>', {noremap = true})
-  
-  return bufnr
-end
-
--- Helper function to build platform-specific MATLAB command
-function M.build_matlab_command(executable, command)
-  -- Different platforms have different command formats
+  -- Build the MATLAB command
+  local cmd
   if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
-    return executable .. ' -nodesktop -nosplash /r ' .. command
+    cmd = matlab_exec .. ' -nodisplay -nosplash -nodesktop /r "run(''' .. script_path:gsub("'", "''") .. ''')"'
   else
-    return executable .. ' -nodesktop -nosplash -r ' .. command
+    cmd = matlab_exec .. ' -nodisplay -nosplash -nodesktop -r "run(''' .. script_path:gsub("'", "''") .. ''')"'
   end
-end
-
--- Load the current .mat file
-function M.load_current_file()
-  local file_path = vim.fn.expand('%:p')
-  if vim.fn.filereadable(file_path) == 1 then
-    M.load_mat_file(file_path)
-  else
-    vim.notify('Cannot read file: ' .. file_path, vim.log.levels.ERROR)
-  end
-end
-
--- Inspect a specific variable (when user presses Enter on a variable)
-function M.inspect_variable()
-  local line = vim.fn.getline('.')
   
-  -- Check if this looks like a variable line (starts with ##)
-  if line:match('^## (.+)$') then
-    local var_name = line:match('^## (.+)$')
-    vim.notify('Inspecting variable: ' .. var_name, vim.log.levels.INFO)
-    
-    -- Get the .mat file path from buffer name
-    local buf_name = vim.fn.bufname('%')
-    local mat_file = buf_name:match('MAT: (.+)$')
-    
-    -- TODO: Implement detailed inspection of a single variable
-    -- For now, just highlight the section
-    
-    -- Find the section boundaries
-    local current_line = vim.fn.line('.')
-    local start_line = current_line
-    local end_line = current_line
-    
-    -- Search forward for the next section or EOF
-    local buf_lines = vim.api.nvim_buf_get_lines(0, current_line, -1, false)
-    for i, next_line in ipairs(buf_lines) do
-      if i > 1 and next_line:match('^## ') then
-        end_line = current_line + i - 2
-        break
+  -- Run MATLAB as job and capture output
+  local output_lines = {}
+  local job_id = vim.fn.jobstart(cmd, {
+    on_stderr = function(_, data)
+      if data then
+        -- Process MATLAB output
+        local capture = false
+        for _, line in ipairs(data) do
+          if line == "===MAT_FILE_BEGIN===" then
+            capture = true
+          elseif line == "===MAT_FILE_END===" then
+            capture = false
+          elseif capture then
+            table.insert(output_lines, line)
+          end
+        end
       end
-      if i == #buf_lines then
-        end_line = current_line + i - 1
-      end
+    end,
+    on_exit = function()
+      -- Update buffer with MATLAB output
+      vim.schedule(function()
+        if #output_lines == 0 then
+          output_lines = {"Error: No output from MATLAB", 
+                          "Check that MATLAB is properly installed and configured"}
+        end
+        
+        -- Add help text at the end
+        table.insert(output_lines, "")
+        table.insert(output_lines, "Press q to close this view")
+        
+        vim.api.nvim_buf_set_option(0, 'modifiable', true)
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, output_lines)
+        vim.api.nvim_buf_set_option(0, 'modifiable', false)
+        
+        -- Set up syntax highlighting
+        vim.cmd('set syntax=matlab_mat_view')
+        
+        -- Set up keymaps for the buffer
+        vim.api.nvim_buf_set_keymap(0, 'n', 'q', ':bdelete<CR>', {noremap = true, silent = true})
+        
+        -- Clean up temp files
+        os.remove(script_path)
+        os.rmdir(temp_dir)
+      end)
     end
-    
-    -- Highlight the section
-    local ns_id = vim.api.nvim_create_namespace('matlab_mat_inspect')
-    vim.api.nvim_buf_clear_namespace(0, ns_id, 0, -1)
-    for i = start_line, end_line do
-      vim.api.nvim_buf_add_highlight(0, ns_id, 'Search', i-1, 0, -1)
-    end
-    
-    -- Set up a timer to clear the highlight after a few seconds
-    vim.defer_fn(function()
-      vim.api.nvim_buf_clear_namespace(0, ns_id, 0, -1)
-    end, 3000)
+  })
+  
+  if job_id <= 0 then
+    vim.notify('Failed to start MATLAB job', vim.log.levels.ERROR)
+    vim.api.nvim_buf_set_option(0, 'modifiable', true)
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+      "Error: Failed to start MATLAB",
+      "Check your MATLAB configuration in matlab.nvim settings"
+    })
+    vim.api.nvim_buf_set_option(0, 'modifiable', false)
   end
 end
 

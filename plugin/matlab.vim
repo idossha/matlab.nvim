@@ -8,8 +8,21 @@ let g:loaded_matlab_nvim = 1
 augroup matlab_filetype_detection
   autocmd!
   autocmd BufRead,BufNewFile *.m set filetype=matlab
-  autocmd BufRead,BufNewFile *.mat set filetype=matlab_mat
+  " Updated handling for .mat files
+  autocmd BufReadCmd *.mat call s:HandleMatFile()
 augroup END
+
+" Handler function for .mat files
+function! s:HandleMatFile()
+  " Set the filetype so we can apply specific handling
+  set filetype=matlab_mat
+  " Call the Lua function to handle .mat files
+  lua require('matlab.matfile').handle_mat_file()
+  " This prevents Neovim from trying to read the binary file
+  setlocal buftype=nofile
+  setlocal noswapfile
+  setlocal nomodifiable
+endfunction
 
 " Enable debugging if set in init.vim/init.lua
 if exists('g:matlab_debug') && g:matlab_debug
