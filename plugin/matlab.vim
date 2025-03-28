@@ -66,3 +66,10 @@ function! s:DebugKeymaps()
   end
 EOF
 endfunction
+
+" Add a command to view .mat files directly from Vim
+command! -nargs=? -complete=file MatlabViewMat call s:ViewMatFile(<q-args>)
+function! s:ViewMAtFile(file_path)
+  let path = empty(a:file_path) ? expand('%:p') : a:file_path
+  lua require('matlab.matfile').view_mat_file(vim.fn.eval('path'))
+endfunction
