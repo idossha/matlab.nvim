@@ -154,6 +154,16 @@ function M.setup(opts)
   
   -- Debug command to check UI settings
   vim.api.nvim_create_user_command('MatlabDebugUI', function()
+    local env_vars = config.get('environment')
+    local env_display = "None"
+    if env_vars and next(env_vars) then
+      local env_parts = {}
+      for k, v in pairs(env_vars) do
+        table.insert(env_parts, k .. '=' .. tostring(v))
+      end
+      env_display = table.concat(env_parts, ', ')
+    end
+    
     local ui_settings = {
       ["Panel Size"] = config.get('panel_size'),
       ["Panel Size Type"] = config.get('panel_size_type'),
@@ -163,7 +173,8 @@ function M.setup(opts)
       ["Default Mappings"] = config.get('default_mappings'),
       ["Debug Mode"] = config.get('debug'),
       ["Minimal Notifications"] = config.get('minimal_notifications'),
-      ["MATLAB Executable"] = config.get('executable')
+      ["MATLAB Executable"] = config.get('executable'),
+      ["Environment Variables"] = env_display
     }
     
     local lines = {"MATLAB UI Settings:"}
@@ -199,6 +210,16 @@ function M.setup(opts)
   
   -- Log configuration after setup
   if config.get('debug') then
+    local env_vars = config.get('environment')
+    local env_debug = "None"
+    if env_vars and next(env_vars) then
+      local env_parts = {}
+      for k, v in pairs(env_vars) do
+        table.insert(env_parts, k .. '=' .. tostring(v))
+      end
+      env_debug = table.concat(env_parts, ', ')
+    end
+    
     local debug_settings = {
       "MATLAB.nvim configuration:",
       "- executable: " .. config.get('executable'),
@@ -208,7 +229,8 @@ function M.setup(opts)
       "- auto_start: " .. tostring(config.get('auto_start')),
       "- default_mappings: " .. tostring(config.get('default_mappings')),
       "- debug: " .. tostring(config.get('debug')),
-      "- minimal_notifications: " .. tostring(config.get('minimal_notifications'))
+      "- minimal_notifications: " .. tostring(config.get('minimal_notifications')),
+      "- environment: " .. env_debug
     }
     
     -- Log to file only, don't notify

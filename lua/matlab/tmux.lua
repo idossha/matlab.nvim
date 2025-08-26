@@ -313,18 +313,41 @@ function M.command_exists(cmd)
 end
 
 -- Build platform-specific MATLAB startup command
-function M.build_matlab_command(executable, startup_cmd)
+function M.build_matlab_command(executable, startup_cmd, env_vars)
+  local command_parts = {}
+  
+  -- Add environment variables if provided
+  if env_vars and next(env_vars) then
+    for var_name, var_value in pairs(env_vars) do
+      -- Validate environment variable names (basic safety check)
+      if type(var_name) == "string" and var_name:match("^[A-Za-z_][A-Za-z0-9_]*$") then
+        if config.get('debug') then
+          M.notify('Setting environment variable: ' .. var_name .. '=' .. tostring(var_value), vim.log.levels.DEBUG)
+        end
+        table.insert(command_parts, 'export ' .. var_name .. '=' .. vim.fn.shellescape(tostring(var_value)))
+      else
+        M.notify('Invalid environment variable name: ' .. tostring(var_name), vim.log.levels.WARN)
+      end
+    end
+  end
+  
   -- Always ensure -nodesktop -nosplash flags are added to prevent GUI from showing
-  local base_command = executable .. ' -nodesktop -nosplash'
+  local matlab_command = executable .. ' -nodesktop -nosplash'
   
   -- Different platforms have different command line argument formats
   if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
     -- Windows uses /r instead of -r
-    return base_command .. ' /r ' .. vim.fn.shellescape(startup_cmd)
+    matlab_command = matlab_command .. ' /r ' .. vim.fn.shellescape(startup_cmd)
   else
     -- macOS and Linux use -r
-    return base_command .. ' -r ' .. vim.fn.shellescape(startup_cmd)
+    matlab_command = matlab_command .. ' -r ' .. vim.fn.shellescape(startup_cmd)
   end
+  
+  -- Add the MATLAB command to the parts
+  table.insert(command_parts, matlab_command)
+  
+  -- Join all parts with ' && ' to ensure proper execution order
+  return table.concat(command_parts, ' && ')
 end
 
 -- Validate UI settings to ensure they're valid
@@ -398,10 +421,11 @@ function M.start_server(auto_start, startup_command)
     end
 
     local executable = config.get('executable')
+    local env_vars = config.get('environment')
     M.notify('Using MATLAB executable: ' .. executable, vim.log.levels.DEBUG)
     
-    -- Build the MATLAB startup command with platform-specific adjustments
-    local mlcmd = 'clear && ' .. M.build_matlab_command(executable, startup_cmd)
+    -- Build the MATLAB startup command with platform-specific adjustments and environment variables
+    local mlcmd = 'clear && ' .. M.build_matlab_command(executable, startup_cmd, env_vars)
     
     -- Create tmux split with the MATLAB command
     local split_flags = ""

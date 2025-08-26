@@ -14,6 +14,10 @@ M.defaults = {
   tmux_pane_direction = 'right', -- Position of the tmux pane ('right', 'below')
   tmux_pane_focus = true,       -- Make tmux pane visible when created
   force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist
+  
+  -- Environment variables to set before starting MATLAB
+  environment = {},       -- Table of environment variables: {VAR_NAME = 'value', ANOTHER_VAR = 'another_value'}
+  
   breakpoint = {
     sign_text = '■', -- Character to use for breakpoint sign
     sign_hl = 'MatlabBreakpoint', -- Highlight group for the sign

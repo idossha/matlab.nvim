@@ -87,6 +87,13 @@ require('matlab').setup({
   -- Path to MATLAB executable (should be full path)
   executable = '/path/to/matlab',            
   
+  -- Environment variables to set before starting MATLAB
+  environment = {
+    -- LD_LIBRARY_PATH = '/usr/local/lib:/opt/custom/lib',
+    -- MATLAB_LOG_DIR = '/tmp/matlab_logs',
+    -- DISPLAY = ':0.0',  -- For X11 forwarding on Linux
+  },
+  
   -- UI options
   panel_size = 50,                  -- Size of the tmux pane (in percentage)
   panel_size_type = 'percentage',   -- 'percentage' or 'fixed' (fixed = columns)
@@ -131,6 +138,57 @@ require('matlab').setup({
   }
 })
 ```
+
+### Environment Variables
+
+The plugin supports setting environment variables that will be applied before starting MATLAB. This is particularly useful for:
+
+- **Library paths**: Setting `LD_LIBRARY_PATH` on Linux for custom libraries
+- **Display settings**: Configuring `DISPLAY` for X11 forwarding
+- **MATLAB-specific variables**: Custom MATLAB environment configuration
+- **System dependencies**: Fixing package conflicts on Linux distributions
+
+#### Example Usage
+
+```lua
+require('matlab').setup({
+  executable = '/usr/local/MATLAB/R2024a/bin/matlab',
+  environment = {
+    LD_LIBRARY_PATH = '/usr/local/lib:/opt/custom/lib',
+    MATLAB_LOG_DIR = '/tmp/matlab_logs',
+    DISPLAY = ':0.0',  -- For X11 forwarding
+    -- Add any other environment variables you need
+  },
+})
+```
+
+#### Common Use Cases
+
+**Linux with package conflicts** (like the user's Arch Linux issue):
+```lua
+environment = {
+  LD_LIBRARY_PATH = '/usr/local/lib:/opt/matlab/lib',
+  XAPPLRESDIR = '/opt/matlab/X11/app-defaults',
+}
+```
+
+**Remote server with X11 forwarding**:
+```lua
+environment = {
+  DISPLAY = 'localhost:10.0',
+  XAUTHORITY = os.getenv('HOME') .. '/.Xauthority',
+}
+```
+
+**Debug mode**:
+```lua
+environment = {
+  MATLAB_LOG_DIR = '/tmp/matlab_debug',
+  MATLAB_PREFDIR = '/tmp/matlab_prefs',
+}
+```
+
+**Note**: Environment variable names must be valid (letters, numbers, and underscores only). Invalid names will be ignored with a warning.
 
 ### MATLAB Executable Detection
 
@@ -260,6 +318,51 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `<Leader>mf` | `:MatlabToggleCellFold`  | Toggle current cell fold               |
 | `<Leader>mF` | `:MatlabToggleAllCellFolds` | Toggle all cell folds               |
 | `<Leader>mg` | `:MatlabOpenInGUI`        | Open current script in MATLAB GUI     |
+
+## Troubleshooting
+
+### Environment Variable Issues
+
+**Problem**: MATLAB fails to start due to library conflicts or missing environment variables (common on Arch Linux and other distributions).
+
+**Solution**: Use the `environment` configuration option instead of trying to set variables in the executable path:
+
+```lua
+-- ❌ This WON'T work:
+require('matlab').setup({
+  executable = "export LD_LIBRARY_PATH=/custom/path; /usr/local/MATLAB/R2024a/bin/matlab"
+})
+
+-- ✅ This WILL work:
+require('matlab').setup({
+  executable = '/usr/local/MATLAB/R2024a/bin/matlab',
+  environment = {
+    LD_LIBRARY_PATH = '/custom/path',
+    XAPPLRESDIR = '/opt/matlab/X11/app-defaults',
+  }
+})
+```
+
+**Why**: The plugin constructs the command internally and needs to properly handle environment variables to ensure they're set before MATLAB starts.
+
+### MATLAB Pane Management
+
+**Problem**: Plugin always creates new tmux panes instead of reusing existing ones.
+
+**Explanation**: This is intentional behavior. The plugin creates a dedicated tmux pane for each MATLAB session to ensure clean state management and avoid conflicts between different MATLAB instances.
+
+### Debug Information
+
+Use `:MatlabDebugUI` to check your current configuration, including environment variables. Enable debug logging for detailed information:
+
+```lua
+require('matlab').setup({
+  debug = true,
+  -- ... other options
+})
+```
+
+Debug logs are saved to: `~/.cache/nvim/matlab_nvim.log`
 
 ## License
 
