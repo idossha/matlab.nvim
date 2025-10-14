@@ -4,8 +4,8 @@ local tmux = require('matlab.tmux')
 
 -- Check if the current buffer is a MATLAB script
 function M.is_matlab_script()
-  local syntax = vim.bo.syntax
-  if syntax == 'matlab' or syntax == 'octave' then
+  local filetype = vim.bo.filetype
+  if filetype == 'matlab' or filetype == 'octave' then
     return true
   end
   vim.notify('Not a MATLAB script.', vim.log.levels.WARN)
