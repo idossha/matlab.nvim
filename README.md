@@ -18,7 +18,8 @@ The plugin is far from complete, but based on some internet search, it seems to 
 - Visual breakpoint indication with customizable appearance
 - Set and clear breakpoints interactively (needs to be fixed)
 - Access MATLAB documentation
-- View MATLAB workspace in a floating window
+- View MATLAB workspace variables in tmux pane
+- Save and load MATLAB workspace files
 - Enhanced syntax highlighting with headers
 - Space leader key compatibility
 
@@ -127,8 +128,7 @@ require('matlab').setup({
     clear_breakpoint = 'd',         -- Clear breakpoint in current file
     clear_breakpoints = 'D',        -- Clear all breakpoints
     doc = 'h',                      -- Show documentation for word under cursor
-    toggle_workspace = 'w',         -- Toggle workspace floating window
-    show_workspace = 'W',           -- Show MATLAB workspace in tmux pane
+    toggle_workspace = 'w',         -- Show MATLAB workspace in tmux pane (whos)
     clear_workspace = 'x',          -- Clear MATLAB workspace
     save_workspace = 's',           -- Save MATLAB workspace
     load_workspace = 'l',           -- Load MATLAB workspace
@@ -271,11 +271,10 @@ If you're not sure where MATLAB is installed:
   - Use `<Leader>mh` or `:MatlabDoc` to display documentation for it
 
 - **Workspace Management**:
-  - Use `<Leader>mw` or `:MatlabToggleWorkspace` to view variables in a side panel
-  - Press `r` in the workspace window to refresh variables
+  - Use `<Leader>mw` or `:MatlabWorkspace` to show workspace variables (uses `whos` command)
   - Use `<Leader>mx` or `:MatlabClearWorkspace` to clear all variables
-  - Use `<Leader>ms` or `:MatlabSaveWorkspace` to save your MATLAB workspace
-  - Use `<Leader>ml` or `:MatlabLoadWorkspace` to load a saved workspace
+  - Use `<Leader>ms` or `:MatlabSaveWorkspace` to save your MATLAB workspace to a .mat file
+  - Use `<Leader>ml` or `:MatlabLoadWorkspace` to load a saved workspace from a .mat file
 
 - **UI & Customization**:
   - Use `:MatlabDebugUI` to check your current UI settings
@@ -310,11 +309,10 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `<Leader>md` | `:MatlabClearBreakpoint` | Clear breakpoint in current file       |
 | `<Leader>mD` | `:MatlabClearBreakpoints`| Clear all breakpoints                  |
 | `<Leader>mh` | `:MatlabDoc`             | Show documentation for word under cursor |
-| `<Leader>mw` | `:MatlabToggleWorkspace` | Toggle workspace floating window       |
-| `<Leader>mW` | `:MatlabWorkspace`       | Show MATLAB workspace in tmux pane     |
+| `<Leader>mw` | `:MatlabWorkspace`       | Show workspace variables (whos)        |
 | `<Leader>mx` | `:MatlabClearWorkspace`  | Clear MATLAB workspace                 |
-| `<Leader>ms` | `:MatlabSaveWorkspace`   | Save MATLAB workspace                  |
-| `<Leader>ml` | `:MatlabLoadWorkspace`   | Load MATLAB workspace                  |
+| `<Leader>ms` | `:MatlabSaveWorkspace`   | Save MATLAB workspace to .mat file     |
+| `<Leader>ml` | `:MatlabLoadWorkspace`   | Load MATLAB workspace from .mat file   |
 | `<Leader>mf` | `:MatlabToggleCellFold`  | Toggle current cell fold               |
 | `<Leader>mF` | `:MatlabToggleAllCellFolds` | Toggle all cell folds               |
 | `<Leader>mg` | `:MatlabOpenInGUI`        | Open current script in MATLAB GUI     |

@@ -3,14 +3,12 @@ local M = {}
 local tmux = require('matlab.tmux')
 
 -- Display variables in the MATLAB workspace in the tmux pane
--- Note: Both toggle() and show() use 'whos' since 'workspace' command
--- requires MATLAB desktop which is not available in -nodesktop mode
-function M.toggle()
-  tmux.run('whos')
-end
-
--- Display variables in the MATLAB workspace in the tmux pane
+-- Uses 'whos' command which works in -nodesktop mode
 function M.show()
+  if not tmux.exists() then
+    vim.notify('MATLAB server not running', vim.log.levels.ERROR)
+    return
+  end
   tmux.run('whos')
 end
 

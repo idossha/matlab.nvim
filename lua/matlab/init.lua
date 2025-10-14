@@ -116,10 +116,6 @@ function M.setup(opts)
     workspace.show()
   end, {})
   
-  vim.api.nvim_create_user_command('MatlabToggleWorkspace', function()
-    workspace.toggle()
-  end, {})
-  
   vim.api.nvim_create_user_command('MatlabClearWorkspace', function()
     workspace.clear()
   end, {})

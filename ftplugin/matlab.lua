@@ -116,8 +116,7 @@ if should_setup_mappings then
   safe_map(actual_prefix .. mappings.doc, '<Cmd>MatlabDoc<CR>', 'Show MATLAB documentation')
 
   -- Workspace
-  safe_map(actual_prefix .. mappings.toggle_workspace, '<Cmd>MatlabToggleWorkspace<CR>', 'Toggle MATLAB workspace window')
-  safe_map(actual_prefix .. mappings.show_workspace, '<Cmd>MatlabWorkspace<CR>', 'Show MATLAB workspace in tmux')
+  safe_map(actual_prefix .. mappings.toggle_workspace, '<Cmd>MatlabWorkspace<CR>', 'Show MATLAB workspace (whos)')
   safe_map(actual_prefix .. mappings.clear_workspace, '<Cmd>MatlabClearWorkspace<CR>', 'Clear MATLAB workspace')
   safe_map(actual_prefix .. mappings.save_workspace, '<Cmd>MatlabSaveWorkspace<CR>', 'Save MATLAB workspace')
   safe_map(actual_prefix .. mappings.load_workspace, '<Cmd>MatlabLoadWorkspace<CR>', 'Load MATLAB workspace')
@@ -146,6 +145,7 @@ if should_setup_mappings then
     table.insert(lines, "- " .. display_prefix .. mappings.clear_breakpoint .. " : Clear breakpoint")
     table.insert(lines, "- " .. display_prefix .. mappings.clear_breakpoints .. " : Clear all breakpoints")
     table.insert(lines, "- " .. display_prefix .. mappings.doc .. " : Show documentation")
+    table.insert(lines, "- " .. display_prefix .. mappings.toggle_workspace .. " : Show workspace (whos)")
     table.insert(lines, "- " .. display_prefix .. mappings.open_in_gui .. " : Open in MATLAB GUI")
     table.insert(lines, "")
     table.insert(lines, "Fallback mapping: ,mr : Run MATLAB script")
