@@ -1,76 +1,13 @@
 -- Tmux integration for matlab.nvim
 local M = {}
 local config = require('matlab.config')
+local utils = require('matlab.utils')
 
 -- Store the server pane ID
 M.server_pane = nil
 
--- Custom notification function that can be set from init.lua
-local external_notify_fn = nil
-
--- Function to set the notification function from outside
-function M.set_notify_function(fn)
-  external_notify_fn = fn
-end
-
--- Enhanced notification function with better control over what's displayed
-function M.notify(message, level, force)
-  level = level or vim.log.levels.INFO
-  
-  -- Use external notification function if available
-  if external_notify_fn and type(external_notify_fn) == "function" then
-    external_notify_fn(message, level, force)
-    return
-  end
-  
-  -- Always show errors
-  if level == vim.log.levels.ERROR then
-    vim.notify(message, level)
-    return
-  end
-  
-  -- For debug messages, only show if debug is enabled
-  if level == vim.log.levels.DEBUG and not config.get('debug') then
-    -- Still log to file even if not showing notification
-    local log_file = io.open(vim.fn.stdpath('cache') .. '/matlab_nvim.log', 'a')
-    if log_file then
-      log_file:write(os.date("%Y-%m-%d %H:%M:%S") .. " [DEBUG] - " .. message .. "\n")
-      log_file:close()
-    end
-    return
-  end
-  
-  -- When minimal_notifications is enabled, only show explicitly forced messages
-  if config.get('minimal_notifications') and not force then
-    -- Stricter filter for important notifications
-    local important_messages = {
-      'MATLAB server started.',
-      'Stopping MATLAB server.',
-      'MATLAB executable not found'
-    }
-    
-    local is_important = false
-    for _, important_msg in ipairs(important_messages) do
-      if message:find(important_msg, 1, true) then -- Use exact matching
-        is_important = true
-        break
-      end
-    end
-    
-    if not is_important then
-      -- Log to file instead of notifying
-      local log_file = io.open(vim.fn.stdpath('cache') .. '/matlab_nvim.log', 'a')
-      if log_file then
-        log_file:write(os.date("%Y-%m-%d %H:%M:%S") .. " - " .. message .. "\n")
-        log_file:close()
-      end
-      return
-    end
-  end
-  
-  -- Default: show the notification
-  vim.notify(message, level)
-end
+-- Use centralized notification system
+M.notify = utils.notify
 
 -- Check if tmux exists and we're in a tmux session
 function M.exists()
@@ -129,8 +66,16 @@ function M.pane_exists()
     return false
   end
   
-  local result = M.execute('has-session -t ' .. vim.fn.shellescape(M.server_pane))
-  return vim.v.shell_error == 0
+  -- Use list-panes to check if this specific pane exists
+  local result = M.execute('list-panes -a -F "#{pane_id}"')
+  if result then
+    -- Extract just the pane ID portion (e.g., %41 from $0:@12.%41)
+    local pane_id = M.server_pane:match('%%(%d+)')
+    if pane_id then
+      return result:match('%%' .. pane_id) ~= nil
+    end
+  end
+  return false
 end
 
 -- Get the server pane
@@ -242,7 +187,7 @@ function M.find_matlab_executable()
       table.insert(matlab_paths, '/Applications/MATLAB_' .. version .. '.app/bin/matlab')
     end
   -- Linux paths
-  elseif vim.fn.has('unix') == 1 and not vim.fn.has('mac') == 1 then
+  elseif vim.fn.has('unix') == 1 and vim.fn.has('mac') ~= 1 then
     for _, version in ipairs(versions) do
       table.insert(matlab_paths, '/usr/local/MATLAB/' .. version .. '/bin/matlab')
       table.insert(matlab_paths, '/opt/MATLAB/' .. version .. '/bin/matlab')

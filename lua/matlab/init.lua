@@ -2,27 +2,14 @@
 -- lua/matlab/init.lua
 local M = {}
 local config = require('matlab.config')
+local utils = require('matlab.utils')
 local tmux = require('matlab.tmux')
 local commands = require('matlab.commands')
 local cells = require('matlab.cells')
 local workspace = require('matlab.workspace')
 
--- Improved notification function that respects settings
-local function notify(message, level, force)
-  level = level or vim.log.levels.INFO
-  
-  -- Only show if minimal_notifications is false or this is a critical error
-  if not config.get('minimal_notifications') or force or level == vim.log.levels.ERROR then
-    vim.notify(message, level)
-  end
-  
-  -- Always log to file for debugging
-  local log_file = io.open(vim.fn.stdpath('cache') .. '/matlab_nvim.log', 'a')
-  if log_file then
-    log_file:write(os.date("%Y-%m-%d %H:%M:%S") .. " - " .. message .. "\n")
-    log_file:close()
-  end
-end
+-- Use centralized notification system
+local notify = utils.notify
 
 -- Define the breakpoint sign with custom highlight groups
 local function define_signs()
@@ -65,15 +52,8 @@ function M.setup(opts)
   
   -- Show message on first load only if minimal notifications are disabled
   vim.schedule(function()
-    if not config.get('minimal_notifications') then
-      notify("matlab.nvim loaded successfully. Use :MatlabStartServer to start MATLAB.")
-    end
+    notify("matlab.nvim loaded successfully. Use :MatlabStartServer to start MATLAB.")
   end)
-  
-  -- Pass the notify function to the modules that need it
-  if tmux.set_notify_function then
-    tmux.set_notify_function(notify)
-  end
   
   -- Create user commands
   vim.api.nvim_create_user_command('MatlabRun', function(args)
@@ -220,27 +200,16 @@ function M.setup(opts)
       env_debug = table.concat(env_parts, ', ')
     end
     
-    local debug_settings = {
-      "MATLAB.nvim configuration:",
-      "- executable: " .. config.get('executable'),
-      "- panel_size: " .. config.get('panel_size'),
-      "- panel_size_type: " .. config.get('panel_size_type'),
-      "- tmux_pane_direction: " .. config.get('tmux_pane_direction'),
-      "- auto_start: " .. tostring(config.get('auto_start')),
-      "- default_mappings: " .. tostring(config.get('default_mappings')),
-      "- debug: " .. tostring(config.get('debug')),
-      "- minimal_notifications: " .. tostring(config.get('minimal_notifications')),
-      "- environment: " .. env_debug
-    }
-    
-    -- Log to file only, don't notify
-    local log_file = io.open(vim.fn.stdpath('cache') .. '/matlab_nvim.log', 'a')
-    if log_file then
-      for _, line in ipairs(debug_settings) do
-        log_file:write(os.date("%Y-%m-%d %H:%M:%S") .. " - " .. line .. "\n")
-      end
-      log_file:close()
-    end
+    utils.log("MATLAB.nvim configuration:", "INFO")
+    utils.log("- executable: " .. config.get('executable'), "INFO")
+    utils.log("- panel_size: " .. config.get('panel_size'), "INFO")
+    utils.log("- panel_size_type: " .. config.get('panel_size_type'), "INFO")
+    utils.log("- tmux_pane_direction: " .. config.get('tmux_pane_direction'), "INFO")
+    utils.log("- auto_start: " .. tostring(config.get('auto_start')), "INFO")
+    utils.log("- default_mappings: " .. tostring(config.get('default_mappings')), "INFO")
+    utils.log("- debug: " .. tostring(config.get('debug')), "INFO")
+    utils.log("- minimal_notifications: " .. tostring(config.get('minimal_notifications')), "INFO")
+    utils.log("- environment: " .. env_debug, "INFO")
   end
 end
 

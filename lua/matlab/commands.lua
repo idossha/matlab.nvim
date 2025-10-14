@@ -30,7 +30,22 @@ function M.run(command)
     if not M.is_matlab_script() then
       return
     end
-    vim.cmd('write')
+    
+    -- Check if buffer is modifiable and can be written
+    if not vim.bo.modifiable then
+      vim.notify('Buffer is not modifiable', vim.log.levels.ERROR)
+      return
+    end
+    
+    -- Only write if buffer is modified or if file doesn't exist
+    if vim.bo.modified or vim.fn.filereadable(vim.fn.expand('%')) ~= 1 then
+      local ok, err = pcall(vim.cmd, 'write')
+      if not ok then
+        vim.notify('Failed to save file: ' .. tostring(err), vim.log.levels.ERROR)
+        return
+      end
+    end
+    
     tmux.run(M.get_filename())
   end
 end
@@ -44,7 +59,15 @@ function M.single_breakpoint()
     return
   end
 
-  vim.cmd('write')
+  -- Save file before setting breakpoint
+  if vim.bo.modified then
+    local ok, err = pcall(vim.cmd, 'write')
+    if not ok then
+      vim.notify('Failed to save file: ' .. tostring(err), vim.log.levels.ERROR)
+      return
+    end
+  end
+  
   local f = M.get_filename()
   local line = vim.fn.line('.')
   local bufnr = vim.api.nvim_get_current_buf()
@@ -99,8 +122,21 @@ function M.open_in_gui()
     return
   end
   
-  vim.cmd('write')
+  -- Save file before opening in GUI
+  if vim.bo.modified then
+    local ok, err = pcall(vim.cmd, 'write')
+    if not ok then
+      vim.notify('Failed to save file: ' .. tostring(err), vim.log.levels.ERROR)
+      return
+    end
+  end
+  
   local filepath = vim.fn.expand('%:p')
+  if filepath == '' or vim.fn.filereadable(filepath) ~= 1 then
+    vim.notify('File does not exist or is not readable', vim.log.levels.ERROR)
+    return
+  end
+  
   local executable = require('matlab.config').get('executable')
   
   -- Build a system command to open the file directly in MATLAB

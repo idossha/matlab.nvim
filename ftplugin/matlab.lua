@@ -8,28 +8,18 @@ vim.b.did_ftplugin_matlab_nvim = true
 
 local config_status, config = pcall(require, 'matlab.config')
 if not config_status then
-  -- Handle the case where config module couldn't be loaded
   vim.notify("MATLAB: Failed to load matlab.config module. Check your installation.", vim.log.levels.ERROR)
   return
 end
 
--- Enhanced debug function that respects configuration settings
-local function debug_info(message, force)
-  -- Only print messages if debug is enabled or it's a forced message
-  if (config.get('debug') or force) and (not config.get('minimal_notifications') or force) then
-    vim.notify("MATLAB: " .. message, vim.log.levels.INFO)
-  end
-  
-  -- Always log to a file for debugging (regardless of settings)
-  local log_file = io.open(vim.fn.stdpath('cache') .. '/matlab_nvim.log', 'a')
-  if log_file then
-    log_file:write(os.date("%Y-%m-%d %H:%M:%S") .. " - " .. message .. "\n")
-    log_file:close()
-  end
+local utils_status, utils = pcall(require, 'matlab.utils')
+if not utils_status then
+  vim.notify("MATLAB: Failed to load matlab.utils module. Check your installation.", vim.log.levels.ERROR)
+  return
 end
 
--- Important startup message but doesn't need to be shown to user
-debug_info("MATLAB ftplugin loading for buffer: " .. vim.api.nvim_buf_get_name(0))
+-- Use centralized logging
+utils.log("MATLAB ftplugin loading for buffer: " .. vim.api.nvim_buf_get_name(0), "DEBUG")
 
 -- Get mappings config with better error handling
 local function get_safe_mappings()
@@ -42,9 +32,9 @@ local function get_safe_mappings()
   
   if status and type(result) == 'table' then
     user_mappings = result
-    debug_info("Successfully loaded user mappings")
+    utils.log("Successfully loaded user mappings", "DEBUG")
   else
-    debug_info("Failed to load user mappings, using defaults")
+    utils.log("Failed to load user mappings, using defaults", "DEBUG")
   end
   
   -- Default mappings as fallback
@@ -87,13 +77,13 @@ if status then
   should_setup_mappings = result
 end
 
-debug_info("Should set up mappings: " .. tostring(should_setup_mappings))
+utils.log("Should set up mappings: " .. tostring(should_setup_mappings), "DEBUG")
 
 if should_setup_mappings then
   local mappings = get_safe_mappings()
   local prefix = mappings.prefix or '<Leader>m'
   
-  debug_info("Setting up MATLAB mappings with prefix: " .. prefix)
+  utils.log("Setting up MATLAB mappings with prefix: " .. prefix, "DEBUG")
   
   -- Helper function to create a mapping with proper error handling
   local function safe_map(lhs, rhs, desc)
@@ -102,9 +92,9 @@ if should_setup_mappings then
     end)
     
     if status then
-      debug_info("Set mapping: " .. lhs .. " -> " .. rhs)
+      utils.log("Set mapping: " .. lhs .. " -> " .. rhs, "DEBUG")
     else
-      debug_info("Failed to set mapping: " .. lhs .. " - " .. tostring(error), true) -- Force important errors
+      utils.notify("Failed to set mapping: " .. lhs .. " - " .. tostring(error), vim.log.levels.ERROR, true)
     end
   end
   
@@ -171,8 +161,8 @@ if should_setup_mappings then
         keymap_count = keymap_count + 1
       end
     end
-    debug_info("Verified " .. keymap_count .. " MATLAB mappings were set")
+    utils.log("Verified " .. keymap_count .. " MATLAB mappings were set", "DEBUG")
   end, 100)
 end
 
-debug_info("MATLAB ftplugin setup complete")
+utils.log("MATLAB ftplugin setup complete", "DEBUG")

@@ -39,6 +39,10 @@ function M.execute_current_cell()
     return
   end
   
+  if not tmux.exists() then
+    return
+  end
+  
   local start_line, end_line = M.find_current_cell()
   
   -- Get cell content
@@ -61,14 +65,25 @@ function M.execute_current_cell()
   -- Join lines and escape for MATLAB execution
   local code = table.concat(code_lines, '\n')
   
-  -- Execute the code
-  vim.cmd('write')
+  -- Save file before executing
+  if vim.bo.modified then
+    local ok, err = pcall(vim.cmd, 'write')
+    if not ok then
+      vim.notify('Failed to save file: ' .. tostring(err), vim.log.levels.ERROR)
+      return
+    end
+  end
+  
   tmux.run(code)
 end
 
 -- Execute from the start to current cell
 function M.execute_to_cell()
   if not commands.is_matlab_script() then
+    return
+  end
+  
+  if not tmux.exists() then
     return
   end
   
@@ -94,8 +109,15 @@ function M.execute_to_cell()
   -- Join lines and escape for MATLAB execution
   local code = table.concat(code_lines, '\n')
   
-  -- Execute the code
-  vim.cmd('write')
+  -- Save file before executing
+  if vim.bo.modified then
+    local ok, err = pcall(vim.cmd, 'write')
+    if not ok then
+      vim.notify('Failed to save file: ' .. tostring(err), vim.log.levels.ERROR)
+      return
+    end
+  end
+  
   tmux.run(code)
 end
 
