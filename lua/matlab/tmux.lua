@@ -261,6 +261,21 @@ end
 function M.build_matlab_command(executable, startup_cmd, env_vars)
   local command_parts = {}
   
+  -- For WSL/Linux: Unset DISPLAY to force CLI mode unless explicitly set by user
+  -- This prevents MATLAB from trying to open GUI even with -nodesktop flag
+  local is_wsl = vim.fn.has('wsl') == 1
+  local is_linux = vim.fn.has('unix') == 1 and vim.fn.has('mac') ~= 1
+  
+  if (is_wsl or is_linux) then
+    -- Only unset DISPLAY if user hasn't explicitly set it in environment config
+    if not (env_vars and env_vars.DISPLAY) then
+      table.insert(command_parts, 'unset DISPLAY')
+      if config.get('debug') then
+        M.notify('Unsetting DISPLAY to force CLI mode', vim.log.levels.DEBUG)
+      end
+    end
+  end
+  
   -- Add environment variables if provided
   if env_vars and next(env_vars) then
     for var_name, var_value in pairs(env_vars) do

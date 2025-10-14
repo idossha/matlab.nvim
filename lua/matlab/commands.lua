@@ -145,11 +145,14 @@ function M.open_in_gui()
     cmd = executable .. ' -r "edit ' .. filepath .. '"'
   elseif vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
     cmd = executable .. ' /r "edit ' .. filepath .. '"'
-  else -- Linux
+  else -- Linux/WSL
+    -- Note: This opens in GUI mode (doesn't use -nodesktop flag)
+    -- DISPLAY will be inherited from the parent environment, not from the tmux pane
     cmd = executable .. ' -r "edit ' .. filepath .. '"'
   end
   
   -- Execute the command in the background
+  -- This spawns a new MATLAB process separate from the tmux CLI instance
   vim.fn.jobstart(cmd)
 end
 

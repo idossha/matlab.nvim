@@ -214,6 +214,18 @@ require('matlab').setup({
 })
 ```
 
+**For WSL (Windows Subsystem for Linux):**
+```lua
+require('matlab').setup({
+  executable = '/usr/local/MATLAB/R2024a/bin/matlab',  -- Adjust according to your installation
+  -- Note: DISPLAY is automatically unset to prevent GUI from opening
+  -- If you need X11 forwarding, explicitly set DISPLAY in environment:
+  -- environment = {
+  --   DISPLAY = ':0',
+  -- },
+})
+```
+
 **For Windows:**
 ```lua
 require('matlab').setup({
@@ -318,6 +330,48 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `<Leader>mg` | `:MatlabOpenInGUI`        | Open current script in MATLAB GUI     |
 
 ## Troubleshooting
+
+### MATLAB Opens in GUI Mode Instead of CLI (WSL/Linux)
+
+**Problem**: MATLAB opens a GUI window instead of running in the tmux pane (common on WSL and Linux with X11).
+
+**Solution**: The plugin now automatically unsets `DISPLAY` on Linux/WSL to force CLI mode. If you still have issues:
+
+1. Make sure you're using the latest version of the plugin
+2. Enable debug mode to see what's happening:
+   ```lua
+   require('matlab').setup({
+     debug = true,
+   })
+   ```
+3. Check the log file: `~/.cache/nvim/matlab_nvim.log`
+4. Try running MATLAB manually to verify: `/path/to/matlab -nodesktop -nosplash`
+
+**If you need GUI/X11 forwarding**, you can explicitly set DISPLAY:
+```lua
+require('matlab').setup({
+  environment = {
+    DISPLAY = ':0',  -- or your X server address
+  },
+})
+```
+
+**Note**: The DISPLAY unset only affects the MATLAB instance running in the tmux pane. The `:MatlabOpenInGUI` command spawns a separate MATLAB process that will still have access to your display and open normally.
+
+### "MATLAB pane could not be found" Error
+
+**Problem**: Plugin shows this error when trying to run MATLAB commands.
+
+**Causes**:
+1. MATLAB failed to start in the tmux pane
+2. The pane was created but MATLAB didn't launch properly
+3. You're not inside a tmux session
+
+**Solutions**:
+- Make sure you're running Neovim inside tmux: `tmux` then `nvim`
+- Check the MATLAB executable path is correct
+- Enable debug mode and check the log file
+- Try `:MatlabStartServer` manually and watch for errors
 
 ### Environment Variable Issues
 
