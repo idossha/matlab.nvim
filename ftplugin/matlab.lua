@@ -64,6 +64,7 @@ local function get_safe_mappings()
     debug_show_variables = 'dv',
     debug_show_stack = 'dk',
     debug_show_breakpoints = 'dp',
+    debug_show_location = 'dl',
     debug_eval = 'dx',
   }
   
@@ -145,6 +146,7 @@ if should_setup_mappings then
   safe_map(actual_prefix .. mappings.debug_show_variables, '<Cmd>MatlabDebugShowVariables<CR>', 'Show MATLAB variables (whos)')
   safe_map(actual_prefix .. mappings.debug_show_stack, '<Cmd>MatlabDebugShowStack<CR>', 'Show MATLAB call stack (dbstack)')
   safe_map(actual_prefix .. mappings.debug_show_breakpoints, '<Cmd>MatlabDebugShowBreakpoints<CR>', 'Show MATLAB breakpoints (dbstatus)')
+  safe_map(actual_prefix .. mappings.debug_show_location, '<Cmd>MatlabDebugShowLocation<CR>', 'Show current debug location (dbstack)')
   safe_map(actual_prefix .. mappings.debug_eval, '<Cmd>MatlabDebugEval<CR>', 'Evaluate expression in MATLAB')
 
   -- Always add a fallback mapping that doesn't depend on leader

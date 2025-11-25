@@ -151,6 +151,10 @@ function M.setup(opts)
     debug_module.eval_expression()
   end, {})
 
+  vim.api.nvim_create_user_command('MatlabDebugShowLocation', function()
+    debug_module.show_location()
+  end, {})
+
   -- Config inspection command
   vim.api.nvim_create_user_command('MatlabShowConfig', function()
     local env_vars = config.get('environment')

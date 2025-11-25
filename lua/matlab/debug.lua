@@ -39,6 +39,22 @@ local function is_matlab_file()
   return true
 end
 
+-- Helper: get current debug location and move cursor
+local function move_to_debug_location()
+  if not validate_context(true) then
+    return
+  end
+
+  -- Use dbstack to show current location in MATLAB pane
+  tmux.run('dbstack', false, false)
+
+  -- Note: Automatic cursor movement would require capturing and parsing tmux output
+  -- For now, we show the location in MATLAB pane
+  -- Future enhancement: parse dbstack output and move cursor automatically
+
+  utils.log('Debug location shown in MATLAB pane', 'DEBUG')
+end
+
 -- Helper: update breakpoint sign
 local function update_sign(bufnr, line, action)
   if not vim.api.nvim_buf_is_valid(bufnr) then
@@ -144,6 +160,9 @@ function M.continue_debug()
 
   tmux.run('dbcont', false, false)
   utils.notify('Continuing...', vim.log.levels.INFO)
+
+  -- Schedule cursor movement to breakpoint location after a short delay
+  vim.defer_fn(move_to_debug_location, 500)
 end
 
 -- Step over (dbstep)
@@ -153,6 +172,9 @@ function M.step_over()
   end
 
   tmux.run('dbstep', false, false)
+
+  -- Schedule cursor movement after stepping
+  vim.defer_fn(move_to_debug_location, 300)
 end
 
 -- Step into (dbstep in)
@@ -162,6 +184,9 @@ function M.step_into()
   end
 
   tmux.run('dbstep in', false, false)
+
+  -- Schedule cursor movement after stepping
+  vim.defer_fn(move_to_debug_location, 300)
 end
 
 -- Step out (dbstep out)
@@ -171,6 +196,9 @@ function M.step_out()
   end
 
   tmux.run('dbstep out', false, false)
+
+  -- Schedule cursor movement after stepping
+  vim.defer_fn(move_to_debug_location, 300)
 end
 
 -- Toggle breakpoint
@@ -274,6 +302,11 @@ function M.show_breakpoints()
 
   tmux.run('dbstatus', false, false)
   utils.notify('Check MATLAB pane for breakpoints', vim.log.levels.INFO)
+end
+
+-- Show current debug location (dbstack)
+function M.show_location()
+  move_to_debug_location()
 end
 
 -- Evaluate expression
