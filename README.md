@@ -22,18 +22,18 @@ The plugin is far from complete, but based on some internet search, it seems to 
 - Save and load MATLAB workspace files
 - Enhanced syntax highlighting with headers
 - Space leader key compatibility
-- **Full debugging support** with [nvim-dap-ui](https://github.com/rcarriga/nvim-dap-ui) integration
+- **Full debugging support** using MATLAB's native debugger
   - Step-through execution (over, into, out)
   - Interactive breakpoints with visual indicators
-  - Variable inspection and REPL
+  - Variable inspection in MATLAB pane
   - Call stack visualization
+  - No external dependencies required
 
 ## Requirements
 
 - Neovim 0.7.0 or later
 - tmux (must be installed and you must run Neovim inside a tmux session)
 - MATLAB
-- [nvim-dap-ui](https://github.com/rcarriga/nvim-dap-ui) (for debugging features)
 
 ### Tmux Setup
 
@@ -80,13 +80,6 @@ use {
 {
   'idossha/matlab.nvim',
   ft = 'matlab',  -- Lazy-load on MATLAB files
-  dependencies = {
-    'rcarriga/nvim-dap-ui',
-    dependencies = {
-      'mfussenegger/nvim-dap',
-      'nvim-neotest/nvim-nio'
-    }
-  },
   config = function()
     require('matlab').setup()
   end
@@ -408,68 +401,46 @@ matlab.nvim now includes full debugging support using MATLAB's built-in debuggin
    - `<Leader>mdo` - Step over
    - `<Leader>mdi` - Step into functions
    - `<Leader>mdt` - Step out of functions
-6. Open the debug UI with `<Leader>mdu` to see variables, call stack, and breakpoints
-7. Use the REPL window to execute MATLAB commands during debugging
-8. Stop debugging with `<Leader>mde` or `:MatlabDebugStop`
+6. View debug information in the MATLAB pane:
+   - `<Leader>mdv` - Show variables (whos)
+   - `<Leader>mdk` - Show call stack (dbstack)
+   - `<Leader>mdp` - Show breakpoints (dbstatus)
+   - `<Leader>mdx` - Evaluate expression
+7. Stop debugging with `<Leader>mde` or `:MatlabDebugStop`
 
 ### Debugging Commands
 
-#### Core Debugging Commands
-
-| Command | Description |
-|---------|-------------|
-| `:MatlabDebugStart` | Start a debugging session for the current file |
-| `:MatlabDebugStop` | Stop the current debugging session |
-| `:MatlabDebugContinue` | Continue execution until next breakpoint |
-| `:MatlabDebugStepOver` | Execute current line and stop at next line |
-| `:MatlabDebugStepInto` | Step into function calls |
-| `:MatlabDebugStepOut` | Step out of current function |
-| `:MatlabDebugToggleBreakpoint` | Toggle breakpoint at current line |
-| `:MatlabDebugClearBreakpoints` | Clear all breakpoints |
-
-#### Debug UI Commands
-
-| Command | Description |
-|---------|-------------|
-| `:MatlabDebugUI` | Show all debugging windows (variables, call stack, breakpoints, REPL) |
-| `:MatlabDebugShowVariables` | Show variables window |
-| `:MatlabDebugShowCallstack` | Show call stack window |
-| `:MatlabDebugShowBreakpoints` | Show breakpoints window |
-| `:MatlabDebugShowRepl` | Show MATLAB REPL/console window |
-| `:MatlabDebugToggleVariables` | Toggle variables window |
-| `:MatlabDebugToggleCallstack` | Toggle call stack window |
-| `:MatlabDebugToggleBreakpoints` | Toggle breakpoints window |
-| `:MatlabDebugToggleRepl` | Toggle REPL window |
-| `:MatlabDebugCloseUI` | Close all debug UI windows |
+| Command | Description | Default Mapping |
+|---------|-------------|-----------------|
+| `:MatlabDebugStart` | Start a debugging session for the current file | `<Leader>mds` |
+| `:MatlabDebugStop` | Stop the current debugging session | `<Leader>mde` |
+| `:MatlabDebugContinue` | Continue execution until next breakpoint | `<Leader>mdc` |
+| `:MatlabDebugStepOver` | Execute current line and stop at next line | `<Leader>mdo` |
+| `:MatlabDebugStepInto` | Step into function calls | `<Leader>mdi` |
+| `:MatlabDebugStepOut` | Step out of current function | `<Leader>mdt` |
+| `:MatlabDebugToggleBreakpoint` | Toggle breakpoint at current line | `<Leader>mdb` |
+| `:MatlabDebugClearBreakpoints` | Clear all breakpoints | `<Leader>mdd` |
+| `:MatlabDebugShowVariables` | Show workspace variables in MATLAB pane | `<Leader>mdv` |
+| `:MatlabDebugShowStack` | Show call stack in MATLAB pane | `<Leader>mdk` |
+| `:MatlabDebugShowBreakpoints` | Show all breakpoints in MATLAB pane | `<Leader>mdp` |
+| `:MatlabDebugEval` | Evaluate expression in debug context | `<Leader>mdx` |
 
 ### Visual Indicators
 
-- **Breakpoints**: Red square (■) in the sign column
-- **Current execution line**: Green arrow (▶) when debugging is active
+- **Breakpoints**: Red circle (●) in the sign column with highlighted line
+- Debug output appears in the MATLAB tmux pane
 
-### Debug UI Windows
+### How It Works
 
-The debugging UI provides several floating windows (similar to nvim-dap-ui):
-
-- **Variables Window** (`<Leader>mdv`): Shows MATLAB workspace variables
-- **Call Stack Window** (`<Leader>mdk`): Shows the current execution stack
-- **Breakpoints Window** (`<Leader>mdp`): Lists all active breakpoints
-- **REPL Window** (`<Leader>mdr`): Interactive MATLAB console for debugging
-
-Each window can be toggled individually or all can be opened with `<Leader>mdu`. Press `q` or `<Esc>` to close individual windows, or use `<Leader>mdx` to close all debug UI windows.
+matlab.nvim uses MATLAB's native debugging commands (`dbstop`, `dbcont`, `dbstep`, etc.) under the hood. All debug output appears in your MATLAB tmux pane, providing a simple, dependency-free debugging experience.
 
 ### Tips
 
-- Always save your file (`:w`) before starting debugging
-- Use `<Leader>mdu` to inspect variables and call stack during debugging
-- MATLAB's debugging commands work in the tmux pane - you can also type them directly
+- Files are automatically saved when starting a debug session
+- View variables, call stack, and breakpoints in the MATLAB pane using the show commands
+- You can also type MATLAB debug commands directly in the tmux pane (`dbstep`, `whos`, etc.)
 - Breakpoints persist across debugging sessions within the same Neovim session
-
-### Requirements
-
-- MATLAB must be running in the tmux pane
-- Files must be saved before debugging
-- Works with MATLAB's command-line debugger (not GUI debugger)
+- Breakpoints are synchronized with MATLAB's native debugger
 
 ## Troubleshooting
 

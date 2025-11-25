@@ -64,17 +64,10 @@ local function get_safe_mappings()
     debug_step_out = 'dt',
     debug_toggle_breakpoint = 'db',
     debug_clear_breakpoints = 'dd',
-    debug_ui = 'du',
-    -- Debug UI mappings
     debug_show_variables = 'dv',
-    debug_show_callstack = 'dk',
+    debug_show_stack = 'dk',
     debug_show_breakpoints = 'dp',
-    debug_show_repl = 'dr',
-    debug_toggle_variables = 'tv',
-    debug_toggle_callstack = 'tk',
-    debug_toggle_breakpoints = 'tp',
-    debug_toggle_repl = 'tr',
-    debug_close_ui = 'dx',
+    debug_eval = 'dx',
   }
   
   -- Merge with defaults
@@ -157,18 +150,10 @@ if should_setup_mappings then
   safe_map(actual_prefix .. mappings.debug_step_out, '<Cmd>MatlabDebugStepOut<CR>', 'Step out in MATLAB debugging')
   safe_map(actual_prefix .. mappings.debug_toggle_breakpoint, '<Cmd>MatlabDebugToggleBreakpoint<CR>', 'Toggle breakpoint in MATLAB debugging')
   safe_map(actual_prefix .. mappings.debug_clear_breakpoints, '<Cmd>MatlabDebugClearBreakpoints<CR>', 'Clear all breakpoints in MATLAB debugging')
-  safe_map(actual_prefix .. mappings.debug_ui, '<Cmd>MatlabDebugUI<CR>', 'Show MATLAB debug UI')
-
-  -- Debug UI mappings
-  safe_map(actual_prefix .. mappings.debug_show_variables, '<Cmd>MatlabDebugShowVariables<CR>', 'Show MATLAB variables window')
-  safe_map(actual_prefix .. mappings.debug_show_callstack, '<Cmd>MatlabDebugShowCallstack<CR>', 'Show MATLAB call stack window')
-  safe_map(actual_prefix .. mappings.debug_show_breakpoints, '<Cmd>MatlabDebugShowBreakpoints<CR>', 'Show MATLAB breakpoints window')
-  safe_map(actual_prefix .. mappings.debug_show_repl, '<Cmd>MatlabDebugShowRepl<CR>', 'Show MATLAB REPL window')
-  safe_map(actual_prefix .. mappings.debug_toggle_variables, '<Cmd>MatlabDebugToggleVariables<CR>', 'Toggle MATLAB variables window')
-  safe_map(actual_prefix .. mappings.debug_toggle_callstack, '<Cmd>MatlabDebugToggleCallstack<CR>', 'Toggle MATLAB call stack window')
-  safe_map(actual_prefix .. mappings.debug_toggle_breakpoints, '<Cmd>MatlabDebugToggleBreakpoints<CR>', 'Toggle MATLAB breakpoints window')
-  safe_map(actual_prefix .. mappings.debug_toggle_repl, '<Cmd>MatlabDebugToggleRepl<CR>', 'Toggle MATLAB REPL window')
-  safe_map(actual_prefix .. mappings.debug_close_ui, '<Cmd>MatlabDebugCloseUI<CR>', 'Close all MATLAB debug UI windows')
+  safe_map(actual_prefix .. mappings.debug_show_variables, '<Cmd>MatlabDebugShowVariables<CR>', 'Show MATLAB variables (whos)')
+  safe_map(actual_prefix .. mappings.debug_show_stack, '<Cmd>MatlabDebugShowStack<CR>', 'Show MATLAB call stack (dbstack)')
+  safe_map(actual_prefix .. mappings.debug_show_breakpoints, '<Cmd>MatlabDebugShowBreakpoints<CR>', 'Show MATLAB breakpoints (dbstatus)')
+  safe_map(actual_prefix .. mappings.debug_eval, '<Cmd>MatlabDebugEval<CR>', 'Evaluate expression in MATLAB')
 
   -- Always add a fallback mapping that doesn't depend on leader
   safe_map(',mr', '<Cmd>MatlabRun<CR>', 'Run MATLAB script (fallback)')

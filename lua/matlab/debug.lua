@@ -1,114 +1,122 @@
--- MATLAB Debugging Module
--- Integrates MATLAB debugging with nvim-dap-ui
+-- Simple MATLAB Debugging Module
+-- Uses only MATLAB's native debugging commands (dbstop, dbcont, dbstep, etc.)
+-- No external dependencies required
+
 local M = {}
 local tmux = require('matlab.tmux')
 local utils = require('matlab.utils')
 
--- Debug session state
+-- Debug state
 M.debug_active = false
 M.current_file = nil
-M.current_line = nil
-M.breakpoints = {}
+M.breakpoints = {}  -- { [bufnr] = { [line] = true } }
 
--- UI state
-M.debug_signs_defined = false
-M.debug_highlight_ns = nil
+-- Sign configuration
 M.sign_group = 'matlab_debug'
+M.signs_defined = false
 
--- Lazy-load dap modules
-local dap_elements
-local dap_config
-
-local function get_dap_elements()
-  if not dap_elements then
-    dap_elements = require('matlab.dap_elements')
-  end
-  return dap_elements
-end
-
-local function get_dap_config()
-  if not dap_config then
-    dap_config = require('matlab.dap_config')
-  end
-  return dap_config
-end
-
--- Helper: validate debug prerequisites
-local function validate_debug_context(require_active)
+-- Helper: validate prerequisites
+local function validate_context(require_active)
   if not tmux.exists() then
-    utils.notify('MATLAB pane not available.', vim.log.levels.ERROR)
+    utils.notify('MATLAB pane not available. Start with :MatlabStartServer', vim.log.levels.ERROR)
     return false
   end
 
   if require_active and not M.debug_active then
-    utils.notify('No active debugging session.', vim.log.levels.ERROR)
+    utils.notify('No active debug session. Start with :MatlabDebugStart', vim.log.levels.ERROR)
     return false
   end
 
   return true
 end
 
--- Helper: validate MATLAB file context
-local function validate_matlab_file()
+-- Helper: validate MATLAB file
+local function is_matlab_file()
   if vim.bo.filetype ~= 'matlab' then
-    utils.notify('This operation requires a MATLAB file.', vim.log.levels.ERROR)
+    utils.notify('Must be in a MATLAB file', vim.log.levels.ERROR)
     return false
   end
   return true
 end
 
--- Check if debugging is available
-function M.is_available()
-  return tmux.exists()
+-- Helper: update breakpoint sign
+local function update_sign(bufnr, line, action)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+
+  if action == 'set' then
+    vim.fn.sign_place(0, M.sign_group, 'matlab_breakpoint', bufnr, {
+      lnum = line,
+      priority = 10
+    })
+  elseif action == 'clear' then
+    vim.fn.sign_unplace(M.sign_group, { buffer = bufnr, lnum = line })
+  end
+end
+
+-- Setup signs
+function M.setup_signs()
+  if M.signs_defined then
+    return
+  end
+
+  vim.fn.sign_define('matlab_breakpoint', {
+    text = '●',
+    texthl = 'DiagnosticError',
+    linehl = '',
+    numhl = ''
+  })
+
+  vim.fn.sign_define('matlab_debug_line', {
+    text = '▶',
+    texthl = 'DiagnosticInfo',
+    linehl = 'CursorLine',
+    numhl = 'DiagnosticInfo'
+  })
+
+  M.signs_defined = true
 end
 
 -- Start debugging session
 function M.start_debug()
-  if not validate_debug_context(false) or not validate_matlab_file() then
+  if not validate_context(false) or not is_matlab_file() then
     return
   end
 
   -- Save file if modified
   if vim.bo.modified then
-    local ok, err = pcall(vim.cmd.write)
+    local ok = pcall(vim.cmd.write)
     if not ok then
-      utils.notify('Failed to save file: ' .. tostring(err), vim.log.levels.ERROR)
+      utils.notify('Failed to save file', vim.log.levels.ERROR)
       return
     end
   end
 
-  -- Get current file info
+  -- Get filename
   local filename = vim.fn.expand('%:t:r')
   if filename == '' then
-    utils.notify('Cannot determine filename.', vim.log.levels.ERROR)
+    utils.notify('Cannot determine filename', vim.log.levels.ERROR)
     return
   end
 
   M.current_file = filename
 
-  -- Clear any existing debug state
+  -- Clear existing debug state in MATLAB
   tmux.run('dbclear all', false, false)
   tmux.run('dbquit', false, false)
 
-  -- Set breakpoints that were previously set
+  -- Restore breakpoints
   M.restore_breakpoints()
 
-  -- Start debugging the current file
-  local cmd = string.format('dbstop in %s at 1', filename)
-  tmux.run(cmd, false, false)
+  -- Run the file (will stop at first breakpoint or line 1)
+  tmux.run(filename, false, false)
 
   M.debug_active = true
-  utils.notify('Debug session started: ' .. filename, vim.log.levels.INFO)
-
-  -- Trigger UI update
-  vim.schedule(function()
-    get_dap_elements().variables.render()
-    get_dap_elements().callstack.render()
-    get_dap_elements().breakpoints.render()
-  end)
+  utils.notify('Debug started: ' .. filename, vim.log.levels.INFO)
 end
 
--- Stop debugging session
+-- Stop debugging
 function M.stop_debug()
   if not M.debug_active then
     return
@@ -120,66 +128,49 @@ function M.stop_debug()
 
   M.debug_active = false
   M.current_file = nil
-  M.current_line = nil
-  M.clear_debug_signs()
-  utils.notify('Debug session stopped.', vim.log.levels.INFO)
+  utils.notify('Debug stopped', vim.log.levels.INFO)
 end
 
--- Helper: execute debug command
-local function exec_debug_cmd(cmd, msg)
-  if not validate_debug_context(true) then
-    return false
-  end
-
-  tmux.run(cmd, false, false)
-  if msg then
-    utils.notify(msg, vim.log.levels.INFO)
-  end
-
-  -- Update UI after command
-  vim.schedule(function()
-    get_dap_elements().callstack.render()
-  end)
-
-  return true
-end
-
--- Continue execution
+-- Continue execution (dbcont)
 function M.continue_debug()
-  exec_debug_cmd('dbcont', 'Continuing execution...')
-end
-
--- Step over (next line)
-function M.step_over()
-  exec_debug_cmd('dbstep', 'Stepping over...')
-end
-
--- Step into function
-function M.step_into()
-  exec_debug_cmd('dbstep in', 'Stepping into...')
-end
-
--- Step out of function
-function M.step_out()
-  exec_debug_cmd('dbstep out', 'Stepping out...')
-end
-
--- Helper: update breakpoint sign
-local function update_breakpoint_sign(bufnr, line, action)
-  if not vim.api.nvim_buf_is_valid(bufnr) then
+  if not validate_context(true) then
     return
   end
 
-  if action == 'set' then
-    vim.fn.sign_place(0, M.sign_group, 'matlab_breakpoint', bufnr, { lnum = line, priority = 10 })
-  elseif action == 'clear' then
-    vim.fn.sign_unplace(M.sign_group, { buffer = bufnr, id = line })
-  end
+  tmux.run('dbcont', false, false)
+  utils.notify('Continuing...', vim.log.levels.INFO)
 end
 
--- Toggle breakpoint at current line
+-- Step over (dbstep)
+function M.step_over()
+  if not validate_context(true) then
+    return
+  end
+
+  tmux.run('dbstep', false, false)
+end
+
+-- Step into (dbstep in)
+function M.step_into()
+  if not validate_context(true) then
+    return
+  end
+
+  tmux.run('dbstep in', false, false)
+end
+
+-- Step out (dbstep out)
+function M.step_out()
+  if not validate_context(true) then
+    return
+  end
+
+  tmux.run('dbstep out', false, false)
+end
+
+-- Toggle breakpoint
 function M.toggle_breakpoint()
-  if not validate_debug_context(false) or not validate_matlab_file() then
+  if not validate_context(false) or not is_matlab_file() then
     return
   end
 
@@ -188,44 +179,37 @@ function M.toggle_breakpoint()
   local line = vim.fn.line('.')
 
   if filename == '' then
-    utils.notify('Cannot determine filename.', vim.log.levels.ERROR)
+    utils.notify('Cannot determine filename', vim.log.levels.ERROR)
     return
   end
 
-  -- Initialize breakpoints table for this buffer
+  -- Initialize breakpoints for this buffer
   M.breakpoints[bufnr] = M.breakpoints[bufnr] or {}
 
   if M.breakpoints[bufnr][line] then
-    -- Remove breakpoint
-    local cmd = string.format('dbclear %s at %d', filename, line)
-    tmux.run(cmd, false, false)
+    -- Clear breakpoint
+    tmux.run(string.format('dbclear %s at %d', filename, line), false, false)
     M.breakpoints[bufnr][line] = nil
-    update_breakpoint_sign(bufnr, line, 'clear')
+    update_sign(bufnr, line, 'clear')
     utils.notify('Breakpoint cleared: line ' .. line, vim.log.levels.INFO)
   else
-    -- Add breakpoint
-    local cmd = string.format('dbstop in %s at %d', filename, line)
-    tmux.run(cmd, false, false)
+    -- Set breakpoint
+    tmux.run(string.format('dbstop in %s at %d', filename, line), false, false)
     M.breakpoints[bufnr][line] = true
-    update_breakpoint_sign(bufnr, line, 'set')
+    update_sign(bufnr, line, 'set')
     utils.notify('Breakpoint set: line ' .. line, vim.log.levels.INFO)
   end
-
-  -- Update breakpoints UI
-  vim.schedule(function()
-    get_dap_elements().breakpoints.render()
-  end)
 end
 
 -- Clear all breakpoints
 function M.clear_breakpoints()
-  if not validate_debug_context(false) then
+  if not validate_context(false) then
     return
   end
 
   tmux.run('dbclear all', false, false)
 
-  -- Clear all signs
+  -- Clear signs
   for bufnr, _ in pairs(M.breakpoints) do
     if vim.api.nvim_buf_is_valid(bufnr) then
       vim.fn.sign_unplace(M.sign_group, { buffer = bufnr })
@@ -233,59 +217,10 @@ function M.clear_breakpoints()
   end
 
   M.breakpoints = {}
-  utils.notify('All breakpoints cleared.', vim.log.levels.INFO)
-
-  -- Update breakpoints UI
-  vim.schedule(function()
-    get_dap_elements().breakpoints.render()
-  end)
+  utils.notify('All breakpoints cleared', vim.log.levels.INFO)
 end
 
--- UI delegation to dap-ui
-function M.show_debug_ui()
-  if not validate_debug_context(false) then
-    return
-  end
-  get_dap_config().open()
-end
-
-function M.show_variables()
-  get_dap_config().float_element('variables')
-end
-
-function M.show_callstack()
-  get_dap_config().float_element('callstack')
-end
-
-function M.show_breakpoints()
-  get_dap_config().float_element('breakpoints')
-end
-
-function M.show_repl()
-  get_dap_config().float_element('repl', { enter = true })
-end
-
-function M.toggle_variables()
-  get_dap_config().float_element('variables')
-end
-
-function M.toggle_callstack()
-  get_dap_config().float_element('callstack')
-end
-
-function M.toggle_breakpoints()
-  get_dap_config().float_element('breakpoints')
-end
-
-function M.toggle_repl()
-  get_dap_config().float_element('repl', { enter = true })
-end
-
-function M.close_ui()
-  get_dap_config().close()
-end
-
--- Restore breakpoints from internal storage
+-- Restore breakpoints after starting debug
 function M.restore_breakpoints()
   if not tmux.exists() then
     return
@@ -293,82 +228,86 @@ function M.restore_breakpoints()
 
   for bufnr, buf_breakpoints in pairs(M.breakpoints) do
     if vim.api.nvim_buf_is_valid(bufnr) then
-      local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':t:r')
+      local filepath = vim.api.nvim_buf_get_name(bufnr)
+      local filename = vim.fn.fnamemodify(filepath, ':t:r')
+
       if filename ~= '' then
         for line, _ in pairs(buf_breakpoints) do
-          local cmd = string.format('dbstop in %s at %d', filename, line)
-          tmux.run(cmd, false, false)
-          update_breakpoint_sign(bufnr, line, 'set')
+          tmux.run(string.format('dbstop in %s at %d', filename, line), false, false)
+          update_sign(bufnr, line, 'set')
         end
       end
     end
   end
 end
 
--- Get debug status string for statusline
-function M.get_status_string()
+-- Show workspace variables (whos)
+function M.show_variables()
+  if not validate_context(false) then
+    return
+  end
+
+  tmux.run('whos', false, false)
+  utils.notify('Check MATLAB pane for variables', vim.log.levels.INFO)
+end
+
+-- Show call stack (dbstack)
+function M.show_stack()
+  if not validate_context(false) then
+    return
+  end
+
+  tmux.run('dbstack', false, false)
+  utils.notify('Check MATLAB pane for call stack', vim.log.levels.INFO)
+end
+
+-- Show breakpoints (dbstatus)
+function M.show_breakpoints()
+  if not validate_context(false) then
+    return
+  end
+
+  tmux.run('dbstatus', false, false)
+  utils.notify('Check MATLAB pane for breakpoints', vim.log.levels.INFO)
+end
+
+-- Evaluate expression
+function M.eval_expression()
+  if not validate_context(false) then
+    return
+  end
+
+  local expr = vim.fn.input('Evaluate: ')
+  if expr ~= '' then
+    tmux.run(expr, false, false)
+  end
+end
+
+-- Get status string for statusline
+function M.get_status()
   if not M.debug_active then
     return ''
   end
 
-  local parts = { 'DEBUG' }
-  if M.current_file then
-    table.insert(parts, M.current_file)
-    if M.current_line then
-      table.insert(parts, ':' .. M.current_line)
-    end
-  end
-
-  return table.concat(parts, ' ')
+  return 'DEBUG: ' .. (M.current_file or '')
 end
 
--- Get current debug status
-function M.get_debug_status()
-  return M.debug_active and 'active' or 'inactive'
-end
-
--- Clear debug signs from all buffers
-function M.clear_debug_signs()
-  vim.fn.sign_unplace(M.sign_group)
-end
-
--- Setup debug UI elements (signs and highlights)
-function M.setup_debug_ui()
-  if M.debug_signs_defined then
-    return
-  end
-
-  -- Define debug signs with modern highlight groups
-  vim.fn.sign_define('matlab_debug_current', {
-    text = '▶',
-    texthl = 'DiagnosticSignInfo',
-    linehl = 'CursorLine',
-    numhl = 'DiagnosticSignInfo'
-  })
-
-  -- Create namespace for debug highlights
-  M.debug_highlight_ns = vim.api.nvim_create_namespace('matlab_debug')
-
-  M.debug_signs_defined = true
-end
-
--- Setup autocmds for cleanup
+-- Setup autocmds
 local function setup_autocmds()
   local group = vim.api.nvim_create_augroup('MatlabDebug', { clear = true })
 
-  -- Clean up breakpoints when buffer is deleted
+  -- Clean up on buffer delete
   vim.api.nvim_create_autocmd('BufDelete', {
     group = group,
     pattern = '*.m',
     callback = function(args)
-      local bufnr = args.buf
-      if M.breakpoints[bufnr] then
-        M.breakpoints[bufnr] = nil
+      if M.breakpoints[args.buf] then
+        M.breakpoints[args.buf] = nil
       end
     end,
   })
 
-  -- Stop debug session on VimLeavePre
+  -- Stop debug on exit
   vim.api.nvim_create_autocmd('VimLeavePre', {
     group = group,
     callback = function()
@@ -379,22 +318,10 @@ local function setup_autocmds()
   })
 end
 
--- Initialize debugging module
-function M.setup(opts)
-  opts = opts or {}
-
-  M.setup_debug_ui()
+-- Initialize module
+function M.setup()
+  M.setup_signs()
   setup_autocmds()
-
-  -- Register dap-ui elements
-  local elements = get_dap_elements()
-  if not elements.register_all() then
-    utils.notify('Failed to register MATLAB debug elements. Is nvim-dap-ui installed?', vim.log.levels.WARN)
-    return
-  end
-
-  -- Setup dap-ui configuration
-  get_dap_config().setup(opts.dapui_config or {})
 end
 
 return M

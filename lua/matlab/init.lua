@@ -51,8 +51,8 @@ function M.setup(opts)
   -- Define signs for breakpoints
   define_signs()
 
-  -- Initialize debugging module (requires nvim-dap-ui)
-  debug_module.setup({ dapui_config = opts.dapui_config })
+  -- Initialize debugging module
+  debug_module.setup()
 
   -- Show load message if minimal notifications are disabled
   if not config.get('minimal_notifications') then
@@ -167,45 +167,20 @@ function M.setup(opts)
     debug_module.clear_breakpoints()
   end, {})
 
-  -- Debug UI commands
-  vim.api.nvim_create_user_command('MatlabDebugUI', function()
-    debug_module.show_debug_ui()
-  end, {})
-
   vim.api.nvim_create_user_command('MatlabDebugShowVariables', function()
     debug_module.show_variables()
   end, {})
 
-  vim.api.nvim_create_user_command('MatlabDebugShowCallstack', function()
-    debug_module.show_callstack()
+  vim.api.nvim_create_user_command('MatlabDebugShowStack', function()
+    debug_module.show_stack()
   end, {})
 
   vim.api.nvim_create_user_command('MatlabDebugShowBreakpoints', function()
     debug_module.show_breakpoints()
   end, {})
 
-  vim.api.nvim_create_user_command('MatlabDebugShowRepl', function()
-    debug_module.show_repl()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugToggleVariables', function()
-    debug_module.toggle_variables()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugToggleCallstack', function()
-    debug_module.toggle_callstack()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugToggleBreakpoints', function()
-    debug_module.toggle_breakpoints()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugToggleRepl', function()
-    debug_module.toggle_repl()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugCloseUI', function()
-    debug_module.close_ui()
+  vim.api.nvim_create_user_command('MatlabDebugEval', function()
+    debug_module.eval_expression()
   end, {})
 
   -- Config inspection command
