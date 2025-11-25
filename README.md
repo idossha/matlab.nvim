@@ -368,7 +368,6 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `<Leader>mdv`| `:MatlabDebugShowVariables` | Show variables window                |
 | `<Leader>mdk`| `:MatlabDebugShowCallstack` | Show call stack window               |
 | `<Leader>mdp`| `:MatlabDebugShowBreakpoints`| Show breakpoints window              |
-| `<Leader>mdl`| `:MatlabDebugShowLocation`  | Show current debug location          |
 | `<Leader>mdr`| `:MatlabDebugShowRepl`      | Show REPL window                     |
 | `<Leader>mtv`| `:MatlabDebugToggleVariables`| Toggle variables window              |
 | `<Leader>mtk`| `:MatlabDebugToggleCallstack`| Toggle call stack window             |
@@ -413,7 +412,6 @@ matlab.nvim now includes full debugging support using MATLAB's built-in debuggin
 | `:MatlabDebugShowVariables` | Show workspace variables in MATLAB pane | `<Leader>mdv` |
 | `:MatlabDebugShowStack` | Show call stack in MATLAB pane | `<Leader>mdk` |
 | `:MatlabDebugShowBreakpoints` | Show all breakpoints in MATLAB pane | `<Leader>mdp` |
-| `:MatlabDebugShowLocation` | Show current debug location (dbstack) | `<Leader>mdl` |
 | `:MatlabDebugEval` | Evaluate expression in debug context | `<Leader>mdx` |
 
 ### Visual Indicators
@@ -429,7 +427,6 @@ matlab.nvim uses MATLAB's native debugging commands (`dbstop`, `dbcont`, `dbstep
 
 - Files are automatically saved when starting a debug session
 - View variables, call stack, and breakpoints in the MATLAB pane using the show commands
-- Use `<Leader>mdl` or `:MatlabDebugShowLocation` to see your current location in the debug stack
 - You can also type MATLAB debug commands directly in the tmux pane (`dbstep`, `whos`, etc.)
 - Breakpoints persist across debugging sessions within the same Neovim session
 - Breakpoints are synchronized with MATLAB's native debugger

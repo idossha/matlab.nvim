@@ -45,57 +45,14 @@ local function move_to_debug_location()
     return
   end
 
-  -- Capture dbstack output to get current location
-  local output = tmux.run_and_capture('dbstack', true)
+  -- Use dbstack to show current location in MATLAB pane
+  tmux.run('dbstack', false, false)
 
-  if output then
-    -- Parse dbstack output to find current location
-    -- dbstack output typically looks like:
-    -- > In function_name (file.m) at line 42
-    -- We want to extract file.m and line 42
+  -- Note: Automatic cursor movement would require capturing and parsing tmux output
+  -- For now, we show the location in MATLAB pane
+  -- Future enhancement: parse dbstack output and move cursor automatically
 
-    for line in output:gmatch("[^\r\n]+") do
-      -- Look for lines containing "at line" (current location)
-      local file, line_num = line:match("In%s+[^%s]+%s*%(([^%)]+)%)%s*at%s+line%s+(%d+)")
-      if file and line_num then
-        line_num = tonumber(line_num)
-
-        -- Find or open the file
-        local bufnr = vim.fn.bufnr(file)
-        if bufnr == -1 then
-          -- File not open, try to find it
-          local full_path = vim.fn.findfile(file, vim.fn.getcwd() .. '/**')
-          if full_path ~= '' then
-            vim.cmd('edit ' .. vim.fn.fnameescape(full_path))
-            bufnr = vim.fn.bufnr(full_path)
-          else
-            utils.notify('Could not find file: ' .. file, vim.log.levels.WARN)
-            return
-          end
-        else
-          -- File already open, switch to it
-          vim.cmd('buffer ' .. bufnr)
-        end
-
-        -- Move cursor to the line
-        vim.api.nvim_win_set_cursor(0, {line_num, 0})
-
-        -- Center the line in the window
-        vim.cmd('normal! zz')
-
-        utils.log('Moved cursor to ' .. file .. ':' .. line_num, 'INFO')
-        return
-      end
-    end
-
-    -- If we couldn't parse the output, just show it in the pane
-    tmux.run('dbstack', false, false)
-    utils.notify('Could not parse debug location, check MATLAB pane', vim.log.levels.WARN)
-  else
-    -- Fallback: just show in pane
-    tmux.run('dbstack', false, false)
-    utils.notify('Check MATLAB pane for current location', vim.log.levels.INFO)
-  end
+  utils.log('Debug location shown in MATLAB pane', 'DEBUG')
 end
 
 -- Helper: update breakpoint sign
@@ -345,11 +302,6 @@ function M.show_breakpoints()
 
   tmux.run('dbstatus', false, false)
   utils.notify('Check MATLAB pane for breakpoints', vim.log.levels.INFO)
-end
-
--- Show current debug location (dbstack)
-function M.show_location()
-  move_to_debug_location()
 end
 
 -- Evaluate expression
