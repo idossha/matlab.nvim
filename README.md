@@ -86,8 +86,6 @@ use {
 }
 ```
 
-See **[DEBUGGING.md](DEBUGGING.md)** for complete debugging documentation.
-
 ## Configuration
 
 You can customize matlab.nvim by passing options to the setup function:
@@ -441,6 +439,88 @@ matlab.nvim uses MATLAB's native debugging commands (`dbstop`, `dbcont`, `dbstep
 - You can also type MATLAB debug commands directly in the tmux pane (`dbstep`, `whos`, etc.)
 - Breakpoints persist across debugging sessions within the same Neovim session
 - Breakpoints are synchronized with MATLAB's native debugger
+
+### Troubleshooting Debugging
+
+**Breakpoint not stopping**: Make sure the line contains executable code (not comments or blank lines)
+
+**Can't start debugging**: Ensure MATLAB server is running (`:MatlabStartServer`)
+
+**"Cannot find function" error**: The plugin automatically changes MATLAB's directory to the file's location when debugging starts. If you still get this error, verify:
+- The file has been saved (`:w`)
+- You're in a `.m` file
+- The filename matches the function name (for function files)
+
+**Lost track of breakpoints**: Use `:MatlabDebugShowBreakpoints` to see all active breakpoints in MATLAB
+
+**Debugging from tests/ directory**: The plugin will automatically `cd` to the tests directory when you start debugging `tests/test_debug.m`, so the file will be found correctly
+
+#### Customization
+
+##### Custom Key Mappings
+
+You can customize the debug key mappings in your setup:
+
+```lua
+require('matlab').setup({
+  mappings = {
+    debug_start = 'ds',
+    debug_stop = 'de',
+    debug_continue = 'dc',
+    debug_step_over = 'do',
+    debug_step_into = 'di',
+    debug_step_out = 'dt',
+    debug_toggle_breakpoint = 'db',
+    debug_clear_breakpoints = 'dd',
+    debug_show_variables = 'dv',
+    debug_show_stack = 'dk',
+    debug_show_breakpoints = 'dp',
+    debug_eval = 'dx',
+  }
+})
+```
+
+##### Custom Breakpoint Signs
+
+Breakpoint signs are configured in your `setup()` call:
+
+```lua
+require('matlab').setup({
+  breakpoint = {
+    sign_text = '●',           -- Character shown in sign column
+    sign_hl = 'MatlabBreakpoint',     -- Highlight group for sign text
+    line_hl = 'MatlabBreakpointLine', -- Highlight group for entire line
+    num_hl = 'MatlabBreakpoint'       -- Highlight group for line number
+  }
+})
+```
+
+Default highlights:
+- `MatlabBreakpoint`: Bold red text on dark red background
+- `MatlabBreakpointLine`: Dark red line background
+
+You can override these in your colorscheme or init.lua:
+
+```lua
+vim.api.nvim_set_hl(0, 'MatlabBreakpoint', { fg = '#ff0000', bg = '#5a0000', bold = true })
+vim.api.nvim_set_hl(0, 'MatlabBreakpointLine', { bg = '#300000' })
+```
+
+##### MATLAB Debug Commands Reference
+
+The debugging module uses these native MATLAB commands:
+
+- `dbstop in <file> at <line>` - Set breakpoint
+- `dbclear <file> at <line>` - Clear specific breakpoint
+- `dbclear all` - Clear all breakpoints
+- `dbcont` - Continue execution
+- `dbstep` - Step to next line
+- `dbstep in` - Step into function
+- `dbstep out` - Step out of function
+- `dbstack` - Show call stack
+- `dbstatus` - Show all breakpoints
+- `dbquit` - Exit debug mode
+- `whos` - Show workspace variables
 
 ## Troubleshooting
 
