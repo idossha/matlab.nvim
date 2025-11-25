@@ -12,23 +12,6 @@ local debug_module = require('matlab.debug')
 -- Use centralized notification system
 local notify = utils.notify
 
--- Define the breakpoint sign with custom highlight groups
-local function define_signs()
-  -- Create a custom highlight group for breakpoints if it doesn't exist
-  vim.api.nvim_command('highlight default MatlabBreakpoint guifg=#ff0000 guibg=#5a0000 ctermfg=196 ctermbg=52 gui=bold cterm=bold')
-  vim.api.nvim_command('highlight default MatlabBreakpointLine guibg=#300000 ctermbg=235')
-  
-  -- Get user breakpoint config
-  local bp_config = config.get('breakpoint') or {}
-  
-  -- Define the sign with the user's custom or default settings
-  vim.fn.sign_define('matlab_breakpoint', {
-    text = bp_config.sign_text or '■',
-    texthl = bp_config.sign_hl or 'MatlabBreakpoint',
-    linehl = bp_config.line_hl or 'MatlabBreakpointLine',
-    numhl = bp_config.num_hl or 'MatlabBreakpoint'
-  })
-end
 
 -- Setup function
 function M.setup(opts)
@@ -48,9 +31,6 @@ function M.setup(opts)
   -- Initialize configuration
   config.setup(opts)
 
-  -- Define signs for breakpoints
-  define_signs()
-
   -- Initialize debugging module
   debug_module.setup()
 
@@ -65,11 +45,7 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('MatlabRun', function(args)
     commands.run(args.args ~= '' and args.args or nil)
   end, { nargs = '?' })
-  
-  vim.api.nvim_create_user_command('MatlabBreakpoint', function()
-    commands.single_breakpoint()
-  end, {})
-  
+
   vim.api.nvim_create_user_command('MatlabStartServer', function()
     tmux.start_server(false)
   end, {})
@@ -81,15 +57,7 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('MatlabStopServer', function()
     tmux.stop_server()
   end, {})
-  
-  vim.api.nvim_create_user_command('MatlabClearBreakpoint', function()
-    commands.clear_breakpoint(false)
-  end, {})
-  
-  vim.api.nvim_create_user_command('MatlabClearBreakpoints', function()
-    commands.clear_breakpoint(true)
-  end, {})
-  
+
   -- New command to open in MATLAB GUI
   vim.api.nvim_create_user_command('MatlabOpenInGUI', function()
     commands.open_in_gui()

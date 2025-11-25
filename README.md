@@ -150,9 +150,6 @@ require('matlab').setup({
     run = 'r',                      -- Run MATLAB script
     run_cell = 'c',                 -- Run current MATLAB cell
     run_to_cell = 't',              -- Run to current MATLAB cell
-    breakpoint = 'b',               -- Set breakpoint at current line
-    clear_breakpoint = 'd',         -- Clear breakpoint in current file
-    clear_breakpoints = 'D',        -- Clear all breakpoints
     doc = 'h',                      -- Show documentation for word under cursor
     toggle_workspace = 'w',         -- Show MATLAB workspace in tmux pane (whos)
     clear_workspace = 'x',          -- Clear MATLAB workspace
@@ -297,9 +294,6 @@ If you're not sure where MATLAB is installed:
   - Use `<Leader>mc` or `:MatlabRunCell` to execute only the current cell
 
 - **Debugging**:
-  - Use `<Leader>mb` or `:MatlabBreakpoint` to set a breakpoint at the current line (with visual indicator)
-  - Use `<Leader>md` or `:MatlabClearBreakpoint` to clear a breakpoint in the current file
-  - Use `<Leader>mD` or `:MatlabClearBreakpoints` to clear all breakpoints
   - Run your code with `<Leader>mr` or `:MatlabRun` to hit the breakpoints
   - By default, MATLAB GUI won't open even when breakpoints are present (`force_nogui_with_breakpoints` option)
   - Use `<Leader>mg` or `:MatlabOpenInGUI` if you want to open the current script in MATLAB GUI
@@ -354,9 +348,6 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `<Leader>mr` | `:MatlabRun`             | Run current MATLAB script              |
 | `<Leader>mc` | `:MatlabRunCell`         | Run current MATLAB cell                |
 | `<Leader>mt` | `:MatlabRunToCell`       | Run up to current MATLAB cell          |
-| `<Leader>mb` | `:MatlabBreakpoint`      | Set breakpoint at current line         |
-| `<Leader>md` | `:MatlabClearBreakpoint` | Clear breakpoint in current file       |
-| `<Leader>mD` | `:MatlabClearBreakpoints`| Clear all breakpoints                  |
 | `<Leader>mh` | `:MatlabDoc`             | Show documentation for word under cursor |
 | `<Leader>mw` | `:MatlabWorkspace`       | Show workspace variables (whos)        |
 | `<Leader>mx` | `:MatlabClearWorkspace`  | Clear MATLAB workspace                 |

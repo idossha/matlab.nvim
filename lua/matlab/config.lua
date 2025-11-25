@@ -17,13 +17,6 @@ M.defaults = {
   
   -- Environment variables to set before starting MATLAB
   environment = {},       -- Table of environment variables: {VAR_NAME = 'value', ANOTHER_VAR = 'another_value'}
-  
-  breakpoint = {
-    sign_text = '■', -- Character to use for breakpoint sign
-    sign_hl = 'MatlabBreakpoint', -- Highlight group for the sign
-    line_hl = 'MatlabBreakpointLine', -- Highlight group for the entire line
-    num_hl = 'MatlabBreakpoint', -- Highlight group for the line number
-  },
 
   -- Debug configuration
   debug = {
@@ -50,9 +43,6 @@ M.defaults = {
     run = 'r',            -- Run MATLAB script
     run_cell = 'c',       -- Run current MATLAB cell
     run_to_cell = 't',    -- Run to current MATLAB cell
-    breakpoint = 'b',     -- Set breakpoint at current line
-    clear_breakpoint = 'd', -- Clear breakpoint in current file
-    clear_breakpoints = 'D', -- Clear all breakpoints
     doc = 'h',            -- Show documentation for word under cursor
     toggle_workspace = 'w', -- Show workspace variables (whos)
     clear_workspace = 'x', -- Clear MATLAB workspace
