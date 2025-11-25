@@ -43,9 +43,6 @@ local function get_safe_mappings()
     run = 'r',
     run_cell = 'c',
     run_to_cell = 't',
-    breakpoint = 'b',
-    clear_breakpoint = 'd',
-    clear_breakpoints = 'D',
     doc = 'h',
     toggle_workspace = 'w',
     show_workspace = 'W',
@@ -120,11 +117,6 @@ if should_setup_mappings then
   safe_map(actual_prefix .. mappings.run_cell, '<Cmd>MatlabRunCell<CR>', 'Run current MATLAB cell')
   safe_map(actual_prefix .. mappings.run_to_cell, '<Cmd>MatlabRunToCell<CR>', 'Run to current MATLAB cell')
 
-  -- Breakpoints
-  safe_map(actual_prefix .. mappings.breakpoint, '<Cmd>MatlabBreakpoint<CR>', 'Set MATLAB breakpoint')
-  safe_map(actual_prefix .. mappings.clear_breakpoint, '<Cmd>MatlabClearBreakpoint<CR>', 'Clear MATLAB breakpoint')
-  safe_map(actual_prefix .. mappings.clear_breakpoints, '<Cmd>MatlabClearBreakpoints<CR>', 'Clear all MATLAB breakpoints')
-
   -- Documentation
   safe_map(actual_prefix .. mappings.doc, '<Cmd>MatlabDoc<CR>', 'Show MATLAB documentation')
 
@@ -168,9 +160,6 @@ if should_setup_mappings then
     table.insert(lines, "- " .. display_prefix .. mappings.run .. " : Run MATLAB script")
     table.insert(lines, "- " .. display_prefix .. mappings.run_cell .. " : Run current MATLAB cell")
     table.insert(lines, "- " .. display_prefix .. mappings.run_to_cell .. " : Run to current MATLAB cell")
-    table.insert(lines, "- " .. display_prefix .. mappings.breakpoint .. " : Set breakpoint")
-    table.insert(lines, "- " .. display_prefix .. mappings.clear_breakpoint .. " : Clear breakpoint")
-    table.insert(lines, "- " .. display_prefix .. mappings.clear_breakpoints .. " : Clear all breakpoints")
     table.insert(lines, "- " .. display_prefix .. mappings.doc .. " : Show documentation")
     table.insert(lines, "- " .. display_prefix .. mappings.toggle_workspace .. " : Show workspace (whos)")
     table.insert(lines, "- " .. display_prefix .. mappings.open_in_gui .. " : Open in MATLAB GUI")
