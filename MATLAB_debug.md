@@ -14,10 +14,9 @@ matlab.nvim provides **basic debugging support** using MATLAB's native debugging
 ## Key Features
 
 ### Breakpoint Management
-- **Visual indicators**: Red circle (●) for regular breakpoints, diamond (◆) for conditional breakpoints
-- **Interactive toggling**: Set/clear breakpoints with `<Leader>mdb`
-- **Conditional breakpoints**: Set conditions when creating breakpoints (e.g., `x > 5`)
-- **Edit conditions**: Modify breakpoint conditions with `<Leader>mde`
+- **Visual indicators**: Red circle (●) for regular breakpoints, yellow diamond (◆) for conditional breakpoints
+- **Interactive toggling**: Set/clear regular breakpoints with `<Leader>mdb`
+- **Conditional breakpoints**: Add conditions to existing breakpoints with `<Leader>mdc` (MATLAB GUI style)
 - **Persistence**: Breakpoints and conditions maintained across sessions
 - **Synchronization**: Neovim breakpoints sync with MATLAB debugger
 
@@ -34,11 +33,11 @@ matlab.nvim provides **basic debugging support** using MATLAB's native debugging
 
 ## Workflow
 
-### Quick Start
+### Quick Start (MATLAB GUI Style)
 1. Open MATLAB file in Neovim (inside tmux)
 2. Start MATLAB server: `:MatlabStartServer`
-3. Set breakpoints: `<Leader>mdb` on desired lines (enter condition when prompted, or leave empty for unconditional)
-4. Edit breakpoint conditions: `<Leader>mde` on existing breakpoints
+3. Set breakpoints: `<Leader>mdb` on desired lines (creates red circles)
+4. Add conditions: `<Leader>mdc` on breakpoints to make them conditional (turns them yellow)
 5. Start debugging: `<Leader>mds`
 6. Step through code: `<Leader>mdo` / `<Leader>mdi` / `<Leader>mdt`
 7. Inspect state: `<Leader>mdv` / `<Leader>mdk`
@@ -63,7 +62,7 @@ Start Server → Set Breakpoints → Start Debug → Step/Continue → Inspect �
 | `:MatlabDebugStepOut` | `<Leader>mdt` | Step out of function |
 | `:MatlabDebugToggleBreakpoint` | `<Leader>mdb` | Toggle breakpoint at cursor |
 | `:MatlabDebugClearBreakpoints` | `<Leader>mdd` | Clear all breakpoints |
-| `:MatlabDebugEditBreakpoint` | `<Leader>mde` | Edit breakpoint condition |
+| `:MatlabDebugSetCondition` | `<Leader>mdc` | Set/modify breakpoint condition |
 | `:MatlabDebugShowVariables` | `<Leader>mdv` | Show variables (whos) |
 | `:MatlabDebugShowStack` | `<Leader>mdk` | Show call stack (dbstack) |
 | `:MatlabDebugShowBreakpoints` | `<Leader>mdp` | Show breakpoints (dbstatus) |
@@ -74,10 +73,10 @@ Start Server → Set Breakpoints → Start Debug → Step/Continue → Inspect �
 The plugin translates Neovim commands to these MATLAB debugging commands:
 
 - `dbstop in file at line` - Set unconditional breakpoint
-- `dbstop in file at line if(condition)` - Set conditional breakpoint
+- `dbstop in file at line if condition` - Set conditional breakpoint
 - `dbclear file at line` - Clear specific breakpoint
 
-**Note**: Conditional breakpoints use MATLAB expression syntax (e.g., `x > 5`, `length(data) > 10`, `strcmp(status, 'error')`). The condition is evaluated in MATLAB's workspace when the breakpoint line is reached.
+**Note**: Use MATLAB expression syntax for conditions (e.g., `x > 5`, `length(data) > 10`, `strcmp(status, 'error')`). Conditions are evaluated in MATLAB's workspace when execution reaches the breakpoint line.
 - `dbclear all` - Clear all breakpoints
 - `dbcont` - Continue execution
 - `dbstep` - Step over
