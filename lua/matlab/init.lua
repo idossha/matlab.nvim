@@ -51,12 +51,8 @@ function M.setup(opts)
   -- Define signs for breakpoints
   define_signs()
 
-  -- Initialize debugging module with options
-  local debug_opts = {
-    use_dapui = opts.use_dapui,
-    dapui_config = opts.dapui_config,
-  }
-  debug_module.setup(debug_opts)
+  -- Initialize debugging module (requires nvim-dap-ui)
+  debug_module.setup({ dapui_config = opts.dapui_config })
 
   -- Show load message if minimal notifications are disabled
   if not config.get('minimal_notifications') then
@@ -211,21 +207,6 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('MatlabDebugCloseUI', function()
     debug_module.close_ui()
   end, {})
-
-  -- UI backend switching
-  vim.api.nvim_create_user_command('MatlabDebugSetUI', function(args)
-    local backend = args.args
-    if backend == 'dapui' or backend == 'custom' then
-      debug_module.set_ui_backend(backend)
-    else
-      vim.notify('Invalid backend. Use "dapui" or "custom"', vim.log.levels.ERROR)
-    end
-  end, {
-    nargs = 1,
-    complete = function()
-      return { 'dapui', 'custom' }
-    end,
-  })
 
   -- Config inspection command
   vim.api.nvim_create_user_command('MatlabShowConfig', function()

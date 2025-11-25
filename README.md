@@ -22,14 +22,18 @@ The plugin is far from complete, but based on some internet search, it seems to 
 - Save and load MATLAB workspace files
 - Enhanced syntax highlighting with headers
 - Space leader key compatibility
-- **Full debugging support** with step-through execution, breakpoints, and variable inspection
-- **Dual UI backends**: Choose between custom lightweight UI or [nvim-dap-ui](https://github.com/rcarriga/nvim-dap-ui) integration
+- **Full debugging support** with [nvim-dap-ui](https://github.com/rcarriga/nvim-dap-ui) integration
+  - Step-through execution (over, into, out)
+  - Interactive breakpoints with visual indicators
+  - Variable inspection and REPL
+  - Call stack visualization
 
 ## Requirements
 
 - Neovim 0.7.0 or later
 - tmux (must be installed and you must run Neovim inside a tmux session)
 - MATLAB
+- [nvim-dap-ui](https://github.com/rcarriga/nvim-dap-ui) (for debugging features)
 
 ### Tmux Setup
 
@@ -70,22 +74,12 @@ use {
 }
 ```
 
-### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
+### Using [lazy.nvim](https://github.com/folke/lazy.nvim) - Recommended
 
-**Basic installation:**
 ```lua
 {
   'idossha/matlab.nvim',
-  config = function()
-    require('matlab').setup()
-  end
-}
-```
-
-**With nvim-dap-ui integration (recommended for debugging):**
-```lua
-{
-  'idossha/matlab.nvim',
+  ft = 'matlab',  -- Lazy-load on MATLAB files
   dependencies = {
     'rcarriga/nvim-dap-ui',
     dependencies = {
@@ -94,14 +88,12 @@ use {
     }
   },
   config = function()
-    require('matlab').setup({
-      use_dapui = true,  -- Enable nvim-dap-ui integration
-    })
+    require('matlab').setup()
   end
 }
 ```
 
-See [NVIM_DAP_UI_INTEGRATION.md](NVIM_DAP_UI_INTEGRATION.md) for detailed documentation on nvim-dap-ui integration.
+See **[DEBUGGING.md](DEBUGGING.md)** for complete debugging documentation.
 
 ## Configuration
 
