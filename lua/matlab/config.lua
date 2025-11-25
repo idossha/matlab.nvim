@@ -60,17 +60,10 @@ M.defaults = {
     debug_step_out = 'dt', -- Step out
     debug_toggle_breakpoint = 'db', -- Toggle breakpoint
     debug_clear_breakpoints = 'dd', -- Clear all breakpoints
-    debug_ui = 'du',     -- Show debug UI
-    -- Debug UI mappings
-    debug_show_variables = 'dv',    -- Show variables window
-    debug_show_callstack = 'dk',    -- Show call stack window
-    debug_show_breakpoints = 'dp',  -- Show breakpoints window
-    debug_show_repl = 'dr',         -- Show REPL window
-    debug_toggle_variables = 'tv',  -- Toggle variables window
-    debug_toggle_callstack = 'tk',  -- Toggle call stack window
-    debug_toggle_breakpoints = 'tp', -- Toggle breakpoints window
-    debug_toggle_repl = 'tr',       -- Toggle REPL window
-    debug_close_ui = 'dx',          -- Close all debug UI windows
+    debug_show_variables = 'dv',    -- Show variables in MATLAB pane
+    debug_show_callstack = 'dk',    -- Show call stack in MATLAB pane
+    debug_show_breakpoints = 'dp',  -- Show breakpoints in MATLAB pane
+    debug_eval = 'dx',              -- Evaluate expression
   }
 }
 

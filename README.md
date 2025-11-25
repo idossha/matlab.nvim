@@ -15,14 +15,14 @@ The plugin is far from complete, but based on some internet search, it seems to 
 - Run MATLAB scripts directly from Neovim
 - Execute MATLAB code cells (sections between %% comments)
 - Fold/unfold MATLAB cell sections
-- Visual breakpoint indication with customizable appearance
+- Visual breakpoint indication
 - Set and clear breakpoints interactively
 - Access MATLAB documentation
 - View MATLAB workspace variables in tmux pane
 - Save and load MATLAB workspace files
-- Enhanced syntax highlighting with headers
+- Enhanced syntax highlighting (via syntax/matlab.vim)
 - Space leader key compatibility
-- **Full debugging support** using MATLAB's native debugger
+- **Basic debugging support** using MATLAB's native debugger
   - Step-through execution (over, into, out)
   - Interactive breakpoints with visual indicators
   - Variable inspection in MATLAB pane
@@ -113,13 +113,6 @@ require('matlab').setup({
   default_mappings = true,          -- Enable default keymappings
   force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist
   
-  -- Breakpoint visualization
-  breakpoint = {
-    sign_text = '■',                -- Character to use for breakpoint sign
-    sign_hl = 'MatlabBreakpoint',   -- Highlight group for the sign
-    line_hl = 'MatlabBreakpointLine', -- Highlight group for the entire line
-    num_hl = 'MatlabBreakpoint',    -- Highlight group for the line number
-  },
 
   -- Debug configuration
   debug = {
@@ -128,17 +121,6 @@ require('matlab').setup({
     show_debug_status = true,       -- Show debug status in status line
   },
 
-  -- Debug UI configuration
-  debug_ui = {
-    variables_position = 'right',   -- Position of variables window ('left', 'right', 'top', 'bottom')
-    variables_size = 0.3,           -- Size of variables window (0.0-1.0)
-    callstack_position = 'bottom',  -- Position of call stack window
-    callstack_size = 0.3,           -- Size of call stack window
-    breakpoints_position = 'left',  -- Position of breakpoints window
-    breakpoints_size = 0.25,        -- Size of breakpoints window
-    repl_position = 'bottom',       -- Position of REPL window
-    repl_size = 0.4,                -- Size of REPL window
-  },
 
   -- Notification options
   minimal_notifications = false,    -- Only show important notifications
@@ -309,7 +291,7 @@ If you're not sure where MATLAB is installed:
   - Use `<Leader>ml` or `:MatlabLoadWorkspace` to load a saved workspace from a .mat file
 
 - **UI & Customization**:
-  - Use `:MatlabDebugUI` to check your current UI settings
+  - Use `:MatlabShowConfig` to check your current configuration
   - Control notification verbosity with the `minimal_notifications` option
   - Customize tmux pane size and position with `panel_size` and `tmux_pane_direction`
 
@@ -322,7 +304,6 @@ If you're not sure where MATLAB is installed:
   - Step out: `<Leader>mdt` or `:MatlabDebugStepOut`
   - Toggle breakpoint: `<Leader>mdb` or `:MatlabDebugToggleBreakpoint`
   - Clear all breakpoints: `<Leader>mdd` or `:MatlabDebugClearBreakpoints`
-  - Show debug UI: `<Leader>mdu` or `:MatlabDebugUI`
 
 - **Customizing Keymappings**:
   - Full support for Space as leader key with proper handling of key conflicts
@@ -364,20 +345,10 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `<Leader>mdt`| `:MatlabDebugStepOut`      | Step out in MATLAB debugging          |
 | `<Leader>mdb`| `:MatlabDebugToggleBreakpoint` | Toggle breakpoint in MATLAB debugging |
 | `<Leader>mdd`| `:MatlabDebugClearBreakpoints` | Clear all breakpoints in MATLAB debugging |
-| `<Leader>mdu`| `:MatlabDebugUI`           | Show MATLAB debug UI                 |
-| `<Leader>mdv`| `:MatlabDebugShowVariables` | Show variables window                |
-| `<Leader>mdk`| `:MatlabDebugShowCallstack` | Show call stack window               |
-| `<Leader>mdp`| `:MatlabDebugShowBreakpoints`| Show breakpoints window              |
-| `<Leader>mdr`| `:MatlabDebugShowRepl`      | Show REPL window                     |
-| `<Leader>mtv`| `:MatlabDebugToggleVariables`| Toggle variables window              |
-| `<Leader>mtk`| `:MatlabDebugToggleCallstack`| Toggle call stack window             |
-| `<Leader>mtp`| `:MatlabDebugToggleBreakpoints`| Toggle breakpoints window            |
-| `<Leader>mtr`| `:MatlabDebugToggleRepl`    | Toggle REPL window                   |
-| `<Leader>mdx`| `:MatlabDebugCloseUI`       | Close all debug UI windows           |
 
 ## Debugging MATLAB Code
 
-matlab.nvim now includes full debugging support using MATLAB's built-in debugging commands. This allows you to step through your code, set breakpoints, inspect variables, and control execution flow directly from Neovim.
+matlab.nvim includes basic debugging support using MATLAB's built-in debugging commands. This allows you to step through your code, set breakpoints, inspect variables, and control execution flow directly from Neovim.
 
 ### Quick Start
 
@@ -471,31 +442,9 @@ require('matlab').setup({
 })
 ```
 
-##### Custom Breakpoint Signs
+##### Breakpoint Signs
 
-Breakpoint signs are configured in your `setup()` call:
-
-```lua
-require('matlab').setup({
-  breakpoint = {
-    sign_text = '●',           -- Character shown in sign column
-    sign_hl = 'MatlabBreakpoint',     -- Highlight group for sign text
-    line_hl = 'MatlabBreakpointLine', -- Highlight group for entire line
-    num_hl = 'MatlabBreakpoint'       -- Highlight group for line number
-  }
-})
-```
-
-Default highlights:
-- `MatlabBreakpoint`: Bold red text on dark red background
-- `MatlabBreakpointLine`: Dark red line background
-
-You can override these in your colorscheme or init.lua:
-
-```lua
-vim.api.nvim_set_hl(0, 'MatlabBreakpoint', { fg = '#ff0000', bg = '#5a0000', bold = true })
-vim.api.nvim_set_hl(0, 'MatlabBreakpointLine', { bg = '#300000' })
-```
+Breakpoint signs use default highlighting. The sign appears as a red circle (●) in the sign column with highlighted line when a breakpoint is set.
 
 ##### MATLAB Debug Commands Reference
 
@@ -589,7 +538,7 @@ require('matlab').setup({
 
 ### Debug Information
 
-Use `:MatlabDebugUI` to check your current configuration, including environment variables. Enable debug logging for detailed information:
+Use `:MatlabShowConfig` to check your current configuration, including environment variables. Enable debug logging for detailed information:
 
 ```lua
 require('matlab').setup({
