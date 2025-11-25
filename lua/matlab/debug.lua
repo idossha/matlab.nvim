@@ -288,7 +288,9 @@ function M.set_breakpoint_condition()
     utils.notify('Regular breakpoint: line ' .. line, vim.log.levels.INFO)
   end
 
-  tmux.run(cmd, false, false)
+  -- Use non-shell-escaped version for commands with special characters (like > < =)
+  local use_shell_escape = not string.find(cmd, '[><=]')
+  tmux.run(cmd, false, false, use_shell_escape)
   M.breakpoints[bufnr][line] = {
     condition = is_conditional and condition or nil,
     enabled = true
@@ -335,7 +337,9 @@ function M.restore_breakpoints()
           else
             cmd = string.format('dbstop in %s at %d', filename, line)
           end
-          tmux.run(cmd, false, false)
+          -- Use non-shell-escaped version for commands with special characters (like > < =)
+          local use_shell_escape = not string.find(cmd, '[><=]')
+          tmux.run(cmd, false, false, use_shell_escape)
           update_sign(bufnr, line, 'set', bp_info.condition ~= nil)
         end
       end
@@ -381,7 +385,9 @@ function M.eval_expression()
 
   local expr = vim.fn.input('Evaluate: ')
   if expr ~= '' then
-    tmux.run(expr, false, false)
+    -- Use non-shell-escaped version for expressions with special characters
+    local use_shell_escape = not string.find(expr, '[><=]')
+    tmux.run(expr, false, false, use_shell_escape)
   end
 end
 
