@@ -53,11 +53,13 @@ function M.setup(opts)
 
   -- Initialize debugging module
   debug_module.setup()
-  
-  -- Show message on first load only if minimal notifications are disabled
-  vim.schedule(function()
-    notify("matlab.nvim loaded successfully. Use :MatlabStartServer to start MATLAB.")
-  end)
+
+  -- Show load message if minimal notifications are disabled
+  if not config.get('minimal_notifications') then
+    vim.schedule(function()
+      notify('matlab.nvim loaded. Use :MatlabStartServer to start MATLAB.')
+    end)
+  end
   
   -- Create user commands
   vim.api.nvim_create_user_command('MatlabRun', function(args)
@@ -165,11 +167,11 @@ function M.setup(opts)
     debug_module.clear_breakpoints()
   end, {})
 
+  -- Debug UI commands
   vim.api.nvim_create_user_command('MatlabDebugUI', function()
     debug_module.show_debug_ui()
   end, {})
 
-  -- Individual UI window commands
   vim.api.nvim_create_user_command('MatlabDebugShowVariables', function()
     debug_module.show_variables()
   end, {})
@@ -186,7 +188,6 @@ function M.setup(opts)
     debug_module.show_repl()
   end, {})
 
-  -- Toggle UI window commands
   vim.api.nvim_create_user_command('MatlabDebugToggleVariables', function()
     debug_module.toggle_variables()
   end, {})
@@ -203,15 +204,14 @@ function M.setup(opts)
     debug_module.toggle_repl()
   end, {})
 
-  -- Close UI commands
   vim.api.nvim_create_user_command('MatlabDebugCloseUI', function()
     debug_module.close_ui()
   end, {})
 
-  -- Debug command to check UI settings
-  vim.api.nvim_create_user_command('MatlabDebugUI', function()
+  -- Config inspection command
+  vim.api.nvim_create_user_command('MatlabShowConfig', function()
     local env_vars = config.get('environment')
-    local env_display = "None"
+    local env_display = 'None'
     if env_vars and next(env_vars) then
       local env_parts = {}
       for k, v in pairs(env_vars) do
@@ -219,26 +219,26 @@ function M.setup(opts)
       end
       env_display = table.concat(env_parts, ', ')
     end
-    
-    local ui_settings = {
-      ["Panel Size"] = config.get('panel_size'),
-      ["Panel Size Type"] = config.get('panel_size_type'),
-      ["TMUX Pane Direction"] = config.get('tmux_pane_direction'),
-      ["TMUX Pane Focus"] = config.get('tmux_pane_focus'),
-      ["Auto Start"] = config.get('auto_start'),
-      ["Default Mappings"] = config.get('default_mappings'),
-      ["Debug Mode"] = config.get('debug'),
-      ["Minimal Notifications"] = config.get('minimal_notifications'),
-      ["MATLAB Executable"] = config.get('executable'),
-      ["Environment Variables"] = env_display
+
+    local settings = {
+      ['Panel Size'] = config.get('panel_size'),
+      ['Panel Size Type'] = config.get('panel_size_type'),
+      ['TMUX Pane Direction'] = config.get('tmux_pane_direction'),
+      ['TMUX Pane Focus'] = config.get('tmux_pane_focus'),
+      ['Auto Start'] = config.get('auto_start'),
+      ['Default Mappings'] = config.get('default_mappings'),
+      ['Debug Mode'] = config.get('debug'),
+      ['Minimal Notifications'] = config.get('minimal_notifications'),
+      ['MATLAB Executable'] = config.get('executable'),
+      ['Environment Variables'] = env_display
     }
-    
-    local lines = {"MATLAB UI Settings:"}
-    for k, v in pairs(ui_settings) do
-      table.insert(lines, "- " .. k .. ": " .. tostring(v))
+
+    local lines = { 'MATLAB Configuration:' }
+    for k, v in pairs(settings) do
+      table.insert(lines, '  ' .. k .. ': ' .. tostring(v))
     end
-    
-    vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
+
+    vim.notify(table.concat(lines, '\n'), vim.log.levels.INFO)
   end, {})
   
   -- Set up autocommands
