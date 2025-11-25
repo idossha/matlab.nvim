@@ -3,7 +3,6 @@
 local M = {}
 local tmux = require('matlab.tmux')
 local utils = require('matlab.utils')
-local debug_module = require('matlab.debug')
 
 -- UI state
 M.windows = {
@@ -179,6 +178,7 @@ end
 
 -- Show variables window
 function M.show_variables()
+  local debug_module = require('matlab.debug')
   if not debug_module.is_available() then
     utils.notify('MATLAB pane not available.', vim.log.levels.ERROR)
     return
@@ -207,6 +207,7 @@ end
 
 -- Show call stack window
 function M.show_callstack()
+  local debug_module = require('matlab.debug')
   if not debug_module.is_available() then
     utils.notify('MATLAB pane not available.', vim.log.levels.ERROR)
     return
@@ -232,6 +233,7 @@ end
 
 -- Show breakpoints window
 function M.show_breakpoints()
+  local debug_module = require('matlab.debug')
   local content = {
     "Breakpoints",
     "===========",
@@ -264,6 +266,7 @@ end
 
 -- Show REPL window
 function M.show_repl()
+  local debug_module = require('matlab.debug')
   if not debug_module.is_available() then
     utils.notify('MATLAB pane not available.', vim.log.levels.ERROR)
     return

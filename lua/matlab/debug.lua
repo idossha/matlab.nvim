@@ -4,13 +4,21 @@ local M = {}
 local tmux = require('matlab.tmux')
 local utils = require('matlab.utils')
 local config = require('matlab.config')
-local debug_ui = require('matlab.debug_ui')
 
 -- Debug session state
 M.debug_active = false
 M.current_file = nil
 M.current_line = nil
 M.breakpoints = {}
+
+-- Cached debug_ui module to avoid circular dependency
+local debug_ui_cache = nil
+local function get_debug_ui()
+  if not debug_ui_cache then
+    debug_ui_cache = require('matlab.debug_ui')
+  end
+  return debug_ui_cache
+end
 
 -- UI state
 M.debug_signs_defined = false
@@ -195,45 +203,55 @@ function M.show_debug_ui()
     return
   end
 
+  local debug_ui = get_debug_ui()
   debug_ui.show_all()
 end
 
 -- Show individual UI windows
 function M.show_variables()
+  local debug_ui = get_debug_ui()
   debug_ui.show_variables()
 end
 
 function M.show_callstack()
+  local debug_ui = get_debug_ui()
   debug_ui.show_callstack()
 end
 
 function M.show_breakpoints()
+  local debug_ui = get_debug_ui()
   debug_ui.show_breakpoints()
 end
 
 function M.show_repl()
+  local debug_ui = get_debug_ui()
   debug_ui.show_repl()
 end
 
 -- Toggle UI windows
 function M.toggle_variables()
+  local debug_ui = get_debug_ui()
   debug_ui.toggle_window('variables')
 end
 
 function M.toggle_callstack()
+  local debug_ui = get_debug_ui()
   debug_ui.toggle_window('callstack')
 end
 
 function M.toggle_breakpoints()
+  local debug_ui = get_debug_ui()
   debug_ui.toggle_window('breakpoints')
 end
 
 function M.toggle_repl()
+  local debug_ui = get_debug_ui()
   debug_ui.toggle_window('repl')
 end
 
 -- Close all UI windows
 function M.close_ui()
+  local debug_ui = get_debug_ui()
   debug_ui.close_all()
 end
 
@@ -337,6 +355,7 @@ end
 -- Initialize debugging module
 function M.setup()
   M.setup_debug_ui()
+  local debug_ui = get_debug_ui()
   debug_ui.setup()
   utils.notify('MATLAB debugging module initialized.', vim.log.levels.INFO)
 end
