@@ -9,7 +9,7 @@ local utils = require('matlab.utils')
 -- Debug state
 M.debug_active = false
 M.current_file = nil
-M.breakpoints = {}  -- { [bufnr] = { [line] = {condition = string, enabled = boolean} } }
+M.breakpoints = {}  -- { [bufnr] = { [line] = boolean } }
 
 -- Sign configuration
 M.sign_group = 'matlab_debug'
@@ -56,14 +56,13 @@ local function move_to_debug_location()
 end
 
 -- Helper: update breakpoint sign
-local function update_sign(bufnr, line, action, is_conditional)
+local function update_sign(bufnr, line, action)
   if not vim.api.nvim_buf_is_valid(bufnr) then
     return
   end
 
   if action == 'set' then
-    local sign_name = is_conditional and 'matlab_conditional_breakpoint' or 'matlab_breakpoint'
-    vim.fn.sign_place(0, M.sign_group, sign_name, bufnr, {
+    vim.fn.sign_place(0, M.sign_group, 'matlab_breakpoint', bufnr, {
       lnum = line,
       priority = 10
     })
@@ -81,13 +80,6 @@ function M.setup_signs()
   vim.fn.sign_define('matlab_breakpoint', {
     text = '●',
     texthl = 'DiagnosticError',
-    linehl = '',
-    numhl = ''
-  })
-
-  vim.fn.sign_define('matlab_conditional_breakpoint', {
-    text = '◆',
-    texthl = 'DiagnosticWarn',
     linehl = '',
     numhl = ''
   })
@@ -209,7 +201,7 @@ function M.step_out()
   vim.defer_fn(move_to_debug_location, 300)
 end
 
--- Toggle breakpoint (regular unconditional)
+-- Toggle breakpoint
 function M.toggle_breakpoint()
   if not validate_context(false) or not is_matlab_file() then
     return
@@ -234,69 +226,14 @@ function M.toggle_breakpoint()
     update_sign(bufnr, line, 'clear')
     utils.notify('Breakpoint cleared: line ' .. line, vim.log.levels.INFO)
   else
-    -- Set regular breakpoint
+    -- Set breakpoint
     tmux.run(string.format('dbstop in %s at %d', filename, line), false, false)
-    M.breakpoints[bufnr][line] = {
-      condition = nil,
-      enabled = true
-    }
-    update_sign(bufnr, line, 'set', false)
+    M.breakpoints[bufnr][line] = true
+    update_sign(bufnr, line, 'set')
     utils.notify('Breakpoint set: line ' .. line, vim.log.levels.INFO)
   end
 end
 
--- Set/modify condition for existing breakpoint (MATLAB GUI style)
-function M.set_breakpoint_condition()
-  if not validate_context(false) or not is_matlab_file() then
-    return
-  end
-
-  local bufnr = vim.api.nvim_get_current_buf()
-  local filename = vim.fn.expand('%:t:r')
-  local line = vim.fn.line('.')
-
-  if filename == '' then
-    utils.notify('Cannot determine filename', vim.log.levels.ERROR)
-    return
-  end
-
-  -- Check if there's a breakpoint at this line
-  M.breakpoints[bufnr] = M.breakpoints[bufnr] or {}
-  local bp_info = M.breakpoints[bufnr][line]
-
-  if not bp_info then
-    utils.notify('No breakpoint at line ' .. line .. '. Set a breakpoint first with <Leader>mdb', vim.log.levels.WARN)
-    return
-  end
-
-  -- Prompt for condition (MATLAB GUI style)
-  local current_condition = bp_info.condition or ''
-  local condition = vim.fn.input('Set condition (MATLAB expression, e.g., "n >= 4", empty to remove): ', current_condition)
-
-  -- Clear existing breakpoint
-  tmux.run(string.format('dbclear %s at %d', filename, line), false, false)
-
-  -- Set new breakpoint with or without condition
-  local is_conditional = condition ~= '' and condition ~= nil
-  local cmd
-
-  if is_conditional then
-    cmd = string.format('dbstop in %s at %d if %s', filename, line, condition)
-    utils.notify('Conditional breakpoint: line ' .. line .. ' when ' .. condition, vim.log.levels.INFO)
-  else
-    cmd = string.format('dbstop in %s at %d', filename, line)
-    utils.notify('Regular breakpoint: line ' .. line, vim.log.levels.INFO)
-  end
-
-  -- Use non-shell-escaped version for commands with special characters (like > < =)
-  local use_shell_escape = not string.find(cmd, '[><=]')
-  tmux.run(cmd, false, false, use_shell_escape)
-  M.breakpoints[bufnr][line] = {
-    condition = is_conditional and condition or nil,
-    enabled = true
-  }
-  update_sign(bufnr, line, 'set', is_conditional)
-end
 
 -- Clear all breakpoints
 function M.clear_breakpoints()
@@ -330,17 +267,9 @@ function M.restore_breakpoints()
       local filename = vim.fn.fnamemodify(filepath, ':t:r')
 
       if filename ~= '' then
-        for line, bp_info in pairs(buf_breakpoints) do
-          local cmd
-          if bp_info.condition then
-            cmd = string.format('dbstop in %s at %d if %s', filename, line, bp_info.condition)
-          else
-            cmd = string.format('dbstop in %s at %d', filename, line)
-          end
-          -- Use non-shell-escaped version for commands with special characters (like > < =)
-          local use_shell_escape = not string.find(cmd, '[><=]')
-          tmux.run(cmd, false, false, use_shell_escape)
-          update_sign(bufnr, line, 'set', bp_info.condition ~= nil)
+        for line, _ in pairs(buf_breakpoints) do
+          tmux.run(string.format('dbstop in %s at %d', filename, line), false, false)
+          update_sign(bufnr, line, 'set')
         end
       end
     end

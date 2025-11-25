@@ -142,7 +142,6 @@ if should_setup_mappings then
   safe_map(actual_prefix .. mappings.debug_step_out, '<Cmd>MatlabDebugStepOut<CR>', 'Step out in MATLAB debugging')
   safe_map(actual_prefix .. mappings.debug_toggle_breakpoint, '<Cmd>MatlabDebugToggleBreakpoint<CR>', 'Toggle breakpoint in MATLAB debugging')
   safe_map(actual_prefix .. mappings.debug_clear_breakpoints, '<Cmd>MatlabDebugClearBreakpoints<CR>', 'Clear all breakpoints in MATLAB debugging')
-  safe_map(actual_prefix .. mappings.debug_set_condition, '<Cmd>MatlabDebugSetCondition<CR>', 'Set/modify breakpoint condition')
   safe_map(actual_prefix .. mappings.debug_show_variables, '<Cmd>MatlabDebugShowVariables<CR>', 'Show MATLAB variables (whos)')
   safe_map(actual_prefix .. mappings.debug_show_stack, '<Cmd>MatlabDebugShowStack<CR>', 'Show MATLAB call stack (dbstack)')
   safe_map(actual_prefix .. mappings.debug_show_breakpoints, '<Cmd>MatlabDebugShowBreakpoints<CR>', 'Show MATLAB breakpoints (dbstatus)')
@@ -165,7 +164,6 @@ if should_setup_mappings then
     table.insert(lines, "- " .. display_prefix .. mappings.toggle_workspace .. " : Show workspace (whos)")
     table.insert(lines, "- " .. display_prefix .. mappings.open_in_gui .. " : Open in MATLAB GUI")
     table.insert(lines, "- " .. display_prefix .. mappings.debug_toggle_breakpoint .. " : Toggle breakpoint")
-    table.insert(lines, "- " .. display_prefix .. mappings.debug_set_condition .. " : Set breakpoint condition")
     table.insert(lines, "")
     table.insert(lines, "Fallback mapping: ,mr : Run MATLAB script")
     

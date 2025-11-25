@@ -131,10 +131,6 @@ function M.setup(opts)
     debug_module.toggle_breakpoint()
   end, {})
 
-  vim.api.nvim_create_user_command('MatlabDebugSetCondition', function()
-    debug_module.set_breakpoint_condition()
-  end, {})
-
   vim.api.nvim_create_user_command('MatlabDebugClearBreakpoints', function()
     debug_module.clear_breakpoints()
   end, {})
