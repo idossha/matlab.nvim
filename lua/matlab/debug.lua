@@ -15,14 +15,32 @@ M.breakpoints = {}
 M.debug_signs_defined = false
 M.debug_highlight_ns = nil
 M.sign_group = 'matlab_debug'
+M.use_dapui = false
 
--- Lazy-load debug_ui to avoid circular dependency
+-- Lazy-load UI modules
 local debug_ui
+local dap_elements
+local dap_config
+
 local function get_debug_ui()
   if not debug_ui then
     debug_ui = require('matlab.debug_ui')
   end
   return debug_ui
+end
+
+local function get_dap_elements()
+  if not dap_elements then
+    dap_elements = require('matlab.dap_elements')
+  end
+  return dap_elements
+end
+
+local function get_dap_config()
+  if not dap_config then
+    dap_config = require('matlab.dap_config')
+  end
+  return dap_config
 end
 
 -- Helper: validate debug prerequisites
@@ -210,48 +228,106 @@ function M.clear_breakpoints()
   utils.notify('All breakpoints cleared.', vim.log.levels.INFO)
 end
 
--- UI delegation helpers (simplified)
+-- UI delegation helpers (supports both custom and dap-ui)
 function M.show_debug_ui()
   if not validate_debug_context(false) then
     return
   end
-  get_debug_ui().show_all()
+
+  if M.use_dapui then
+    get_dap_config().open()
+  else
+    get_debug_ui().show_all()
+  end
 end
 
 function M.show_variables()
-  get_debug_ui().show_variables()
+  if M.use_dapui then
+    get_dap_config().float_element('variables')
+  else
+    get_debug_ui().show_variables()
+  end
 end
 
 function M.show_callstack()
-  get_debug_ui().show_callstack()
+  if M.use_dapui then
+    get_dap_config().float_element('callstack')
+  else
+    get_debug_ui().show_callstack()
+  end
 end
 
 function M.show_breakpoints()
-  get_debug_ui().show_breakpoints()
+  if M.use_dapui then
+    get_dap_config().float_element('breakpoints')
+  else
+    get_debug_ui().show_breakpoints()
+  end
 end
 
 function M.show_repl()
-  get_debug_ui().show_repl()
+  if M.use_dapui then
+    get_dap_config().float_element('repl', { enter = true })
+  else
+    get_debug_ui().show_repl()
+  end
 end
 
 function M.toggle_variables()
-  get_debug_ui().toggle_window('variables')
+  if M.use_dapui then
+    get_dap_config().float_element('variables')
+  else
+    get_debug_ui().toggle_window('variables')
+  end
 end
 
 function M.toggle_callstack()
-  get_debug_ui().toggle_window('callstack')
+  if M.use_dapui then
+    get_dap_config().float_element('callstack')
+  else
+    get_debug_ui().toggle_window('callstack')
+  end
 end
 
 function M.toggle_breakpoints()
-  get_debug_ui().toggle_window('breakpoints')
+  if M.use_dapui then
+    get_dap_config().float_element('breakpoints')
+  else
+    get_debug_ui().toggle_window('breakpoints')
+  end
 end
 
 function M.toggle_repl()
-  get_debug_ui().toggle_window('repl')
+  if M.use_dapui then
+    get_dap_config().float_element('repl', { enter = true })
+  else
+    get_debug_ui().toggle_window('repl')
+  end
 end
 
 function M.close_ui()
-  get_debug_ui().close_all()
+  if M.use_dapui then
+    get_dap_config().close()
+  else
+    get_debug_ui().close_all()
+  end
+end
+
+-- Set UI backend (custom or dap-ui)
+function M.set_ui_backend(backend)
+  if backend == 'dapui' then
+    local elements = get_dap_elements()
+    if elements.is_available() then
+      M.use_dapui = true
+      utils.notify('Switched to nvim-dap-ui backend', vim.log.levels.INFO)
+    else
+      utils.notify('nvim-dap-ui not available, using custom UI', vim.log.levels.WARN)
+      M.use_dapui = false
+    end
+  else
+    M.use_dapui = false
+    utils.notify('Using custom debug UI', vim.log.levels.INFO)
+  end
 end
 
 -- Restore breakpoints from internal storage
@@ -349,10 +425,30 @@ local function setup_autocmds()
 end
 
 -- Initialize debugging module
-function M.setup()
+function M.setup(opts)
+  opts = opts or {}
+
   M.setup_debug_ui()
   setup_autocmds()
-  get_debug_ui().setup()
+
+  -- Check if user wants to use nvim-dap-ui
+  local use_dapui = opts.use_dapui
+  if use_dapui == nil then
+    -- Auto-detect if nvim-dap-ui is installed
+    use_dapui = pcall(require, 'dapui')
+  end
+
+  if use_dapui then
+    local elements = get_dap_elements()
+    if elements.register_all() then
+      M.use_dapui = true
+      -- Setup dap-ui configuration
+      get_dap_config().setup(opts.dapui_config or {})
+    end
+  else
+    -- Use custom UI
+    get_debug_ui().setup()
+  end
 end
 
 return M

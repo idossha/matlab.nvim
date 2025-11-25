@@ -16,13 +16,14 @@ The plugin is far from complete, but based on some internet search, it seems to 
 - Execute MATLAB code cells (sections between %% comments)
 - Fold/unfold MATLAB cell sections
 - Visual breakpoint indication with customizable appearance
-- Set and clear breakpoints interactively (needs to be fixed)
+- Set and clear breakpoints interactively
 - Access MATLAB documentation
 - View MATLAB workspace variables in tmux pane
 - Save and load MATLAB workspace files
 - Enhanced syntax highlighting with headers
 - Space leader key compatibility
 - **Full debugging support** with step-through execution, breakpoints, and variable inspection
+- **Dual UI backends**: Choose between custom lightweight UI or [nvim-dap-ui](https://github.com/rcarriga/nvim-dap-ui) integration
 
 ## Requirements
 
@@ -71,6 +72,7 @@ use {
 
 ### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
+**Basic installation:**
 ```lua
 {
   'idossha/matlab.nvim',
@@ -79,6 +81,27 @@ use {
   end
 }
 ```
+
+**With nvim-dap-ui integration (recommended for debugging):**
+```lua
+{
+  'idossha/matlab.nvim',
+  dependencies = {
+    'rcarriga/nvim-dap-ui',
+    dependencies = {
+      'mfussenegger/nvim-dap',
+      'nvim-neotest/nvim-nio'
+    }
+  },
+  config = function()
+    require('matlab').setup({
+      use_dapui = true,  -- Enable nvim-dap-ui integration
+    })
+  end
+}
+```
+
+See [NVIM_DAP_UI_INTEGRATION.md](NVIM_DAP_UI_INTEGRATION.md) for detailed documentation on nvim-dap-ui integration.
 
 ## Configuration
 
