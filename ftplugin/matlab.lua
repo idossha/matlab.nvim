@@ -142,6 +142,7 @@ if should_setup_mappings then
   safe_map(actual_prefix .. mappings.debug_step_out, '<Cmd>MatlabDebugStepOut<CR>', 'Step out in MATLAB debugging')
   safe_map(actual_prefix .. mappings.debug_toggle_breakpoint, '<Cmd>MatlabDebugToggleBreakpoint<CR>', 'Toggle breakpoint in MATLAB debugging')
   safe_map(actual_prefix .. mappings.debug_clear_breakpoints, '<Cmd>MatlabDebugClearBreakpoints<CR>', 'Clear all breakpoints in MATLAB debugging')
+  safe_map(actual_prefix .. mappings.debug_edit_breakpoint, '<Cmd>MatlabDebugEditBreakpoint<CR>', 'Edit breakpoint condition')
   safe_map(actual_prefix .. mappings.debug_show_variables, '<Cmd>MatlabDebugShowVariables<CR>', 'Show MATLAB variables (whos)')
   safe_map(actual_prefix .. mappings.debug_show_stack, '<Cmd>MatlabDebugShowStack<CR>', 'Show MATLAB call stack (dbstack)')
   safe_map(actual_prefix .. mappings.debug_show_breakpoints, '<Cmd>MatlabDebugShowBreakpoints<CR>', 'Show MATLAB breakpoints (dbstatus)')
