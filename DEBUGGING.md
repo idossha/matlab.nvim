@@ -60,6 +60,7 @@ With the default `<Leader>m` prefix:
 
 2. **Start Debug Session**: Press `<Leader>mds` or run `:MatlabDebugStart`
    - Your file will be saved automatically
+   - MATLAB will cd to the file's directory
    - MATLAB will run the file and stop at the first breakpoint
 
 3. **Inspect State**:
@@ -93,7 +94,14 @@ With the default `<Leader>m` prefix:
 
 **Can't start debugging**: Ensure MATLAB server is running (`:MatlabStartServer`)
 
+**"Cannot find function" error**: The plugin automatically changes MATLAB's directory to the file's location when debugging starts. If you still get this error, verify:
+- The file has been saved (`:w`)
+- You're in a `.m` file
+- The filename matches the function name (for function files)
+
 **Lost track of breakpoints**: Use `:MatlabDebugShowBreakpoints` to see all active breakpoints in MATLAB
+
+**Debugging from tests/ directory**: The plugin will automatically `cd` to the tests directory when you start debugging `tests/test_debug.m`, so the file will be found correctly
 
 ## Customization
 

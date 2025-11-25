@@ -93,14 +93,19 @@ function M.start_debug()
     end
   end
 
-  -- Get filename
+  -- Get filename and directory
   local filename = vim.fn.expand('%:t:r')
+  local filepath = vim.fn.expand('%:p:h')
   if filename == '' then
     utils.notify('Cannot determine filename', vim.log.levels.ERROR)
     return
   end
 
   M.current_file = filename
+
+  -- Change to file's directory in MATLAB
+  local cd_cmd = string.format("cd '%s'", filepath)
+  tmux.run(cd_cmd, false, false)
 
   -- Clear existing debug state in MATLAB
   tmux.run('dbclear all', false, false)
