@@ -43,9 +43,6 @@ local function get_safe_mappings()
     run = 'r',
     run_cell = 'c',
     run_to_cell = 't',
-    breakpoint = 'b',
-    clear_breakpoint = 'd',
-    clear_breakpoints = 'D',
     doc = 'h',
     toggle_workspace = 'w',
     show_workspace = 'W',
@@ -55,6 +52,19 @@ local function get_safe_mappings()
     toggle_cell_fold = 'f',
     toggle_all_cell_folds = 'F',
     open_in_gui = 'g',
+    -- Debug mappings
+    debug_start = 'ds',
+    debug_stop = 'de',
+    debug_continue = 'dc',
+    debug_step_over = 'do',
+    debug_step_into = 'di',
+    debug_step_out = 'dt',
+    debug_toggle_breakpoint = 'db',
+    debug_clear_breakpoints = 'dd',
+    debug_show_variables = 'dv',
+    debug_show_stack = 'dk',
+    debug_show_breakpoints = 'dp',
+    debug_eval = 'dx',
   }
   
   -- Merge with defaults
@@ -107,11 +117,6 @@ if should_setup_mappings then
   safe_map(actual_prefix .. mappings.run_cell, '<Cmd>MatlabRunCell<CR>', 'Run current MATLAB cell')
   safe_map(actual_prefix .. mappings.run_to_cell, '<Cmd>MatlabRunToCell<CR>', 'Run to current MATLAB cell')
 
-  -- Breakpoints
-  safe_map(actual_prefix .. mappings.breakpoint, '<Cmd>MatlabBreakpoint<CR>', 'Set MATLAB breakpoint')
-  safe_map(actual_prefix .. mappings.clear_breakpoint, '<Cmd>MatlabClearBreakpoint<CR>', 'Clear MATLAB breakpoint')
-  safe_map(actual_prefix .. mappings.clear_breakpoints, '<Cmd>MatlabClearBreakpoints<CR>', 'Clear all MATLAB breakpoints')
-
   -- Documentation
   safe_map(actual_prefix .. mappings.doc, '<Cmd>MatlabDoc<CR>', 'Show MATLAB documentation')
 
@@ -128,6 +133,20 @@ if should_setup_mappings then
   -- Open in MATLAB GUI
   safe_map(actual_prefix .. mappings.open_in_gui, '<Cmd>MatlabOpenInGUI<CR>', 'Open in MATLAB GUI')
 
+  -- Debug mappings
+  safe_map(actual_prefix .. mappings.debug_start, '<Cmd>MatlabDebugStart<CR>', 'Start MATLAB debugging session')
+  safe_map(actual_prefix .. mappings.debug_stop, '<Cmd>MatlabDebugStop<CR>', 'Stop MATLAB debugging session')
+  safe_map(actual_prefix .. mappings.debug_continue, '<Cmd>MatlabDebugContinue<CR>', 'Continue MATLAB debugging')
+  safe_map(actual_prefix .. mappings.debug_step_over, '<Cmd>MatlabDebugStepOver<CR>', 'Step over in MATLAB debugging')
+  safe_map(actual_prefix .. mappings.debug_step_into, '<Cmd>MatlabDebugStepInto<CR>', 'Step into in MATLAB debugging')
+  safe_map(actual_prefix .. mappings.debug_step_out, '<Cmd>MatlabDebugStepOut<CR>', 'Step out in MATLAB debugging')
+  safe_map(actual_prefix .. mappings.debug_toggle_breakpoint, '<Cmd>MatlabDebugToggleBreakpoint<CR>', 'Toggle breakpoint in MATLAB debugging')
+  safe_map(actual_prefix .. mappings.debug_clear_breakpoints, '<Cmd>MatlabDebugClearBreakpoints<CR>', 'Clear all breakpoints in MATLAB debugging')
+  safe_map(actual_prefix .. mappings.debug_show_variables, '<Cmd>MatlabDebugShowVariables<CR>', 'Show MATLAB variables (whos)')
+  safe_map(actual_prefix .. mappings.debug_show_stack, '<Cmd>MatlabDebugShowStack<CR>', 'Show MATLAB call stack (dbstack)')
+  safe_map(actual_prefix .. mappings.debug_show_breakpoints, '<Cmd>MatlabDebugShowBreakpoints<CR>', 'Show MATLAB breakpoints (dbstatus)')
+  safe_map(actual_prefix .. mappings.debug_eval, '<Cmd>MatlabDebugEval<CR>', 'Evaluate expression in MATLAB')
+
   -- Always add a fallback mapping that doesn't depend on leader
   safe_map(',mr', '<Cmd>MatlabRun<CR>', 'Run MATLAB script (fallback)')
   
@@ -141,12 +160,10 @@ if should_setup_mappings then
     table.insert(lines, "- " .. display_prefix .. mappings.run .. " : Run MATLAB script")
     table.insert(lines, "- " .. display_prefix .. mappings.run_cell .. " : Run current MATLAB cell")
     table.insert(lines, "- " .. display_prefix .. mappings.run_to_cell .. " : Run to current MATLAB cell")
-    table.insert(lines, "- " .. display_prefix .. mappings.breakpoint .. " : Set breakpoint")
-    table.insert(lines, "- " .. display_prefix .. mappings.clear_breakpoint .. " : Clear breakpoint")
-    table.insert(lines, "- " .. display_prefix .. mappings.clear_breakpoints .. " : Clear all breakpoints")
     table.insert(lines, "- " .. display_prefix .. mappings.doc .. " : Show documentation")
     table.insert(lines, "- " .. display_prefix .. mappings.toggle_workspace .. " : Show workspace (whos)")
     table.insert(lines, "- " .. display_prefix .. mappings.open_in_gui .. " : Open in MATLAB GUI")
+    table.insert(lines, "- " .. display_prefix .. mappings.debug_toggle_breakpoint .. " : Toggle breakpoint")
     table.insert(lines, "")
     table.insert(lines, "Fallback mapping: ,mr : Run MATLAB script")
     

@@ -15,13 +15,19 @@ The plugin is far from complete, but based on some internet search, it seems to 
 - Run MATLAB scripts directly from Neovim
 - Execute MATLAB code cells (sections between %% comments)
 - Fold/unfold MATLAB cell sections
-- Visual breakpoint indication with customizable appearance
-- Set and clear breakpoints interactively (needs to be fixed)
+- Visual breakpoint indication
+- Set and clear breakpoints interactively
 - Access MATLAB documentation
 - View MATLAB workspace variables in tmux pane
 - Save and load MATLAB workspace files
-- Enhanced syntax highlighting with headers
+- Enhanced syntax highlighting (via syntax/matlab.vim)
 - Space leader key compatibility
+- **Basic debugging support** using MATLAB's native debugger
+  - Step-through execution (over, into, out)
+  - Interactive breakpoints with visual indicators
+  - Variable inspection in MATLAB pane
+  - Call stack visualization
+  - No external dependencies required
 
 ## Requirements
 
@@ -68,11 +74,12 @@ use {
 }
 ```
 
-### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
+### Using [lazy.nvim](https://github.com/folke/lazy.nvim) - Recommended
 
 ```lua
 {
   'idossha/matlab.nvim',
+  ft = 'matlab',  -- Lazy-load on MATLAB files
   config = function()
     require('matlab').setup()
   end
@@ -106,14 +113,15 @@ require('matlab').setup({
   default_mappings = true,          -- Enable default keymappings
   force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist
   
-  -- Breakpoint visualization
-  breakpoint = {
-    sign_text = '■',                -- Character to use for breakpoint sign
-    sign_hl = 'MatlabBreakpoint',   -- Highlight group for the sign
-    line_hl = 'MatlabBreakpointLine', -- Highlight group for the entire line
-    num_hl = 'MatlabBreakpoint',    -- Highlight group for the line number
+
+  -- Debug configuration
+  debug = {
+    enabled = true,                 -- Enable debugging features
+    auto_update_ui = true,          -- Automatically update debug UI indicators
+    show_debug_status = true,       -- Show debug status in status line
   },
-  
+
+
   -- Notification options
   minimal_notifications = false,    -- Only show important notifications
   debug = false,                    -- Enable debug logging
@@ -124,9 +132,6 @@ require('matlab').setup({
     run = 'r',                      -- Run MATLAB script
     run_cell = 'c',                 -- Run current MATLAB cell
     run_to_cell = 't',              -- Run to current MATLAB cell
-    breakpoint = 'b',               -- Set breakpoint at current line
-    clear_breakpoint = 'd',         -- Clear breakpoint in current file
-    clear_breakpoints = 'D',        -- Clear all breakpoints
     doc = 'h',                      -- Show documentation for word under cursor
     toggle_workspace = 'w',         -- Show MATLAB workspace in tmux pane (whos)
     clear_workspace = 'x',          -- Clear MATLAB workspace
@@ -271,9 +276,6 @@ If you're not sure where MATLAB is installed:
   - Use `<Leader>mc` or `:MatlabRunCell` to execute only the current cell
 
 - **Debugging**:
-  - Use `<Leader>mb` or `:MatlabBreakpoint` to set a breakpoint at the current line (with visual indicator)
-  - Use `<Leader>md` or `:MatlabClearBreakpoint` to clear a breakpoint in the current file
-  - Use `<Leader>mD` or `:MatlabClearBreakpoints` to clear all breakpoints
   - Run your code with `<Leader>mr` or `:MatlabRun` to hit the breakpoints
   - By default, MATLAB GUI won't open even when breakpoints are present (`force_nogui_with_breakpoints` option)
   - Use `<Leader>mg` or `:MatlabOpenInGUI` if you want to open the current script in MATLAB GUI
@@ -289,9 +291,19 @@ If you're not sure where MATLAB is installed:
   - Use `<Leader>ml` or `:MatlabLoadWorkspace` to load a saved workspace from a .mat file
 
 - **UI & Customization**:
-  - Use `:MatlabDebugUI` to check your current UI settings
+  - Use `:MatlabShowConfig` to check your current configuration
   - Control notification verbosity with the `minimal_notifications` option
   - Customize tmux pane size and position with `panel_size` and `tmux_pane_direction`
+
+- **Debugging MATLAB Code**:
+  - Start debugging session: `<Leader>mds` or `:MatlabDebugStart`
+  - Stop debugging: `<Leader>mde` or `:MatlabDebugStop`
+  - Continue execution: `<Leader>mdc` or `:MatlabDebugContinue`
+  - Step over: `<Leader>mdo` or `:MatlabDebugStepOver`
+  - Step into: `<Leader>mdi` or `:MatlabDebugStepInto`
+  - Step out: `<Leader>mdt` or `:MatlabDebugStepOut`
+  - Toggle breakpoint: `<Leader>mdb` or `:MatlabDebugToggleBreakpoint`
+  - Clear all breakpoints: `<Leader>mdd` or `:MatlabDebugClearBreakpoints`
 
 - **Customizing Keymappings**:
   - Full support for Space as leader key with proper handling of key conflicts
@@ -317,9 +329,6 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `<Leader>mr` | `:MatlabRun`             | Run current MATLAB script              |
 | `<Leader>mc` | `:MatlabRunCell`         | Run current MATLAB cell                |
 | `<Leader>mt` | `:MatlabRunToCell`       | Run up to current MATLAB cell          |
-| `<Leader>mb` | `:MatlabBreakpoint`      | Set breakpoint at current line         |
-| `<Leader>md` | `:MatlabClearBreakpoint` | Clear breakpoint in current file       |
-| `<Leader>mD` | `:MatlabClearBreakpoints`| Clear all breakpoints                  |
 | `<Leader>mh` | `:MatlabDoc`             | Show documentation for word under cursor |
 | `<Leader>mw` | `:MatlabWorkspace`       | Show workspace variables (whos)        |
 | `<Leader>mx` | `:MatlabClearWorkspace`  | Clear MATLAB workspace                 |
@@ -328,6 +337,130 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `<Leader>mf` | `:MatlabToggleCellFold`  | Toggle current cell fold               |
 | `<Leader>mF` | `:MatlabToggleAllCellFolds` | Toggle all cell folds               |
 | `<Leader>mg` | `:MatlabOpenInGUI`        | Open current script in MATLAB GUI     |
+| `<Leader>mds`| `:MatlabDebugStart`        | Start MATLAB debugging session        |
+| `<Leader>mde`| `:MatlabDebugStop`         | Stop MATLAB debugging session         |
+| `<Leader>mdc`| `:MatlabDebugContinue`     | Continue MATLAB debugging             |
+| `<Leader>mdo`| `:MatlabDebugStepOver`     | Step over in MATLAB debugging         |
+| `<Leader>mdi`| `:MatlabDebugStepInto`     | Step into in MATLAB debugging         |
+| `<Leader>mdt`| `:MatlabDebugStepOut`      | Step out in MATLAB debugging          |
+| `<Leader>mdb`| `:MatlabDebugToggleBreakpoint` | Toggle breakpoint in MATLAB debugging |
+| `<Leader>mdd`| `:MatlabDebugClearBreakpoints` | Clear all breakpoints in MATLAB debugging |
+
+## Debugging MATLAB Code
+
+matlab.nvim includes basic debugging support using MATLAB's built-in debugging commands. This allows you to step through your code, set breakpoints, inspect variables, and control execution flow directly from Neovim.
+
+### Quick Start
+
+1. Open a MATLAB file (`.m`) in Neovim inside a tmux session
+2. Start MATLAB with `:MatlabStartServer`
+3. Set breakpoints with `<Leader>mdb` or `:MatlabDebugToggleBreakpoint`
+4. Start debugging with `<Leader>mds` or `:MatlabDebugStart`
+5. Use stepping commands to navigate through your code:
+   - `<Leader>mdc` - Continue execution
+   - `<Leader>mdo` - Step over
+   - `<Leader>mdi` - Step into functions
+   - `<Leader>mdt` - Step out of functions
+6. View debug information in the MATLAB pane:
+   - `<Leader>mdv` - Show variables (whos)
+   - `<Leader>mdk` - Show call stack (dbstack)
+   - `<Leader>mdp` - Show breakpoints (dbstatus)
+   - `<Leader>mdx` - Evaluate expression
+7. Stop debugging with `<Leader>mde` or `:MatlabDebugStop`
+
+### Debugging Commands
+
+| Command | Description | Default Mapping |
+|---------|-------------|-----------------|
+| `:MatlabDebugStart` | Start a debugging session for the current file | `<Leader>mds` |
+| `:MatlabDebugStop` | Stop the current debugging session | `<Leader>mde` |
+| `:MatlabDebugContinue` | Continue execution until next breakpoint | `<Leader>mdc` |
+| `:MatlabDebugStepOver` | Execute current line and stop at next line | `<Leader>mdo` |
+| `:MatlabDebugStepInto` | Step into function calls | `<Leader>mdi` |
+| `:MatlabDebugStepOut` | Step out of current function | `<Leader>mdt` |
+| `:MatlabDebugToggleBreakpoint` | Toggle breakpoint at current line | `<Leader>mdb` |
+| `:MatlabDebugClearBreakpoints` | Clear all breakpoints | `<Leader>mdd` |
+| `:MatlabDebugShowVariables` | Show workspace variables in MATLAB pane | `<Leader>mdv` |
+| `:MatlabDebugShowStack` | Show call stack in MATLAB pane | `<Leader>mdk` |
+| `:MatlabDebugShowBreakpoints` | Show all breakpoints in MATLAB pane | `<Leader>mdp` |
+| `:MatlabDebugEval` | Evaluate expression in debug context | `<Leader>mdx` |
+
+### Visual Indicators
+
+- **Breakpoints**: Red circle (●) in the sign column with highlighted line
+- Debug output appears in the MATLAB tmux pane
+
+### How It Works
+
+matlab.nvim uses MATLAB's native debugging commands (`dbstop`, `dbcont`, `dbstep`, etc.) under the hood. All debug output appears in your MATLAB tmux pane, providing a simple, dependency-free debugging experience.
+
+### Tips
+
+- Files are automatically saved when starting a debug session
+- View variables, call stack, and breakpoints in the MATLAB pane using the show commands
+- You can also type MATLAB debug commands directly in the tmux pane (`dbstep`, `whos`, etc.)
+- Breakpoints persist across debugging sessions within the same Neovim session
+- Breakpoints are synchronized with MATLAB's native debugger
+
+### Troubleshooting Debugging
+
+**Breakpoint not stopping**: Make sure the line contains executable code (not comments or blank lines)
+
+**Can't start debugging**: Ensure MATLAB server is running (`:MatlabStartServer`)
+
+**"Cannot find function" error**: The plugin automatically changes MATLAB's directory to the file's location when debugging starts. If you still get this error, verify:
+- The file has been saved (`:w`)
+- You're in a `.m` file
+- The filename matches the function name (for function files)
+
+**Lost track of breakpoints**: Use `:MatlabDebugShowBreakpoints` to see all active breakpoints in MATLAB
+
+**Debugging from tests/ directory**: The plugin will automatically `cd` to the tests directory when you start debugging `tests/test_debug.m`, so the file will be found correctly
+
+#### Customization
+
+##### Custom Key Mappings
+
+You can customize the debug key mappings in your setup:
+
+```lua
+require('matlab').setup({
+  mappings = {
+    debug_start = 'ds',
+    debug_stop = 'de',
+    debug_continue = 'dc',
+    debug_step_over = 'do',
+    debug_step_into = 'di',
+    debug_step_out = 'dt',
+    debug_toggle_breakpoint = 'db',
+    debug_clear_breakpoints = 'dd',
+    debug_show_variables = 'dv',
+    debug_show_stack = 'dk',
+    debug_show_breakpoints = 'dp',
+    debug_eval = 'dx',
+  }
+})
+```
+
+##### Breakpoint Signs
+
+Breakpoint signs use default highlighting. The sign appears as a red circle (●) in the sign column with highlighted line when a breakpoint is set.
+
+##### MATLAB Debug Commands Reference
+
+The debugging module uses these native MATLAB commands:
+
+- `dbstop in <file> at <line>` - Set breakpoint
+- `dbclear <file> at <line>` - Clear specific breakpoint
+- `dbclear all` - Clear all breakpoints
+- `dbcont` - Continue execution
+- `dbstep` - Step to next line
+- `dbstep in` - Step into function
+- `dbstep out` - Step out of function
+- `dbstack` - Show call stack
+- `dbstatus` - Show all breakpoints
+- `dbquit` - Exit debug mode
+- `whos` - Show workspace variables
 
 ## Troubleshooting
 
@@ -405,7 +538,7 @@ require('matlab').setup({
 
 ### Debug Information
 
-Use `:MatlabDebugUI` to check your current configuration, including environment variables. Enable debug logging for detailed information:
+Use `:MatlabShowConfig` to check your current configuration, including environment variables. Enable debug logging for detailed information:
 
 ```lua
 require('matlab').setup({

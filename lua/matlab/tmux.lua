@@ -109,7 +109,7 @@ function M.open_pane()
 end
 
 -- Run a command in the MATLAB pane
-function M.run(command, skip_interrupt, skip_output)
+function M.run(command, skip_interrupt, skip_output, use_shell_escape)
   local target = M.get_server_pane()
 
   if target then
@@ -119,7 +119,18 @@ function M.run(command, skip_interrupt, skip_output)
     end
 
     local cmd = vim.fn.escape(command, '"')
-    local r = M.execute("send-keys -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(cmd))
+
+    -- Use shell escaping by default, but allow disabling it for commands with special characters
+    local use_shell_escape = use_shell_escape ~= false  -- default to true
+    local send_cmd
+    if use_shell_escape then
+      send_cmd = "send-keys -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(cmd)
+    else
+      -- Send without shell escaping - may work better for commands with special characters
+      send_cmd = "send-keys -t " .. vim.fn.shellescape(target) .. " '" .. cmd .. "'"
+    end
+
+    local r = M.execute(send_cmd)
     M.execute("send-keys -t " .. vim.fn.shellescape(target) .. " Enter")
     
     -- If not skipping output, open the pane to show results
