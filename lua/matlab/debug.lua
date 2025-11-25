@@ -235,13 +235,13 @@ function M.toggle_breakpoint()
     utils.notify('Breakpoint cleared: line ' .. line, vim.log.levels.INFO)
   else
     -- Set breakpoint - prompt for condition
-    local condition = vim.fn.input('Breakpoint condition (leave empty for unconditional): ')
+    local condition = vim.fn.input('Breakpoint condition (e.g., "x > 5", leave empty for unconditional): ')
     local is_conditional = condition ~= '' and condition ~= nil
 
     local cmd
     if is_conditional then
-      cmd = string.format('dbstop in %s at %d if %s', filename, line, condition)
-      utils.notify('Conditional breakpoint set: line ' .. line .. ' if ' .. condition, vim.log.levels.INFO)
+      cmd = string.format('dbstop in %s at %d %s', filename, line, condition)
+      utils.notify('Conditional breakpoint set: line ' .. line .. ' when ' .. condition, vim.log.levels.INFO)
     else
       cmd = string.format('dbstop in %s at %d', filename, line)
       utils.notify('Breakpoint set: line ' .. line, vim.log.levels.INFO)
@@ -299,9 +299,9 @@ function M.edit_breakpoint_condition()
     return
   end
 
-  -- Prompt for new condition (pre-fill with existing condition)
-  local current_condition = bp_info.condition or ''
-  local new_condition = vim.fn.input('Breakpoint condition (leave empty for unconditional): ', current_condition)
+    -- Prompt for new condition (pre-fill with existing condition)
+    local current_condition = bp_info.condition or ''
+    local new_condition = vim.fn.input('Breakpoint condition (e.g., "x > 5", leave empty for unconditional): ', current_condition)
 
   -- Clear existing breakpoint
   tmux.run(string.format('dbclear %s at %d', filename, line), false, false)
@@ -311,8 +311,8 @@ function M.edit_breakpoint_condition()
   local cmd
 
   if is_conditional then
-    cmd = string.format('dbstop in %s at %d if %s', filename, line, new_condition)
-    utils.notify('Conditional breakpoint updated: line ' .. line .. ' if ' .. new_condition, vim.log.levels.INFO)
+    cmd = string.format('dbstop in %s at %d %s', filename, line, new_condition)
+    utils.notify('Conditional breakpoint updated: line ' .. line .. ' when ' .. new_condition, vim.log.levels.INFO)
   else
     cmd = string.format('dbstop in %s at %d', filename, line)
     utils.notify('Breakpoint updated: line ' .. line .. ' (unconditional)', vim.log.levels.INFO)
@@ -341,7 +341,7 @@ function M.restore_breakpoints()
         for line, bp_info in pairs(buf_breakpoints) do
           local cmd
           if bp_info.condition then
-            cmd = string.format('dbstop in %s at %d if %s', filename, line, bp_info.condition)
+            cmd = string.format('dbstop in %s at %d %s', filename, line, bp_info.condition)
           else
             cmd = string.format('dbstop in %s at %d', filename, line)
           end

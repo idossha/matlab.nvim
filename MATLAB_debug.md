@@ -74,8 +74,10 @@ Start Server → Set Breakpoints → Start Debug → Step/Continue → Inspect �
 The plugin translates Neovim commands to these MATLAB debugging commands:
 
 - `dbstop in file at line` - Set unconditional breakpoint
-- `dbstop in file at line if condition` - Set conditional breakpoint
+- `dbstop in file at line condition` - Set conditional breakpoint
 - `dbclear file at line` - Clear specific breakpoint
+
+**Note**: Conditional breakpoints use MATLAB expression syntax (e.g., `x > 5`, `length(data) > 10`, `strcmp(status, 'error')`). The condition is evaluated in MATLAB's workspace when the breakpoint line is reached.
 - `dbclear all` - Clear all breakpoints
 - `dbcont` - Continue execution
 - `dbstep` - Step over
