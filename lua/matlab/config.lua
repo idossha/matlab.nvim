@@ -24,7 +24,26 @@ M.defaults = {
     line_hl = 'MatlabBreakpointLine', -- Highlight group for the entire line
     num_hl = 'MatlabBreakpoint', -- Highlight group for the line number
   },
-  
+
+  -- Debug configuration
+  debug = {
+    enabled = true, -- Enable debugging features
+    auto_update_ui = true, -- Automatically update debug UI indicators
+    show_debug_status = true, -- Show debug status in status line
+  },
+
+  -- Debug UI configuration
+  debug_ui = {
+    variables_position = 'right',   -- Position of variables window ('left', 'right', 'top', 'bottom')
+    variables_size = 0.3,           -- Size of variables window (0.0-1.0)
+    callstack_position = 'bottom',  -- Position of call stack window
+    callstack_size = 0.3,           -- Size of call stack window
+    breakpoints_position = 'left',  -- Position of breakpoints window
+    breakpoints_size = 0.25,        -- Size of breakpoints window
+    repl_position = 'bottom',       -- Position of REPL window
+    repl_size = 0.4,                -- Size of REPL window
+  },
+
   -- Default keymappings with leader-m prefix
   mappings = {
     prefix = '<Leader>m', -- Common prefix for all MATLAB mappings
@@ -42,6 +61,26 @@ M.defaults = {
     toggle_cell_fold = 'f', -- Toggle current cell fold
     toggle_all_cell_folds = 'F', -- Toggle all cell folds
     open_in_gui = 'g',     -- Open current script in MATLAB GUI
+    -- Debug mappings
+    debug_start = 'ds',   -- Start debugging session
+    debug_stop = 'de',    -- Stop debugging session
+    debug_continue = 'dc', -- Continue execution
+    debug_step_over = 'do', -- Step over
+    debug_step_into = 'di', -- Step into
+    debug_step_out = 'dt', -- Step out
+    debug_toggle_breakpoint = 'db', -- Toggle breakpoint
+    debug_clear_breakpoints = 'dd', -- Clear all breakpoints
+    debug_ui = 'du',     -- Show debug UI
+    -- Debug UI mappings
+    debug_show_variables = 'dv',    -- Show variables window
+    debug_show_callstack = 'dk',    -- Show call stack window
+    debug_show_breakpoints = 'dp',  -- Show breakpoints window
+    debug_show_repl = 'dr',         -- Show REPL window
+    debug_toggle_variables = 'tv',  -- Toggle variables window
+    debug_toggle_callstack = 'tk',  -- Toggle call stack window
+    debug_toggle_breakpoints = 'tp', -- Toggle breakpoints window
+    debug_toggle_repl = 'tr',       -- Toggle REPL window
+    debug_close_ui = 'dx',          -- Close all debug UI windows
   }
 }
 

@@ -22,6 +22,7 @@ The plugin is far from complete, but based on some internet search, it seems to 
 - Save and load MATLAB workspace files
 - Enhanced syntax highlighting with headers
 - Space leader key compatibility
+- **Full debugging support** with step-through execution, breakpoints, and variable inspection
 
 ## Requirements
 
@@ -113,7 +114,26 @@ require('matlab').setup({
     line_hl = 'MatlabBreakpointLine', -- Highlight group for the entire line
     num_hl = 'MatlabBreakpoint',    -- Highlight group for the line number
   },
-  
+
+  -- Debug configuration
+  debug = {
+    enabled = true,                 -- Enable debugging features
+    auto_update_ui = true,          -- Automatically update debug UI indicators
+    show_debug_status = true,       -- Show debug status in status line
+  },
+
+  -- Debug UI configuration
+  debug_ui = {
+    variables_position = 'right',   -- Position of variables window ('left', 'right', 'top', 'bottom')
+    variables_size = 0.3,           -- Size of variables window (0.0-1.0)
+    callstack_position = 'bottom',  -- Position of call stack window
+    callstack_size = 0.3,           -- Size of call stack window
+    breakpoints_position = 'left',  -- Position of breakpoints window
+    breakpoints_size = 0.25,        -- Size of breakpoints window
+    repl_position = 'bottom',       -- Position of REPL window
+    repl_size = 0.4,                -- Size of REPL window
+  },
+
   -- Notification options
   minimal_notifications = false,    -- Only show important notifications
   debug = false,                    -- Enable debug logging
@@ -293,6 +313,17 @@ If you're not sure where MATLAB is installed:
   - Control notification verbosity with the `minimal_notifications` option
   - Customize tmux pane size and position with `panel_size` and `tmux_pane_direction`
 
+- **Debugging MATLAB Code**:
+  - Start debugging session: `<Leader>mds` or `:MatlabDebugStart`
+  - Stop debugging: `<Leader>mde` or `:MatlabDebugStop`
+  - Continue execution: `<Leader>mdc` or `:MatlabDebugContinue`
+  - Step over: `<Leader>mdo` or `:MatlabDebugStepOver`
+  - Step into: `<Leader>mdi` or `:MatlabDebugStepInto`
+  - Step out: `<Leader>mdt` or `:MatlabDebugStepOut`
+  - Toggle breakpoint: `<Leader>mdb` or `:MatlabDebugToggleBreakpoint`
+  - Clear all breakpoints: `<Leader>mdd` or `:MatlabDebugClearBreakpoints`
+  - Show debug UI: `<Leader>mdu` or `:MatlabDebugUI`
+
 - **Customizing Keymappings**:
   - Full support for Space as leader key with proper handling of key conflicts
   - You can customize all keymappings through the `mappings` table in your setup
@@ -328,6 +359,102 @@ When `default_mappings` is enabled, the following keymaps are available in MATLA
 | `<Leader>mf` | `:MatlabToggleCellFold`  | Toggle current cell fold               |
 | `<Leader>mF` | `:MatlabToggleAllCellFolds` | Toggle all cell folds               |
 | `<Leader>mg` | `:MatlabOpenInGUI`        | Open current script in MATLAB GUI     |
+| `<Leader>mds`| `:MatlabDebugStart`        | Start MATLAB debugging session        |
+| `<Leader>mde`| `:MatlabDebugStop`         | Stop MATLAB debugging session         |
+| `<Leader>mdc`| `:MatlabDebugContinue`     | Continue MATLAB debugging             |
+| `<Leader>mdo`| `:MatlabDebugStepOver`     | Step over in MATLAB debugging         |
+| `<Leader>mdi`| `:MatlabDebugStepInto`     | Step into in MATLAB debugging         |
+| `<Leader>mdt`| `:MatlabDebugStepOut`      | Step out in MATLAB debugging          |
+| `<Leader>mdb`| `:MatlabDebugToggleBreakpoint` | Toggle breakpoint in MATLAB debugging |
+| `<Leader>mdd`| `:MatlabDebugClearBreakpoints` | Clear all breakpoints in MATLAB debugging |
+| `<Leader>mdu`| `:MatlabDebugUI`           | Show MATLAB debug UI                 |
+| `<Leader>mdv`| `:MatlabDebugShowVariables` | Show variables window                |
+| `<Leader>mdk`| `:MatlabDebugShowCallstack` | Show call stack window               |
+| `<Leader>mdp`| `:MatlabDebugShowBreakpoints`| Show breakpoints window              |
+| `<Leader>mdr`| `:MatlabDebugShowRepl`      | Show REPL window                     |
+| `<Leader>mtv`| `:MatlabDebugToggleVariables`| Toggle variables window              |
+| `<Leader>mtk`| `:MatlabDebugToggleCallstack`| Toggle call stack window             |
+| `<Leader>mtp`| `:MatlabDebugToggleBreakpoints`| Toggle breakpoints window            |
+| `<Leader>mtr`| `:MatlabDebugToggleRepl`    | Toggle REPL window                   |
+| `<Leader>mdx`| `:MatlabDebugCloseUI`       | Close all debug UI windows           |
+
+## Debugging MATLAB Code
+
+matlab.nvim now includes full debugging support using MATLAB's built-in debugging commands. This allows you to step through your code, set breakpoints, inspect variables, and control execution flow directly from Neovim.
+
+### Quick Start
+
+1. Open a MATLAB file (`.m`) in Neovim inside a tmux session
+2. Start MATLAB with `:MatlabStartServer`
+3. Set breakpoints with `<Leader>mdb` or `:MatlabDebugToggleBreakpoint`
+4. Start debugging with `<Leader>mds` or `:MatlabDebugStart`
+5. Use stepping commands to navigate through your code:
+   - `<Leader>mdc` - Continue execution
+   - `<Leader>mdo` - Step over
+   - `<Leader>mdi` - Step into functions
+   - `<Leader>mdt` - Step out of functions
+6. Open the debug UI with `<Leader>mdu` to see variables, call stack, and breakpoints
+7. Use the REPL window to execute MATLAB commands during debugging
+8. Stop debugging with `<Leader>mde` or `:MatlabDebugStop`
+
+### Debugging Commands
+
+#### Core Debugging Commands
+
+| Command | Description |
+|---------|-------------|
+| `:MatlabDebugStart` | Start a debugging session for the current file |
+| `:MatlabDebugStop` | Stop the current debugging session |
+| `:MatlabDebugContinue` | Continue execution until next breakpoint |
+| `:MatlabDebugStepOver` | Execute current line and stop at next line |
+| `:MatlabDebugStepInto` | Step into function calls |
+| `:MatlabDebugStepOut` | Step out of current function |
+| `:MatlabDebugToggleBreakpoint` | Toggle breakpoint at current line |
+| `:MatlabDebugClearBreakpoints` | Clear all breakpoints |
+
+#### Debug UI Commands
+
+| Command | Description |
+|---------|-------------|
+| `:MatlabDebugUI` | Show all debugging windows (variables, call stack, breakpoints, REPL) |
+| `:MatlabDebugShowVariables` | Show variables window |
+| `:MatlabDebugShowCallstack` | Show call stack window |
+| `:MatlabDebugShowBreakpoints` | Show breakpoints window |
+| `:MatlabDebugShowRepl` | Show MATLAB REPL/console window |
+| `:MatlabDebugToggleVariables` | Toggle variables window |
+| `:MatlabDebugToggleCallstack` | Toggle call stack window |
+| `:MatlabDebugToggleBreakpoints` | Toggle breakpoints window |
+| `:MatlabDebugToggleRepl` | Toggle REPL window |
+| `:MatlabDebugCloseUI` | Close all debug UI windows |
+
+### Visual Indicators
+
+- **Breakpoints**: Red square (■) in the sign column
+- **Current execution line**: Green arrow (▶) when debugging is active
+
+### Debug UI Windows
+
+The debugging UI provides several floating windows (similar to nvim-dap-ui):
+
+- **Variables Window** (`<Leader>mdv`): Shows MATLAB workspace variables
+- **Call Stack Window** (`<Leader>mdk`): Shows the current execution stack
+- **Breakpoints Window** (`<Leader>mdp`): Lists all active breakpoints
+- **REPL Window** (`<Leader>mdr`): Interactive MATLAB console for debugging
+
+Each window can be toggled individually or all can be opened with `<Leader>mdu`. Press `q` or `<Esc>` to close individual windows, or use `<Leader>mdx` to close all debug UI windows.
+
+### Tips
+
+- Always save your file (`:w`) before starting debugging
+- Use `<Leader>mdu` to inspect variables and call stack during debugging
+- MATLAB's debugging commands work in the tmux pane - you can also type them directly
+- Breakpoints persist across debugging sessions within the same Neovim session
+
+### Requirements
+
+- MATLAB must be running in the tmux pane
+- Files must be saved before debugging
+- Works with MATLAB's command-line debugger (not GUI debugger)
 
 ## Troubleshooting
 

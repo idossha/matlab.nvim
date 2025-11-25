@@ -7,6 +7,7 @@ local tmux = require('matlab.tmux')
 local commands = require('matlab.commands')
 local cells = require('matlab.cells')
 local workspace = require('matlab.workspace')
+local debug_module = require('matlab.debug')
 
 -- Use centralized notification system
 local notify = utils.notify
@@ -46,9 +47,12 @@ function M.setup(opts)
   
   -- Initialize configuration
   config.setup(opts)
-  
+
   -- Define signs for breakpoints
   define_signs()
+
+  -- Initialize debugging module
+  debug_module.setup()
   
   -- Show message on first load only if minimal notifications are disabled
   vim.schedule(function()
@@ -127,7 +131,83 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('MatlabLoadWorkspace', function(args)
     workspace.load(args.args ~= '' and args.args or nil)
   end, { nargs = '?' })
-  
+
+  -- Debug commands
+  vim.api.nvim_create_user_command('MatlabDebugStart', function()
+    debug_module.start_debug()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugStop', function()
+    debug_module.stop_debug()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugContinue', function()
+    debug_module.continue_debug()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugStepOver', function()
+    debug_module.step_over()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugStepInto', function()
+    debug_module.step_into()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugStepOut', function()
+    debug_module.step_out()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugToggleBreakpoint', function()
+    debug_module.toggle_breakpoint()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugClearBreakpoints', function()
+    debug_module.clear_breakpoints()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugUI', function()
+    debug_module.show_debug_ui()
+  end, {})
+
+  -- Individual UI window commands
+  vim.api.nvim_create_user_command('MatlabDebugShowVariables', function()
+    debug_module.show_variables()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugShowCallstack', function()
+    debug_module.show_callstack()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugShowBreakpoints', function()
+    debug_module.show_breakpoints()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugShowRepl', function()
+    debug_module.show_repl()
+  end, {})
+
+  -- Toggle UI window commands
+  vim.api.nvim_create_user_command('MatlabDebugToggleVariables', function()
+    debug_module.toggle_variables()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugToggleCallstack', function()
+    debug_module.toggle_callstack()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugToggleBreakpoints', function()
+    debug_module.toggle_breakpoints()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugToggleRepl', function()
+    debug_module.toggle_repl()
+  end, {})
+
+  -- Close UI commands
+  vim.api.nvim_create_user_command('MatlabDebugCloseUI', function()
+    debug_module.close_ui()
+  end, {})
+
   -- Debug command to check UI settings
   vim.api.nvim_create_user_command('MatlabDebugUI', function()
     local env_vars = config.get('environment')
@@ -215,5 +295,6 @@ M.cells = cells
 M.workspace = workspace
 M.tmux = tmux
 M.config = config
+M.debug = debug_module
 
 return M
