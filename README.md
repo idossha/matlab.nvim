@@ -1,67 +1,76 @@
 # matlab.nvim
 
-A modern Neovim plugin for MATLAB integration with tmux. This plugin provides integration between Neovim, MATLAB, and tmux, making your MATLAB development workflow more efficient.
+A modern Neovim plugin for MATLAB integration with tmux. This plugin provides seamless integration between Neovim, MATLAB, and tmux, making your MATLAB development workflow efficient and productive.
 
-This plugin is inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab-vim) but rewritten in Lua for Neovim with a modular architecture and enhanced functionality.
+Inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab-vim), rewritten in Lua for Neovim with a modular architecture and enhanced functionality.
 
-The plugin is far from complete, but based on some internet search, it seems to be the only MATLAB plugin for Neovim. 
-**Contributions are more than welcome.**
+**Contributions are welcome!** This plugin is actively maintained and we encourage community involvement.
 
 ![Demo of Neovim MATLAB Plugin](docs/example.gif)
 
 ## Features
 
-- Launches a MATLAB console in a tmux split
-- Run MATLAB scripts directly from Neovim
-- Execute MATLAB code cells (sections between %% comments)
-- Fold/unfold MATLAB cell sections
-- Visual breakpoint indication
-- Set and clear breakpoints interactively
-- Access MATLAB documentation
-- View MATLAB workspace variables in tmux pane
-- Save and load MATLAB workspace files
-- Enhanced syntax highlighting (via syntax/matlab.vim)
-- Space leader key compatibility
-- **Basic debugging support** using MATLAB's native debugger
-  - Step-through execution (over, into, out)
-  - Interactive breakpoints with visual indicators
-  - Variable inspection in MATLAB pane
-  - Call stack visualization
-  - No external dependencies required
+### Core Features
+- 🚀 Launch MATLAB console in a tmux split
+- ▶️ Run MATLAB scripts and cells directly from Neovim
+- 📁 Execute code cells (sections between `%%` comments)
+- 🔍 Fold/unfold MATLAB cell sections
+- 📚 Access MATLAB documentation for functions
+- 💾 Save and load MATLAB workspace files
+- 🎨 Enhanced syntax highlighting
+
+### Debugging Features
+- 🐛 Native MATLAB debugger integration (no external dependencies)
+- 🔴 Visual breakpoint indicators with full-line highlighting
+- ⏯️ Step-through execution (over, into, out)
+- 📊 Variable inspection and workspace viewing
+- 📞 Call stack visualization
+- 🎛️ Interactive debug UI with floating windows
+- 🔄 Efficient debug line tracking (updates on command execution)
 
 ## Requirements
 
-- Neovim 0.7.0 or later
-- tmux (must be installed and you must run Neovim inside a tmux session)
-- MATLAB
+- **Neovim**: 0.7.0 or later
+- **tmux**: Must be installed and running
+- **MATLAB**: Any recent version
 
 ### Tmux Setup
 
-This plugin requires you to run Neovim inside a tmux session. If you're not familiar with tmux, here's a quick start:
+This plugin requires running Neovim inside a tmux session.
 
-1. Install tmux:
+**Quick Start:**
+
+1. **Install tmux:**
    - macOS: `brew install tmux`
    - Ubuntu/Debian: `sudo apt install tmux`
    - CentOS/RHEL: `sudo yum install tmux`
 
-2. Start a tmux session:
-   ```sh
+2. **Start tmux and Neovim:**
+   ```bash
    tmux
-   ```
-
-3. Inside the tmux session, launch Neovim:
-   ```sh
    nvim
    ```
 
-4. Basic tmux commands:
-   - Split horizontally: `Ctrl-b "` 
+3. **Basic tmux commands:**
+   - Split horizontally: `Ctrl-b "`
    - Split vertically: `Ctrl-b %`
    - Switch panes: `Ctrl-b arrow-key`
-   - Detach session (without closing): `Ctrl-b d`
-   - Reattach to session: `tmux attach`
+   - Detach session: `Ctrl-b d`
+   - Reattach: `tmux attach`
 
 ## Installation
+
+### Using [lazy.nvim](https://github.com/folke/lazy.nvim) (Recommended)
+
+```lua
+{
+  'idossha/matlab.nvim',
+  ft = 'matlab',  -- Lazy-load on MATLAB files
+  config = function()
+    require('matlab').setup()
+  end
+}
+```
 
 ### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
 
@@ -74,398 +83,78 @@ use {
 }
 ```
 
-### Using [lazy.nvim](https://github.com/folke/lazy.nvim) - Recommended
-
-```lua
-{
-  'idossha/matlab.nvim',
-  ft = 'matlab',  -- Lazy-load on MATLAB files
-  config = function()
-    require('matlab').setup()
-  end
-}
-```
-
 ## Configuration
 
-You can customize matlab.nvim by passing options to the setup function:
+### Basic Configuration
 
 ```lua
 require('matlab').setup({
-  -- Path to MATLAB executable (should be full path)
-  executable = '/path/to/matlab',            
-  
-  -- Environment variables to set before starting MATLAB
-  environment = {
-    -- LD_LIBRARY_PATH = '/usr/local/lib:/opt/custom/lib',
-    -- MATLAB_LOG_DIR = '/tmp/matlab_logs',
-    -- DISPLAY = ':0.0',  -- For X11 forwarding on Linux
-  },
-  
-  -- UI options
-  panel_size = 50,                  -- Size of the tmux pane (in percentage)
-  panel_size_type = 'percentage',   -- 'percentage' or 'fixed' (fixed = columns)
-  tmux_pane_direction = 'right',    -- Position of the tmux pane ('right', 'below')
-  tmux_pane_focus = true,           -- Make tmux pane visible when created
-  
-  -- Behavior options
-  auto_start = true,                -- Auto-start MATLAB when opening a .m file
-  default_mappings = true,          -- Enable default keymappings
-  force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist (adds -nodisplay flag)
-  
+  -- MATLAB executable path (auto-detected if in PATH)
+  executable = 'matlab',  -- or full path: '/Applications/MATLAB_R2024a.app/bin/matlab'
 
-  -- Debug features configuration
-  debug_features = {
-    enabled = true,                 -- Enable debugging features
-    auto_update_ui = true,          -- Automatically update debug UI indicators
-    show_debug_status = true,       -- Show debug status in status line
-  },
+  -- Tmux pane configuration
+  panel_size = 50,                  -- Size in percentage
+  panel_size_type = 'percentage',   -- 'percentage' or 'fixed'
+  tmux_pane_direction = 'right',    -- 'right' or 'below'
+  tmux_pane_focus = true,           -- Focus pane when created
 
+  -- Behavior
+  auto_start = true,                -- Auto-start MATLAB on .m files
+  default_mappings = true,          -- Enable default keybindings
+  minimal_notifications = true,     -- Show only important messages
 
-  -- Notification options
-  minimal_notifications = false,    -- Only show important notifications
-  debug = false,                    -- Enable debug logging (separate from debug_features)
-  
-  -- Keymap customization
-  mappings = {
-    prefix = '<Leader>m',           -- Common prefix for all MATLAB mappings
-    run = 'r',                      -- Run MATLAB script
-    run_cell = 'c',                 -- Run current MATLAB cell
-    run_to_cell = 't',              -- Run to current MATLAB cell
-    doc = 'h',                      -- Show documentation for word under cursor
-    toggle_workspace = 'w',         -- Show MATLAB workspace in tmux pane (whos)
-    clear_workspace = 'x',          -- Clear MATLAB workspace
-    save_workspace = 's',           -- Save MATLAB workspace
-    load_workspace = 'l',           -- Load MATLAB workspace
-    toggle_cell_fold = 'f',         -- Toggle current cell fold
-    toggle_all_cell_folds = 'F',    -- Toggle all cell folds
-    open_in_gui = 'g',             -- Open current script in MATLAB GUI
-  }
+  -- Prevent GUI from opening during debugging
+  force_nogui_with_breakpoints = true,
 })
 ```
 
-### Environment Variables
-
-The plugin supports setting environment variables that will be applied before starting MATLAB. This is particularly useful for:
-
-- **Library paths**: Setting `LD_LIBRARY_PATH` on Linux for custom libraries
-- **Display settings**: Configuring `DISPLAY` for X11 forwarding
-- **MATLAB-specific variables**: Custom MATLAB environment configuration
-- **System dependencies**: Fixing package conflicts on Linux distributions
-
-#### Example Usage
+### Advanced Configuration
 
 ```lua
 require('matlab').setup({
   executable = '/usr/local/MATLAB/R2024a/bin/matlab',
+
+  -- Environment variables (useful for Linux/WSL)
   environment = {
-    LD_LIBRARY_PATH = '/usr/local/lib:/opt/custom/lib',
-    MATLAB_LOG_DIR = '/tmp/matlab_logs',
-    DISPLAY = ':0.0',  -- For X11 forwarding
-    -- Add any other environment variables you need
+    LD_LIBRARY_PATH = '/usr/local/lib',
+    -- DISPLAY = ':0',  -- Uncomment for X11 forwarding
   },
-})
-```
 
-#### Common Use Cases
+  -- Debug features
+  debug_features = {
+    enabled = true,
+    auto_update_ui = true,
+    show_debug_status = true,
+  },
 
-**Linux with package conflicts** (like the user's Arch Linux issue):
-```lua
-environment = {
-  LD_LIBRARY_PATH = '/usr/local/lib:/opt/matlab/lib',
-  XAPPLRESDIR = '/opt/matlab/X11/app-defaults',
-}
-```
+  -- Debug UI window positions
+  debug_ui = {
+    variables_position = 'right',   -- 'left', 'right', 'top', 'bottom'
+    variables_size = 0.3,
+    callstack_position = 'bottom',
+    callstack_size = 0.3,
+    breakpoints_position = 'left',
+    breakpoints_size = 0.25,
+  },
 
-**Remote server with X11 forwarding**:
-```lua
-environment = {
-  DISPLAY = 'localhost:10.0',
-  XAUTHORITY = os.getenv('HOME') .. '/.Xauthority',
-}
-```
+  -- Logging
+  debug = false,  -- Enable debug logging to ~/.cache/nvim/matlab_nvim.log
 
-**Debug mode**:
-```lua
-environment = {
-  MATLAB_LOG_DIR = '/tmp/matlab_debug',
-  MATLAB_PREFDIR = '/tmp/matlab_prefs',
-}
-```
-
-**Note**: Environment variable names must be valid (letters, numbers, and underscores only). Invalid names will be ignored with a warning.
-
-### MATLAB Executable Detection
-
-The plugin will automatically attempt to find your MATLAB installation by searching common installation paths based on your operating system. If found, it will use that installation for the current session and suggest updating your configuration.
-
-The automatic detection searches for recent MATLAB versions (up to 5 years back) in standard installation directories.
-
-However, if you're getting the error "Something went wrong starting the MATLAB server", it's best to explicitly specify the full path to your MATLAB executable:
-
-**For macOS:**
-```lua
-require('matlab').setup({
-  executable = '/Applications/MATLAB_R2024a.app/bin/matlab',  -- Adjust according to your version
-  -- other options...
-})
-```
-
-**For Linux:**
-```lua
-require('matlab').setup({
-  executable = '/usr/local/MATLAB/R2024a/bin/matlab',  -- Adjust according to your installation
-  -- other options...
-})
-```
-
-**For WSL (Windows Subsystem for Linux):**
-```lua
-require('matlab').setup({
-  executable = '/usr/local/MATLAB/R2024a/bin/matlab',  -- Adjust according to your installation
-  -- Note: DISPLAY is automatically unset to prevent GUI from opening
-  -- If you need X11 forwarding, explicitly set DISPLAY in environment:
-  -- environment = {
-  --   DISPLAY = ':0',
-  -- },
-})
-```
-
-**For Windows:**
-```lua
-require('matlab').setup({
-  executable = 'C:\\Program Files\\MATLAB\\R2024a\\bin\\matlab.exe',  -- Adjust according to your installation
-  -- other options...
-})
-```
-
-#### Finding Your MATLAB Path
-
-If you're not sure where MATLAB is installed:
-
-**macOS**:
-1. Open Finder
-2. Navigate to Applications folder
-3. Look for "MATLAB_R####x.app" (where #### is the year and x is a or b)
-4. The executable is located at `/Applications/MATLAB_R####x.app/bin/matlab`
-
-**Linux**:
-1. Run `which matlab` in your terminal to see if it's in your PATH
-2. Common installation directories include:
-   - `/usr/local/MATLAB/R####x/bin/matlab`
-   - `/opt/MATLAB/R####x/bin/matlab`
-   - `~/MATLAB/R####x/bin/matlab`
-
-**Windows**:
-1. Check Program Files folder: `C:\Program Files\MATLAB\R####x\bin\matlab.exe`
-2. Or for 32-bit MATLAB on 64-bit Windows: `C:\Program Files (x86)\MATLAB\R####x\bin\matlab.exe`
-
-
-### Common Tasks
-
-- **Running Code**: 
-  - Open any MATLAB file (.m) with Neovim inside tmux
-  - Use `<Leader>mr` or `:MatlabRun` to execute the current file
-  - Use `<Leader>mc` or `:MatlabRunCell` to execute the current cell (code section between %% markers)
-  - Use `<Leader>mt` or `:MatlabRunToCell` to execute all code from the beginning to the current cell
-
-- **Working with Cells**:
-  - MATLAB cells are sections of code separated by `%%` comment lines
-  - Use `<Leader>mf` to fold/unfold the current cell
-  - Use `<Leader>mF` to fold/unfold all cells
-  - Use `<Leader>mc` or `:MatlabRunCell` to execute only the current cell
-
-- **Debugging**:
-  - Run your code with `<Leader>mr` or `:MatlabRun` to hit the breakpoints
-  - By default, MATLAB GUI won't open even when breakpoints are present (`force_nogui_with_breakpoints` option)
-  - Use `<Leader>mg` or `:MatlabOpenInGUI` if you want to open the current script in MATLAB GUI
-
-- **Documentation**:
-  - Place cursor on any MATLAB function
-  - Use `<Leader>mh` or `:MatlabDoc` to display documentation for it
-
-- **Workspace Management**:
-  - Use `<Leader>mw` or `:MatlabWorkspace` to show workspace variables (uses `whos` command)
-  - Use `<Leader>mx` or `:MatlabClearWorkspace` to clear all variables
-  - Use `<Leader>ms` or `:MatlabSaveWorkspace` to save your MATLAB workspace to a .mat file
-  - Use `<Leader>ml` or `:MatlabLoadWorkspace` to load a saved workspace from a .mat file
-
-- **UI & Customization**:
-  - Use `:MatlabShowConfig` to check your current configuration
-  - Control notification verbosity with the `minimal_notifications` option
-  - Customize tmux pane size and position with `panel_size` and `tmux_pane_direction`
-
-- **Debugging MATLAB Code**:
-  - Start debugging session: `<Leader>mds` or `:MatlabDebugStart`
-  - Stop debugging: `<Leader>mde` or `:MatlabDebugStop`
-  - Continue execution: `<Leader>mdc` or `:MatlabDebugContinue`
-  - Step over: `<Leader>mdo` or `:MatlabDebugStepOver`
-  - Step into: `<Leader>mdi` or `:MatlabDebugStepInto`
-  - Step out: `<Leader>mdt` or `:MatlabDebugStepOut`
-  - Toggle breakpoint: `<Leader>mdb` or `:MatlabDebugToggleBreakpoint`
-  - Clear all breakpoints: `<Leader>mdd` or `:MatlabDebugClearBreakpoints`
-
-- **Customizing Keymappings**:
-  - Full support for Space as leader key with proper handling of key conflicts
-  - You can customize all keymappings through the `mappings` table in your setup
-  - Use the `prefix` option to change the common prefix for all mappings
-  - Example: To use comma as a prefix and change the run key to 'e':
-    ```lua
-    require('matlab').setup({
-      mappings = {
-        prefix = ',',  -- Use comma as prefix
-        run = 'e',     -- Run script with ,e
-        -- other mappings remain default...
-      }
-    })
-    ```
-
-## Default Keymappings
-
-When `default_mappings` is enabled, the following keymaps are available in MATLAB files. All mappings start with `<Leader>m` followed by a second key:
-
-| Mapping      | Command                  | Description                            |
-|--------------|--------------------------|----------------------------------------|
-| `<Leader>mr` | `:MatlabRun`             | Run current MATLAB script              |
-| `<Leader>mc` | `:MatlabRunCell`         | Run current MATLAB cell                |
-| `<Leader>mt` | `:MatlabRunToCell`       | Run up to current MATLAB cell          |
-| `<Leader>mh` | `:MatlabDoc`             | Show documentation for word under cursor |
-| `<Leader>mw` | `:MatlabWorkspace`       | Show workspace variables (whos)        |
-| `<Leader>mx` | `:MatlabClearWorkspace`  | Clear MATLAB workspace                 |
-| `<Leader>ms` | `:MatlabSaveWorkspace`   | Save MATLAB workspace to .mat file     |
-| `<Leader>ml` | `:MatlabLoadWorkspace`   | Load MATLAB workspace from .mat file   |
-| `<Leader>mf` | `:MatlabToggleCellFold`  | Toggle current cell fold               |
-| `<Leader>mF` | `:MatlabToggleAllCellFolds` | Toggle all cell folds               |
-| `<Leader>mg` | `:MatlabOpenInGUI`        | Open current script in MATLAB GUI     |
-| `<Leader>mds`| `:MatlabDebugStart`        | Start MATLAB debugging session        |
-| `<Leader>mde`| `:MatlabDebugStop`         | Stop MATLAB debugging session         |
-| `<Leader>mdc`| `:MatlabDebugContinue`     | Continue MATLAB debugging             |
-| `<Leader>mdo`| `:MatlabDebugStepOver`     | Step over in MATLAB debugging         |
-| `<Leader>mdi`| `:MatlabDebugStepInto`     | Step into in MATLAB debugging         |
-| `<Leader>mdt`| `:MatlabDebugStepOut`      | Step out in MATLAB debugging          |
-| `<Leader>mdb`| `:MatlabDebugToggleBreakpoint` | Toggle breakpoint in MATLAB debugging |
-| `<Leader>mdd`| `:MatlabDebugClearBreakpoints` | Clear all breakpoints in MATLAB debugging |
-
-## Debugging MATLAB Code
-
-matlab.nvim includes basic debugging support using MATLAB's built-in debugging commands. This allows you to step through your code, set breakpoints, inspect variables, and control execution flow directly from Neovim.
-
-### Quick Start
-
-1. Open a MATLAB file (`.m`) in Neovim inside a tmux session
-2. Start MATLAB with `:MatlabStartServer`
-3. Set breakpoints with `<Leader>mdb` or `:MatlabDebugToggleBreakpoint`
-4. Start debugging with `<Leader>mds` or `:MatlabDebugStart`
-5. Use stepping commands to navigate through your code:
-   - `<Leader>mdc` - Continue execution
-   - `<Leader>mdo` - Step over
-   - `<Leader>mdi` - Step into functions
-   - `<Leader>mdt` - Step out of functions
-6. View debug information in the MATLAB pane:
-   - `<Leader>mdv` - Show variables (whos)
-   - `<Leader>mdk` - Show call stack (dbstack)
-   - `<Leader>mdp` - Show breakpoints (dbstatus)
-   - `<Leader>mdx` - Evaluate expression
-7. Stop debugging with `<Leader>mde` or `:MatlabDebugStop`
-
-### Debugging Commands
-
-| Command | Description | Default Mapping |
-|---------|-------------|-----------------|
-| `:MatlabDebugStart` | Start a debugging session for the current file | `<Leader>ms` |
-| `:MatlabDebugStop` | Stop the current debugging session | `<Leader>mq` |
-| `:MatlabDebugContinue` | Continue execution until next breakpoint | `<Leader>mc` |
-| `:MatlabDebugStepOver` | Execute current line and stop at next line | `<Leader>mo` |
-| `:MatlabDebugStepInto` | Step into function calls | `<Leader>mi` |
-| `:MatlabDebugStepOut` | Step out of current function | `<Leader>mt` |
-| `:MatlabDebugToggleBreakpoint` | Toggle breakpoint at current line | `<Leader>mb` |
-| `:MatlabDebugClearBreakpoints` | Clear all breakpoints | `<Leader>mB` |
-| `:MatlabDebugEval` | Evaluate expression in debug context | `<Leader>me` |
-
-### Debug UI Commands
-
-The plugin provides a full debug UI interface similar to VSCode/DAP-UI:
-
-| Command | Description | Default Mapping |
-|---------|-------------|-----------------|
-| `:MatlabDebugUI` | Show debug control bar with buttons and keybindings | `<Leader>mu` |
-| `:MatlabDebugUIVariables` | Show workspace variables in a floating window | `<Leader>mv` |
-| `:MatlabDebugUICallStack` | Show call stack in a floating window | `<Leader>mk` |
-| `:MatlabDebugUIBreakpoints` | Show breakpoints in a floating window | `<Leader>mp` |
-| `:MatlabDebugUIRepl` | Show interactive REPL window | `<Leader>mr` |
-| `:MatlabDebugUIShowAll` | Show all debug windows at once | `<Leader>ma` |
-| `:MatlabDebugUIClose` | Close all debug UI windows | `<Leader>mQ` |
-
-#### Debug Control Bar Features
-
-The debug control bar (`:MatlabDebugUI`) provides:
-
-- **Visual Status**: Shows whether debugging is active (🔴 DEBUGGING) or stopped (⚪ STOPPED)
-- **F-key Shortcuts**: F5=Continue, F10=Step Over, F11=Step Into, F12=Step Out
-- **Quick Actions**:
-  - `b` - Toggle breakpoint
-  - `B` - Clear all breakpoints
-  - `s` - Start debug
-  - `q` - Stop debug and close control bar
-- **Window Management**:
-  - `v` - Variables window
-  - `c` - Call stack window
-  - `p` - Breakpoints window
-  - `r` - REPL window
-  - `a` - Show all windows
-
-#### Auto-Updating Variables Window
-
-The variables window (`:MatlabDebugUIVariables`) automatically:
-- Parses and displays workspace variables with their size, bytes, and class
-- Updates when you step/continue through code
-- Press `r` to manually refresh
-- Press `q` to close
-
-### Visual Indicators
-
-- **Breakpoints**: Red circle (●) in the sign column with full-line red highlighting (DiffDelete)
-- **Current Debug Line**: Blue/cyan arrow (▶) in the sign column with full-line highlighting (DiffText)
-- The current debug line updates when you execute debug commands (step, continue, etc.)
-- Debug output appears in the MATLAB tmux pane
-
-### How It Works
-
-matlab.nvim uses MATLAB's native debugging commands (`dbstop`, `dbcont`, `dbstep`, etc.) under the hood. All debug output appears in your MATLAB tmux pane, providing a simple, dependency-free debugging experience.
-
-### Tips
-
-- Files are automatically saved when starting a debug session
-- View variables, call stack, and breakpoints in the MATLAB pane using the show commands
-- You can also type MATLAB debug commands directly in the tmux pane (`dbstep`, `whos`, etc.)
-- Breakpoints persist across debugging sessions within the same Neovim session
-- Breakpoints are synchronized with MATLAB's native debugger
-
-### Troubleshooting Debugging
-
-**Breakpoint not stopping**: Make sure the line contains executable code (not comments or blank lines)
-
-**Can't start debugging**: Ensure MATLAB server is running (`:MatlabStartServer`)
-
-**"Cannot find function" error**: The plugin automatically changes MATLAB's directory to the file's location when debugging starts. If you still get this error, verify:
-- The file has been saved (`:w`)
-- You're in a `.m` file
-- The filename matches the function name (for function files)
-
-**Lost track of breakpoints**: Use `:MatlabDebugShowBreakpoints` to see all active breakpoints in MATLAB
-
-**Debugging from tests/ directory**: The plugin will automatically `cd` to the tests directory when you start debugging `tests/test_debug.m`, so the file will be found correctly
-
-#### Customization
-
-##### Custom Key Mappings
-
-You can customize the debug key mappings in your setup:
-
-```lua
-require('matlab').setup({
+  -- Custom keymappings
   mappings = {
-    -- Basic debug mappings (all under <Leader>m prefix)
+    prefix = '<Leader>m',
+    run = 'r',
+    run_cell = 'c',
+    run_to_cell = 't',
+    doc = 'h',
+    toggle_workspace = 'w',
+    clear_workspace = 'x',
+    save_workspace = 's',
+    load_workspace = 'l',
+    toggle_cell_fold = 'f',
+    toggle_all_cell_folds = 'F',
+    open_in_gui = 'g',
+    -- Debug mappings
     debug_start = 's',
     debug_stop = 'q',
     debug_continue = 'c',
@@ -487,113 +176,302 @@ require('matlab').setup({
 })
 ```
 
-##### Breakpoint Signs
+### Finding Your MATLAB Installation
 
-Breakpoint signs use default highlighting. The sign appears as a red circle (●) in the sign column with highlighted line when a breakpoint is set.
+The plugin auto-detects MATLAB in standard locations. If auto-detection fails, specify the full path:
 
-##### MATLAB Debug Commands Reference
+**macOS:**
+```lua
+executable = '/Applications/MATLAB_R2024a.app/bin/matlab'
+```
 
-The debugging module uses these native MATLAB commands:
+**Linux:**
+```lua
+executable = '/usr/local/MATLAB/R2024a/bin/matlab'
+```
 
-- `dbstop in <file> at <line>` - Set breakpoint
-- `dbclear <file> at <line>` - Clear specific breakpoint
-- `dbclear all` - Clear all breakpoints
-- `dbcont` - Continue execution
-- `dbstep` - Step to next line
-- `dbstep in` - Step into function
-- `dbstep out` - Step out of function
-- `dbstack` - Show call stack
-- `dbstatus` - Show all breakpoints
-- `dbquit` - Exit debug mode
-- `whos` - Show workspace variables
+**Windows:**
+```lua
+executable = 'C:\\Program Files\\MATLAB\\R2024a\\bin\\matlab.exe'
+```
+
+**To find your installation:**
+- macOS: Check `/Applications/` for `MATLAB_R####x.app`
+- Linux: Run `which matlab` or check `/usr/local/MATLAB/`, `/opt/MATLAB/`
+- Windows: Check `C:\Program Files\MATLAB\`
+
+## Usage
+
+### Default Keymappings
+
+All mappings use `<Leader>m` prefix (e.g., `<Leader>mr` to run).
+
+#### Basic Operations
+
+| Key | Command | Description |
+|-----|---------|-------------|
+| `<Leader>mr` | `:MatlabRun` | Run current script |
+| `<Leader>mc` | `:MatlabRunCell` | Run current cell |
+| `<Leader>mt` | `:MatlabRunToCell` | Run from start to current cell |
+| `<Leader>mh` | `:MatlabDoc` | Show documentation |
+| `<Leader>mg` | `:MatlabOpenInGUI` | Open in MATLAB GUI |
+
+#### Workspace Management
+
+| Key | Command | Description |
+|-----|---------|-------------|
+| `<Leader>mw` | `:MatlabWorkspace` | Show workspace variables |
+| `<Leader>mx` | `:MatlabClearWorkspace` | Clear workspace |
+| `<Leader>ms` | `:MatlabSaveWorkspace` | Save workspace to .mat |
+| `<Leader>ml` | `:MatlabLoadWorkspace` | Load workspace from .mat |
+
+#### Code Folding
+
+| Key | Command | Description |
+|-----|---------|-------------|
+| `<Leader>mf` | `:MatlabToggleCellFold` | Toggle current cell fold |
+| `<Leader>mF` | `:MatlabToggleAllCellFolds` | Toggle all cell folds |
+
+### Working with Cells
+
+MATLAB cells are code sections separated by `%%` comments:
+
+```matlab
+%% Cell 1: Setup
+x = 1:10;
+
+%% Cell 2: Processing
+y = x.^2;
+
+%% Cell 3: Plotting
+plot(x, y);
+```
+
+- Execute current cell: `<Leader>mc`
+- Execute up to current cell: `<Leader>mt`
+- Fold/unfold cells: `<Leader>mf` / `<Leader>mF`
+
+## Debugging
+
+### Quick Start
+
+1. Set breakpoints: `<Leader>mdb` (or `:MatlabDebugToggleBreakpoint`)
+2. Start debugging: `<Leader>mds` (or `:MatlabDebugStart`)
+3. Step through code:
+   - `<Leader>mdc` - Continue to next breakpoint
+   - `<Leader>mdo` - Step over (execute line)
+   - `<Leader>mdi` - Step into (enter functions)
+   - `<Leader>mdt` - Step out (exit function)
+4. Stop debugging: `<Leader>mdq` (or `:MatlabDebugStop`)
+
+### Debug Commands
+
+| Key | Command | Description |
+|-----|---------|-------------|
+| `<Leader>mds` | `:MatlabDebugStart` | Start debugging session |
+| `<Leader>mdq` | `:MatlabDebugStop` | Stop debugging |
+| `<Leader>mdc` | `:MatlabDebugContinue` | Continue execution |
+| `<Leader>mdo` | `:MatlabDebugStepOver` | Step over line |
+| `<Leader>mdi` | `:MatlabDebugStepInto` | Step into function |
+| `<Leader>mdt` | `:MatlabDebugStepOut` | Step out of function |
+| `<Leader>mdb` | `:MatlabDebugToggleBreakpoint` | Toggle breakpoint |
+| `<Leader>mdB` | `:MatlabDebugClearBreakpoints` | Clear all breakpoints |
+| `<Leader>mde` | `:MatlabDebugEval` | Evaluate expression |
+
+### Debug UI
+
+The plugin provides VSCode/DAP-like floating windows:
+
+| Key | Command | Description |
+|-----|---------|-------------|
+| `<Leader>mdu` | `:MatlabDebugUI` | Show control bar |
+| `<Leader>mdv` | `:MatlabDebugUIVariables` | Show variables window |
+| `<Leader>mdk` | `:MatlabDebugUICallStack` | Show call stack |
+| `<Leader>mdp` | `:MatlabDebugUIBreakpoints` | Show breakpoints list |
+| `<Leader>mdr` | `:MatlabDebugUIRepl` | Show interactive REPL |
+| `<Leader>mda` | `:MatlabDebugUIShowAll` | Show all windows |
+| `<Leader>mdQ` | `:MatlabDebugUIClose` | Close all debug UI |
+
+#### Debug Control Bar
+
+The control bar (`:MatlabDebugUI`) provides:
+
+- **Status indicator**: 🔴 DEBUGGING or ⚪ STOPPED
+- **F-key shortcuts**: F5=Continue, F10=Step Over, F11=Step Into, F12=Step Out
+- **Quick actions**:
+  - `b` - Toggle breakpoint
+  - `B` - Clear all breakpoints
+  - `s` - Start debugging
+  - `q` - Stop debugging
+- **Window management**: `v`, `c`, `p`, `r`, `a`
+
+### Visual Indicators
+
+- **Breakpoints**: Red circle (●) with full-line red highlighting
+- **Current line**: Blue arrow (▶) with full-line highlighting
+- Updates automatically when you step/continue
+
+### How It Works
+
+Uses MATLAB's native debugger (`dbstop`, `dbcont`, `dbstep`, etc.). No external dependencies required. All debug output appears in the MATLAB tmux pane.
+
+### Debug Tips
+
+- Files auto-save when starting debug session
+- Breakpoints persist across sessions (same Neovim instance)
+- Use MATLAB commands directly in tmux pane (`whos`, `dbstack`, etc.)
+- Variables window updates after each step/continue
+- Press `r` in any debug window to refresh
 
 ## Troubleshooting
 
-### MATLAB Opens in GUI Mode Instead of CLI (WSL/Linux)
+### Common Issues
 
-**Problem**: MATLAB opens a GUI window instead of running in the tmux pane (common on WSL and Linux with X11).
+#### MATLAB Opens GUI Instead of CLI (Linux/WSL)
 
-**Solution**: The plugin now automatically unsets `DISPLAY` on Linux/WSL to force CLI mode. If you still have issues:
+The plugin automatically unsets `DISPLAY` on Linux/WSL to force CLI mode.
 
-1. Make sure you're using the latest version of the plugin
-2. Enable debug mode to see what's happening:
-   ```lua
-   require('matlab').setup({
-     debug = true,
-   })
-   ```
-3. Check the log file: `~/.cache/nvim/matlab_nvim.log`
-4. Try running MATLAB manually to verify: `/path/to/matlab -nodesktop -nosplash`
+If GUI still opens:
+1. Enable debug logging: `debug = true` in setup
+2. Check log: `~/.cache/nvim/matlab_nvim.log`
+3. Verify: `/path/to/matlab -nodesktop -nosplash -nodisplay`
 
-**If you need GUI/X11 forwarding**, you can explicitly set DISPLAY:
+For X11 forwarding:
 ```lua
-require('matlab').setup({
-  environment = {
-    DISPLAY = ':0',  -- or your X server address
-  },
-})
+environment = {
+  DISPLAY = ':0',
+}
 ```
 
-**Note**: The DISPLAY unset only affects the MATLAB instance running in the tmux pane. The `:MatlabOpenInGUI` command spawns a separate MATLAB process that will still have access to your display and open normally.
+#### "MATLAB pane could not be found"
 
-### "MATLAB pane could not be found" Error
+**Causes:**
+- Not inside tmux session
+- MATLAB failed to start
+- Incorrect executable path
 
-**Problem**: Plugin shows this error when trying to run MATLAB commands.
+**Solutions:**
+- Ensure running in tmux: `tmux` then `nvim`
+- Verify executable path in config
+- Try `:MatlabStartServer` manually
+- Enable debug mode and check logs
 
-**Causes**:
-1. MATLAB failed to start in the tmux pane
-2. The pane was created but MATLAB didn't launch properly
-3. You're not inside a tmux session
+#### Environment Variable Conflicts (Arch Linux, etc.)
 
-**Solutions**:
-- Make sure you're running Neovim inside tmux: `tmux` then `nvim`
-- Check the MATLAB executable path is correct
-- Enable debug mode and check the log file
-- Try `:MatlabStartServer` manually and watch for errors
-
-### Environment Variable Issues
-
-**Problem**: MATLAB fails to start due to library conflicts or missing environment variables (common on Arch Linux and other distributions).
-
-**Solution**: Use the `environment` configuration option instead of trying to set variables in the executable path:
+Use `environment` config option:
 
 ```lua
--- ❌ This WON'T work:
-require('matlab').setup({
-  executable = "export LD_LIBRARY_PATH=/custom/path; /usr/local/MATLAB/R2024a/bin/matlab"
-})
+-- ❌ Wrong:
+executable = "export LD_LIBRARY_PATH=/path; matlab"
 
--- ✅ This WILL work:
-require('matlab').setup({
-  executable = '/usr/local/MATLAB/R2024a/bin/matlab',
-  environment = {
-    LD_LIBRARY_PATH = '/custom/path',
-    XAPPLRESDIR = '/opt/matlab/X11/app-defaults',
-  }
-})
+-- ✅ Correct:
+executable = '/usr/local/MATLAB/R2024a/bin/matlab',
+environment = {
+  LD_LIBRARY_PATH = '/custom/path',
+  XAPPLRESDIR = '/opt/matlab/X11/app-defaults',
+}
 ```
 
-**Why**: The plugin constructs the command internally and needs to properly handle environment variables to ensure they're set before MATLAB starts.
+#### Debugging Issues
 
-### MATLAB Pane Management
+**Breakpoint not stopping:**
+- Ensure line has executable code (not comments/blank lines)
+- File must be saved (`:w`)
 
-**Problem**: Plugin always creates new tmux panes instead of reusing existing ones.
+**"Cannot find function":**
+- Plugin auto-changes to file's directory
+- Verify filename matches function name
+- Ensure file is saved
 
-**Explanation**: This is intentional behavior. The plugin creates a dedicated tmux pane for each MATLAB session to ensure clean state management and avoid conflicts between different MATLAB instances.
+**Lost track of breakpoints:**
+- Use `:MatlabDebugShowBreakpoints` to list all
 
-### Debug Information
+### Debug Mode
 
-Use `:MatlabShowConfig` to check your current configuration, including environment variables. Enable debug logging for detailed information:
+Enable detailed logging:
 
 ```lua
 require('matlab').setup({
   debug = true,
-  -- ... other options
 })
 ```
 
-Debug logs are saved to: `~/.cache/nvim/matlab_nvim.log`
+Check configuration: `:MatlabShowConfig`
+View logs: `~/.cache/nvim/matlab_nvim.log`
+
+## Environment Variables
+
+The `environment` option sets variables before MATLAB starts:
+
+```lua
+environment = {
+  LD_LIBRARY_PATH = '/usr/local/lib',      -- Custom libraries
+  DISPLAY = ':0',                          -- X11 forwarding
+  MATLAB_LOG_DIR = '/tmp/matlab_logs',     -- Log directory
+}
+```
+
+**Common use cases:**
+- Library paths on Linux
+- X11 forwarding on remote servers
+- Fixing package conflicts
+- Debug mode configurations
+
+Variable names must be valid (letters, numbers, underscores). Invalid names are ignored with warnings.
+
+## Advanced Features
+
+### Customizing Keymaps
+
+Change prefix or individual keys:
+
+```lua
+mappings = {
+  prefix = ',',     -- Use comma instead of <Leader>m
+  run = 'e',        -- Run with ,e
+  run_cell = 'r',   -- Run cell with ,r
+}
+```
+
+### Panel Configuration
+
+```lua
+panel_size = 40,                    -- 40% width
+panel_size_type = 'percentage',     -- or 'fixed' for columns
+tmux_pane_direction = 'below',      -- Pane below editor
+tmux_pane_focus = false,            -- Don't auto-focus pane
+```
+
+### Minimal Notifications
+
+```lua
+minimal_notifications = true,  -- Only show important messages
+```
+
+Shows only:
+- Server start/stop
+- Errors
+- Forced notifications
+
+## Performance Optimizations
+
+Recent improvements:
+- Removed 2-second polling timer (saves CPU)
+- Efficient debug line updates (only on commands)
+- Reduced tmux capture size (75% reduction)
+- Enhanced error handling (prevents crashes)
+- Smart retry logic for parsing
 
 ## License
 
 MIT
+
+## Contributing
+
+Contributions welcome! Please feel free to:
+- Report bugs via GitHub Issues
+- Submit pull requests
+- Suggest features
+- Improve documentation
+
+See the [GitHub repository](https://github.com/idossha/matlab.nvim) for more information.
