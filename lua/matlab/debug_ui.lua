@@ -218,16 +218,18 @@ end
 local function parse_workspace_variables()
   local pane = tmux.get_server_pane()
   if not pane then
+    utils.log('No tmux pane available for parsing variables', 'DEBUG')
     return nil
   end
 
   -- Run whos command and capture output
   tmux.run('whos', true, false)
-  vim.wait(300)  -- Wait for MATLAB to process
+  vim.defer_fn(function() end, 300)  -- Brief delay for MATLAB to process
 
-  -- Capture pane content
-  local output = tmux.execute('capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -50')
-  if not output then
+  -- Capture pane content with error handling
+  local ok, output = pcall(tmux.execute, 'capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -50')
+  if not ok or not output then
+    utils.log('Failed to capture pane output for variables', 'DEBUG')
     return nil
   end
 
@@ -248,6 +250,7 @@ local function parse_workspace_variables()
     end
   end
 
+  utils.log('Parsed ' .. #variables .. ' workspace variables', 'DEBUG')
   return variables
 end
 

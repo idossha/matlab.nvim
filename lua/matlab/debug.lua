@@ -12,7 +12,6 @@ M.current_file = nil
 M.current_line = nil
 M.current_bufnr = nil
 M.breakpoints = {}  -- { [bufnr] = { [line] = boolean } }
-M.auto_update_timer = nil
 
 -- Sign configuration
 M.sign_group = 'matlab_debug'
@@ -44,8 +43,8 @@ end
 
 -- Helper: clear current debug line sign
 local function clear_debug_line_sign()
-  if M.current_bufnr and M.current_line then
-    vim.fn.sign_unplace(M.sign_group, {
+  if M.current_bufnr and M.current_line and vim.api.nvim_buf_is_valid(M.current_bufnr) then
+    pcall(vim.fn.sign_unplace, M.sign_group, {
       buffer = M.current_bufnr,
       id = 999999  -- Use specific ID for debug line
     })
@@ -62,15 +61,22 @@ local function update_debug_line_sign(bufnr, line)
     M.current_bufnr = bufnr
     M.current_line = line
 
-    vim.fn.sign_place(999999, M.sign_group, 'matlab_debug_line', bufnr, {
+    -- Safely place sign
+    pcall(vim.fn.sign_place, 999999, M.sign_group, 'matlab_debug_line', bufnr, {
       lnum = line,
       priority = 20  -- Higher priority than breakpoints
     })
 
     -- Move cursor to the debug line
     local wins = vim.fn.win_findbuf(bufnr)
-    if #wins > 0 then
-      vim.api.nvim_win_set_cursor(wins[1], {line, 0})
+    if #wins > 0 and vim.api.nvim_win_is_valid(wins[1]) then
+      -- Ensure line number is valid for the buffer
+      local line_count = vim.api.nvim_buf_line_count(bufnr)
+      if line > 0 and line <= line_count then
+        pcall(vim.api.nvim_win_set_cursor, wins[1], {line, 0})
+      else
+        utils.log('Invalid line number for cursor move: ' .. line, 'WARN')
+      end
     end
   end
 end
@@ -78,20 +84,21 @@ end
 -- Helper: parse dbstack output and update current line
 local function parse_and_update_location()
   if not M.debug_active then
-    return
+    return false
   end
 
   -- Get the tmux pane content to parse dbstack output
   local pane = tmux.get_server_pane()
   if not pane then
-    return
+    utils.log('No tmux pane available for parsing debug location', 'DEBUG')
+    return false
   end
 
-  -- Capture recent output from MATLAB pane (more lines to be safe)
-  local output = tmux.execute('capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -200')
-
-  if not output then
-    return
+  -- Capture recent output from MATLAB pane (reduced from 200 to 50 lines for efficiency)
+  local ok, output = pcall(tmux.execute, 'capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -50')
+  if not ok or not output then
+    utils.log('Failed to capture tmux pane output', 'DEBUG')
+    return false
   end
 
   -- Parse dbstack output for current file and line
@@ -137,7 +144,7 @@ local function parse_and_update_location()
         if buf_filename == filename then
           update_debug_line_sign(bufnr, line)
           utils.log('Updated debug line sign at ' .. filename .. ':' .. line, 'DEBUG')
-          return
+          return true
         end
       end
     end
@@ -145,9 +152,12 @@ local function parse_and_update_location()
   else
     utils.log('Could not parse debug location from output', 'DEBUG')
   end
+
+  return false
 end
 
 -- Helper: get current debug location and move cursor
+-- Uses a single deferred call with retry logic instead of multiple blind attempts
 local function move_to_debug_location()
   if not validate_context(true) then
     return
@@ -156,9 +166,21 @@ local function move_to_debug_location()
   -- Use dbstack to show current location in MATLAB pane
   tmux.run('dbstack', true, false)
 
-  -- Wait for MATLAB to output, then parse multiple times to ensure we catch it
-  vim.defer_fn(parse_and_update_location, 300)
-  vim.defer_fn(parse_and_update_location, 600)  -- Try again in case first attempt was too early
+  -- Single deferred call with intelligent retry
+  local max_retries = 2
+  local retry_count = 0
+
+  local function attempt_parse()
+    local success = parse_and_update_location()
+
+    if not success and retry_count < max_retries then
+      retry_count = retry_count + 1
+      vim.defer_fn(attempt_parse, 200)  -- Retry after 200ms
+    end
+  end
+
+  -- Initial attempt after giving MATLAB time to respond
+  vim.defer_fn(attempt_parse, 300)
 end
 
 -- Helper: update breakpoint sign
@@ -261,35 +283,6 @@ function M.start_debug()
 
   -- Update current line indicator after starting
   vim.defer_fn(move_to_debug_location, 800)
-
-  -- Start auto-update timer to continuously track position
-  -- This checks every 2 seconds if we're at a breakpoint and updates the line
-  if M.auto_update_timer then
-    M.auto_update_timer:stop()
-    M.auto_update_timer:close()
-  end
-
-  M.auto_update_timer = vim.loop.new_timer()
-  M.auto_update_timer:start(2000, 2000, vim.schedule_wrap(function()
-    if M.debug_active then
-      -- Check if we're in debug mode (K>> prompt)
-      local pane = tmux.get_server_pane()
-      if pane then
-        local output = tmux.execute('capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -10')
-        if output and output:match('K>>') then
-          -- We're in debug mode, update location
-          move_to_debug_location()
-        end
-      end
-    else
-      -- Debug stopped, stop timer
-      if M.auto_update_timer then
-        M.auto_update_timer:stop()
-        M.auto_update_timer:close()
-        M.auto_update_timer = nil
-      end
-    end
-  end))
 end
 
 -- Stop debugging
@@ -300,13 +293,6 @@ function M.stop_debug()
 
   if tmux.exists() then
     tmux.run('dbquit', false, false)
-  end
-
-  -- Stop auto-update timer
-  if M.auto_update_timer then
-    M.auto_update_timer:stop()
-    M.auto_update_timer:close()
-    M.auto_update_timer = nil
   end
 
   -- Clear debug line sign
@@ -436,10 +422,10 @@ function M.clear_breakpoints()
 
   tmux.run('dbclear all', false, false)
 
-  -- Clear signs
+  -- Clear signs safely
   for bufnr, _ in pairs(M.breakpoints) do
     if vim.api.nvim_buf_is_valid(bufnr) then
-      vim.fn.sign_unplace(M.sign_group, { buffer = bufnr })
+      pcall(vim.fn.sign_unplace, M.sign_group, { buffer = bufnr })
     end
   end
 

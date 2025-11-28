@@ -114,8 +114,8 @@ require('matlab').setup({
   force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist (adds -nodisplay flag)
   
 
-  -- Debug configuration
-  debug = {
+  -- Debug features configuration
+  debug_features = {
     enabled = true,                 -- Enable debugging features
     auto_update_ui = true,          -- Automatically update debug UI indicators
     show_debug_status = true,       -- Show debug status in status line
@@ -124,7 +124,7 @@ require('matlab').setup({
 
   -- Notification options
   minimal_notifications = false,    -- Only show important notifications
-  debug = false,                    -- Enable debug logging
+  debug = false,                    -- Enable debug logging (separate from debug_features)
   
   -- Keymap customization
   mappings = {
@@ -426,7 +426,7 @@ The variables window (`:MatlabDebugUIVariables`) automatically:
 
 - **Breakpoints**: Red circle (●) in the sign column with full-line red highlighting (DiffDelete)
 - **Current Debug Line**: Blue/cyan arrow (▶) in the sign column with full-line highlighting (DiffText)
-- The current debug line automatically updates as you step through code
+- The current debug line updates when you execute debug commands (step, continue, etc.)
 - Debug output appears in the MATLAB tmux pane
 
 ### How It Works

@@ -9,17 +9,17 @@ M.defaults = {
   panel_size_type = 'percentage', -- 'percentage' or 'fixed' (fixed = columns)
   auto_start = true,
   default_mappings = true,
-  debug = false,         -- Enable debug logging
   minimal_notifications = true, -- Only show important notifications (server start/stop and errors)
   tmux_pane_direction = 'right', -- Position of the tmux pane ('right', 'below')
   tmux_pane_focus = true,       -- Make tmux pane visible when created
   force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist
-  
+
   -- Environment variables to set before starting MATLAB
   environment = {},       -- Table of environment variables: {VAR_NAME = 'value', ANOTHER_VAR = 'another_value'}
 
-  -- Debug configuration
-  debug = {
+  -- Debug and logging configuration
+  debug = false,         -- Enable debug logging
+  debug_features = {
     enabled = true, -- Enable debugging features
     auto_update_ui = true, -- Automatically update debug UI indicators
     show_debug_status = true, -- Show debug status in status line

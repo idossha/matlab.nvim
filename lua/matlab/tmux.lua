@@ -65,16 +65,26 @@ function M.pane_exists()
   if not M.server_pane then
     return false
   end
-  
+
   -- Use list-panes to check if this specific pane exists
-  local result = M.execute('list-panes -a -F "#{pane_id}"')
-  if result then
-    -- Extract just the pane ID portion (e.g., %41 from $0:@12.%41)
-    local pane_id = M.server_pane:match('%%(%d+)')
-    if pane_id then
-      return result:match('%%' .. pane_id) ~= nil
-    end
+  local ok, result = pcall(M.execute, 'list-panes -a -F "#{pane_id}"')
+  if not ok or not result then
+    return false
   end
+
+  -- Extract just the pane ID portion (e.g., %41 from $0:@12.%41)
+  local pane_id = M.server_pane:match('%%(%d+)')
+  if not pane_id then
+    -- Try alternative format
+    pane_id = M.server_pane:match('%%(%d+)$')
+  end
+
+  if pane_id then
+    -- Escape the % for pattern matching
+    local pattern = '%%' .. pane_id
+    return result:find(pattern, 1, true) ~= nil  -- true = plain text search, more reliable
+  end
+
   return false
 end
 
