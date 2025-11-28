@@ -303,7 +303,15 @@ function M.build_matlab_command(executable, startup_cmd, env_vars)
   end
   
   -- Always ensure -nodesktop -nosplash flags are added to prevent GUI from showing
+  -- -nodisplay prevents MATLAB from starting the display (stronger than -nodesktop)
   local matlab_command = executable .. ' -nodesktop -nosplash'
+
+  -- Add -nodisplay flag if force_nogui_with_breakpoints is enabled
+  -- This prevents MATLAB GUI from opening even when breakpoints are present
+  -- Note: This is stronger than -nodesktop and prevents any display output
+  if config.get('force_nogui_with_breakpoints') then
+    matlab_command = matlab_command .. ' -nodisplay'
+  end
   
   -- Different platforms have different command line argument formats
   if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then

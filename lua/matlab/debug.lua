@@ -130,8 +130,25 @@ function M.start_debug()
   -- Restore breakpoints
   M.restore_breakpoints()
 
-  -- Run the file (will stop at first breakpoint or line 1)
-  tmux.run(filename, false, false)
+  -- Run the file (will stop at first breakpoint)
+  -- Use dbstop at 1 to ensure we enter debug mode at the first line if no breakpoints
+  -- This ensures proper debug context for the entire execution
+  local has_breakpoints = false
+  for _, buf_breakpoints in pairs(M.breakpoints) do
+    if next(buf_breakpoints) ~= nil then
+      has_breakpoints = true
+      break
+    end
+  end
+
+  if has_breakpoints then
+    -- Run normally - will stop at first breakpoint
+    tmux.run(filename, false, false)
+  else
+    -- No breakpoints - set temporary breakpoint at line 1 to enter debug mode
+    tmux.run(string.format('dbstop in %s at 1', filename), false, false)
+    tmux.run(filename, false, false)
+  end
 
   M.debug_active = true
   utils.notify('Debug started: ' .. filename, vim.log.levels.INFO)
@@ -158,7 +175,10 @@ function M.continue_debug()
     return
   end
 
-  tmux.run('dbcont', false, false)
+  -- Continue execution
+  -- IMPORTANT: Use skip_interrupt=true to avoid sending Ctrl+C before dbcont
+  -- Sending Ctrl+C interrupts the debug session and can cause errors
+  tmux.run('dbcont', true, false)
   utils.notify('Continuing...', vim.log.levels.INFO)
 
   -- Schedule cursor movement to breakpoint location after a short delay
@@ -171,7 +191,8 @@ function M.step_over()
     return
   end
 
-  tmux.run('dbstep', false, false)
+  -- Use skip_interrupt=true to avoid interrupting the debug session
+  tmux.run('dbstep', true, false)
 
   -- Schedule cursor movement after stepping
   vim.defer_fn(move_to_debug_location, 300)
@@ -183,7 +204,8 @@ function M.step_into()
     return
   end
 
-  tmux.run('dbstep in', false, false)
+  -- Use skip_interrupt=true to avoid interrupting the debug session
+  tmux.run('dbstep in', true, false)
 
   -- Schedule cursor movement after stepping
   vim.defer_fn(move_to_debug_location, 300)
@@ -195,7 +217,8 @@ function M.step_out()
     return
   end
 
-  tmux.run('dbstep out', false, false)
+  -- Use skip_interrupt=true to avoid interrupting the debug session
+  tmux.run('dbstep out', true, false)
 
   -- Schedule cursor movement after stepping
   vim.defer_fn(move_to_debug_location, 300)
