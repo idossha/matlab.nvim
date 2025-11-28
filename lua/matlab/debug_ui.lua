@@ -13,7 +13,8 @@ local DEFAULT_CONFIG = {
   variables = { position = 'right', size = 0.3 },
   callstack = { position = 'bottom', size = 0.3 },
   breakpoints = { position = 'left', size = 0.25 },
-  repl = { position = 'bottom', size = 0.4 }
+  repl = { position = 'bottom', size = 0.4 },
+  controls = { position = 'top', size = 0.3 }
 }
 
 M.config = vim.deepcopy(DEFAULT_CONFIG)
@@ -485,9 +486,6 @@ function M.show_control_bar()
   if not win or not buf then
     return
   end
-
-  -- Custom config for control bar (top of screen)
-  M.config.controls = { position = 'top', size = 0.3 }
 
   -- Set keymaps for control bar
   local opts = { buffer = buf, noremap = true, silent = true }
