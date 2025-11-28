@@ -12,6 +12,7 @@ M.current_file = nil
 M.current_line = nil
 M.current_bufnr = nil
 M.breakpoints = {}  -- { [bufnr] = { [line] = boolean } }
+M.auto_update_timer = nil
 
 -- Sign configuration
 M.sign_group = 'matlab_debug'
@@ -260,6 +261,35 @@ function M.start_debug()
 
   -- Update current line indicator after starting
   vim.defer_fn(move_to_debug_location, 800)
+
+  -- Start auto-update timer to continuously track position
+  -- This checks every 2 seconds if we're at a breakpoint and updates the line
+  if M.auto_update_timer then
+    M.auto_update_timer:stop()
+    M.auto_update_timer:close()
+  end
+
+  M.auto_update_timer = vim.loop.new_timer()
+  M.auto_update_timer:start(2000, 2000, vim.schedule_wrap(function()
+    if M.debug_active then
+      -- Check if we're in debug mode (K>> prompt)
+      local pane = tmux.get_server_pane()
+      if pane then
+        local output = tmux.execute('capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -10')
+        if output and output:match('K>>') then
+          -- We're in debug mode, update location
+          move_to_debug_location()
+        end
+      end
+    else
+      -- Debug stopped, stop timer
+      if M.auto_update_timer then
+        M.auto_update_timer:stop()
+        M.auto_update_timer:close()
+        M.auto_update_timer = nil
+      end
+    end
+  end))
 end
 
 -- Stop debugging
@@ -270,6 +300,13 @@ function M.stop_debug()
 
   if tmux.exists() then
     tmux.run('dbquit', false, false)
+  end
+
+  -- Stop auto-update timer
+  if M.auto_update_timer then
+    M.auto_update_timer:stop()
+    M.auto_update_timer:close()
+    M.auto_update_timer = nil
   end
 
   -- Clear debug line sign
