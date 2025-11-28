@@ -86,24 +86,46 @@ local function parse_and_update_location()
     return
   end
 
-  -- Capture recent output from MATLAB pane
-  local output = tmux.execute('capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -100')
+  -- Capture recent output from MATLAB pane (more lines to be safe)
+  local output = tmux.execute('capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -200')
 
   if not output then
     return
   end
 
   -- Parse dbstack output for current file and line
-  -- Format: "In <filename> (line <number>)"
-  -- Or: "> In <filename> (line <number>)"
-  local filename, line = output:match('> In ([^%(]+)%(line (%d+)%)')
+  -- Try multiple patterns to be more robust:
+  -- Pattern 1: "> In <filename> (line <number>)"
+  -- Pattern 2: "In <filename> (line <number>)" at the top of stack
+  -- Pattern 3: "K>> " prompt followed by file info
+
+  local filename, line
+
+  -- Try pattern with ">" indicator (most recent stack frame)
+  filename, line = output:match('> In ([^%(]+)%(line (%d+)%)')
+
+  -- If not found, try to find the first "In ... (line ...)" after K>> prompt
+  if not filename then
+    -- Look for the dbstack output - usually appears after K>>
+    local stack_section = output:match('K>>.-\n(.-)\n[^\n]*K>>')
+    if stack_section then
+      filename, line = stack_section:match('In ([^%(]+)%(line (%d+)%)')
+    end
+  end
+
+  -- Last resort: find any "In ... (line ...)" pattern
   if not filename then
     filename, line = output:match('In ([^%(]+)%(line (%d+)%)')
   end
 
   if filename and line then
+    -- Clean up filename (remove extra spaces and path separators)
     filename = vim.trim(filename)
+    filename = filename:gsub('^.*[/\\]', '')  -- Remove path if present
+    filename = filename:gsub('%.m$', '')      -- Remove .m extension if present
     line = tonumber(line)
+
+    utils.log('Parsed debug location: ' .. filename .. ':' .. line, 'DEBUG')
 
     -- Find buffer with matching filename
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
@@ -113,10 +135,14 @@ local function parse_and_update_location()
 
         if buf_filename == filename then
           update_debug_line_sign(bufnr, line)
+          utils.log('Updated debug line sign at ' .. filename .. ':' .. line, 'DEBUG')
           return
         end
       end
     end
+    utils.log('Could not find buffer for ' .. filename, 'DEBUG')
+  else
+    utils.log('Could not parse debug location from output', 'DEBUG')
   end
 end
 
@@ -129,8 +155,9 @@ local function move_to_debug_location()
   -- Use dbstack to show current location in MATLAB pane
   tmux.run('dbstack', true, false)
 
-  -- Wait a bit for output, then parse and update location
-  vim.defer_fn(parse_and_update_location, 200)
+  -- Wait for MATLAB to output, then parse multiple times to ensure we catch it
+  vim.defer_fn(parse_and_update_location, 300)
+  vim.defer_fn(parse_and_update_location, 600)  -- Try again in case first attempt was too early
 end
 
 -- Helper: update breakpoint sign
@@ -230,6 +257,9 @@ function M.start_debug()
 
   M.debug_active = true
   utils.notify('Debug started: ' .. filename, vim.log.levels.INFO)
+
+  -- Update current line indicator after starting
+  vim.defer_fn(move_to_debug_location, 800)
 end
 
 -- Stop debugging

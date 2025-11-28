@@ -372,18 +372,15 @@ matlab.nvim includes basic debugging support using MATLAB's built-in debugging c
 
 | Command | Description | Default Mapping |
 |---------|-------------|-----------------|
-| `:MatlabDebugStart` | Start a debugging session for the current file | `<Leader>mds` |
-| `:MatlabDebugStop` | Stop the current debugging session | `<Leader>mde` |
-| `:MatlabDebugContinue` | Continue execution until next breakpoint | `<Leader>mdc` |
-| `:MatlabDebugStepOver` | Execute current line and stop at next line | `<Leader>mdo` |
-| `:MatlabDebugStepInto` | Step into function calls | `<Leader>mdi` |
-| `:MatlabDebugStepOut` | Step out of current function | `<Leader>mdt` |
-| `:MatlabDebugToggleBreakpoint` | Toggle breakpoint at current line | `<Leader>mdb` |
-| `:MatlabDebugClearBreakpoints` | Clear all breakpoints | `<Leader>mdd` |
-| `:MatlabDebugShowVariables` | Show workspace variables in MATLAB pane | `<Leader>mdv` |
-| `:MatlabDebugShowStack` | Show call stack in MATLAB pane | `<Leader>mdk` |
-| `:MatlabDebugShowBreakpoints` | Show all breakpoints in MATLAB pane | `<Leader>mdp` |
-| `:MatlabDebugEval` | Evaluate expression in debug context | `<Leader>mdx` |
+| `:MatlabDebugStart` | Start a debugging session for the current file | `<Leader>ms` |
+| `:MatlabDebugStop` | Stop the current debugging session | `<Leader>mq` |
+| `:MatlabDebugContinue` | Continue execution until next breakpoint | `<Leader>mc` |
+| `:MatlabDebugStepOver` | Execute current line and stop at next line | `<Leader>mo` |
+| `:MatlabDebugStepInto` | Step into function calls | `<Leader>mi` |
+| `:MatlabDebugStepOut` | Step out of current function | `<Leader>mt` |
+| `:MatlabDebugToggleBreakpoint` | Toggle breakpoint at current line | `<Leader>mb` |
+| `:MatlabDebugClearBreakpoints` | Clear all breakpoints | `<Leader>mB` |
+| `:MatlabDebugEval` | Evaluate expression in debug context | `<Leader>me` |
 
 ### Debug UI Commands
 
@@ -391,13 +388,13 @@ The plugin provides a full debug UI interface similar to VSCode/DAP-UI:
 
 | Command | Description | Default Mapping |
 |---------|-------------|-----------------|
-| `:MatlabDebugUI` | Show debug control bar with buttons and keybindings | `<Leader>mdu` |
-| `:MatlabDebugUIVariables` | Show workspace variables in a floating window | `<Leader>mdV` |
-| `:MatlabDebugUICallStack` | Show call stack in a floating window | `<Leader>mdC` |
-| `:MatlabDebugUIBreakpoints` | Show breakpoints in a floating window | `<Leader>mdP` |
-| `:MatlabDebugUIRepl` | Show interactive REPL window | `<Leader>mdR` |
-| `:MatlabDebugUIShowAll` | Show all debug windows at once | `<Leader>mdA` |
-| `:MatlabDebugUIClose` | Close all debug UI windows | `<Leader>mdQ` |
+| `:MatlabDebugUI` | Show debug control bar with buttons and keybindings | `<Leader>mu` |
+| `:MatlabDebugUIVariables` | Show workspace variables in a floating window | `<Leader>mv` |
+| `:MatlabDebugUICallStack` | Show call stack in a floating window | `<Leader>mk` |
+| `:MatlabDebugUIBreakpoints` | Show breakpoints in a floating window | `<Leader>mp` |
+| `:MatlabDebugUIRepl` | Show interactive REPL window | `<Leader>mr` |
+| `:MatlabDebugUIShowAll` | Show all debug windows at once | `<Leader>ma` |
+| `:MatlabDebugUIClose` | Close all debug UI windows | `<Leader>mQ` |
 
 #### Debug Control Bar Features
 
@@ -468,27 +465,24 @@ You can customize the debug key mappings in your setup:
 ```lua
 require('matlab').setup({
   mappings = {
-    -- Basic debug mappings
-    debug_start = 'ds',
-    debug_stop = 'de',
-    debug_continue = 'dc',
-    debug_step_over = 'do',
-    debug_step_into = 'di',
-    debug_step_out = 'dt',
-    debug_toggle_breakpoint = 'db',
-    debug_clear_breakpoints = 'dd',
-    debug_show_variables = 'dv',
-    debug_show_stack = 'dk',
-    debug_show_breakpoints = 'dp',
-    debug_eval = 'dx',
+    -- Basic debug mappings (all under <Leader>m prefix)
+    debug_start = 's',
+    debug_stop = 'q',
+    debug_continue = 'c',
+    debug_step_over = 'o',
+    debug_step_into = 'i',
+    debug_step_out = 't',
+    debug_toggle_breakpoint = 'b',
+    debug_clear_breakpoints = 'B',
+    debug_eval = 'e',
     -- Debug UI mappings
-    debug_ui = 'du',
-    debug_ui_variables = 'dV',
-    debug_ui_callstack = 'dC',
-    debug_ui_breakpoints = 'dP',
-    debug_ui_repl = 'dR',
-    debug_ui_show_all = 'dA',
-    debug_ui_close = 'dQ',
+    debug_ui = 'u',
+    debug_ui_variables = 'v',
+    debug_ui_callstack = 'k',
+    debug_ui_breakpoints = 'p',
+    debug_ui_repl = 'r',
+    debug_ui_show_all = 'a',
+    debug_ui_close = 'Q',
   }
 })
 ```

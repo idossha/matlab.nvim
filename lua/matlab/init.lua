@@ -137,17 +137,10 @@ function M.setup(opts)
     debug_module.clear_breakpoints()
   end, {})
 
-  vim.api.nvim_create_user_command('MatlabDebugShowVariables', function()
-    debug_module.show_variables()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugShowStack', function()
-    debug_module.show_stack()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugShowBreakpoints', function()
-    debug_module.show_breakpoints()
-  end, {})
+  -- Removed: Redundant with Debug UI versions
+  -- vim.api.nvim_create_user_command('MatlabDebugShowVariables', ...)
+  -- vim.api.nvim_create_user_command('MatlabDebugShowStack', ...)
+  -- vim.api.nvim_create_user_command('MatlabDebugShowBreakpoints', ...)
 
   vim.api.nvim_create_user_command('MatlabDebugEval', function()
     debug_module.eval_expression()

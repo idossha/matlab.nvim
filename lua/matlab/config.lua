@@ -51,27 +51,24 @@ M.defaults = {
     toggle_cell_fold = 'f', -- Toggle current cell fold
     toggle_all_cell_folds = 'F', -- Toggle all cell folds
     open_in_gui = 'g',     -- Open current script in MATLAB GUI
-    -- Debug mappings
-    debug_start = 'ds',   -- Start debugging session
-    debug_stop = 'de',    -- Stop debugging session
-    debug_continue = 'dc', -- Continue execution
-    debug_step_over = 'do', -- Step over
-    debug_step_into = 'di', -- Step into
-    debug_step_out = 'dt', -- Step out
-    debug_toggle_breakpoint = 'db', -- Toggle breakpoint
-    debug_clear_breakpoints = 'dd', -- Clear all breakpoints
-    debug_show_variables = 'dv',    -- Show variables in MATLAB pane
-    debug_show_callstack = 'dk',    -- Show call stack in MATLAB pane
-    debug_show_breakpoints = 'dp',  -- Show breakpoints in MATLAB pane
-    debug_eval = 'dx',              -- Evaluate expression
+    -- Debug mappings (all under <Leader>md prefix)
+    debug_start = 's',   -- Start debugging session
+    debug_stop = 'q',    -- Stop debugging session (quit)
+    debug_continue = 'c', -- Continue execution
+    debug_step_over = 'o', -- Step over
+    debug_step_into = 'i', -- Step into
+    debug_step_out = 't', -- Step out
+    debug_toggle_breakpoint = 'b', -- Toggle breakpoint
+    debug_clear_breakpoints = 'B', -- Clear all breakpoints
+    debug_eval = 'e',              -- Evaluate expression
     -- Debug UI mappings
-    debug_ui = 'du',                -- Show debug control bar
-    debug_ui_variables = 'dV',      -- Show variables window (auto-updating)
-    debug_ui_callstack = 'dC',      -- Show call stack window
-    debug_ui_breakpoints = 'dP',    -- Show breakpoints window
-    debug_ui_repl = 'dR',           -- Show REPL window
-    debug_ui_show_all = 'dA',       -- Show all debug windows
-    debug_ui_close = 'dQ',          -- Close all debug UI windows
+    debug_ui = 'u',                -- Show debug control bar
+    debug_ui_variables = 'v',      -- Show variables window (auto-updating)
+    debug_ui_callstack = 'k',      -- Show call stack window (stack)
+    debug_ui_breakpoints = 'p',    -- Show breakpoints window
+    debug_ui_repl = 'r',           -- Show REPL window
+    debug_ui_show_all = 'a',       -- Show all debug windows
+    debug_ui_close = 'Q',          -- Close all debug UI windows (Quit UI)
   }
 }
 

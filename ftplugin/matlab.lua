@@ -53,26 +53,23 @@ local function get_safe_mappings()
     toggle_all_cell_folds = 'F',
     open_in_gui = 'g',
     -- Debug mappings
-    debug_start = 'ds',
-    debug_stop = 'de',
-    debug_continue = 'dc',
-    debug_step_over = 'do',
-    debug_step_into = 'di',
-    debug_step_out = 'dt',
-    debug_toggle_breakpoint = 'db',
-    debug_clear_breakpoints = 'dd',
-    debug_show_variables = 'dv',
-    debug_show_stack = 'dk',
-    debug_show_breakpoints = 'dp',
-    debug_eval = 'dx',
+    debug_start = 's',
+    debug_stop = 'q',
+    debug_continue = 'c',
+    debug_step_over = 'o',
+    debug_step_into = 'i',
+    debug_step_out = 't',
+    debug_toggle_breakpoint = 'b',
+    debug_clear_breakpoints = 'B',
+    debug_eval = 'e',
     -- Debug UI mappings
-    debug_ui = 'du',
-    debug_ui_variables = 'dV',
-    debug_ui_callstack = 'dC',
-    debug_ui_breakpoints = 'dP',
-    debug_ui_repl = 'dR',
-    debug_ui_show_all = 'dA',
-    debug_ui_close = 'dQ',
+    debug_ui = 'u',
+    debug_ui_variables = 'v',
+    debug_ui_callstack = 'k',
+    debug_ui_breakpoints = 'p',
+    debug_ui_repl = 'r',
+    debug_ui_show_all = 'a',
+    debug_ui_close = 'Q',
   }
   
   -- Merge with defaults
@@ -150,9 +147,6 @@ if should_setup_mappings then
   safe_map(actual_prefix .. mappings.debug_step_out, '<Cmd>MatlabDebugStepOut<CR>', 'Step out in MATLAB debugging')
   safe_map(actual_prefix .. mappings.debug_toggle_breakpoint, '<Cmd>MatlabDebugToggleBreakpoint<CR>', 'Toggle breakpoint in MATLAB debugging')
   safe_map(actual_prefix .. mappings.debug_clear_breakpoints, '<Cmd>MatlabDebugClearBreakpoints<CR>', 'Clear all breakpoints in MATLAB debugging')
-  safe_map(actual_prefix .. mappings.debug_show_variables, '<Cmd>MatlabDebugShowVariables<CR>', 'Show MATLAB variables (whos)')
-  safe_map(actual_prefix .. mappings.debug_show_stack, '<Cmd>MatlabDebugShowStack<CR>', 'Show MATLAB call stack (dbstack)')
-  safe_map(actual_prefix .. mappings.debug_show_breakpoints, '<Cmd>MatlabDebugShowBreakpoints<CR>', 'Show MATLAB breakpoints (dbstatus)')
   safe_map(actual_prefix .. mappings.debug_eval, '<Cmd>MatlabDebugEval<CR>', 'Evaluate expression in MATLAB')
 
   -- Debug UI mappings
