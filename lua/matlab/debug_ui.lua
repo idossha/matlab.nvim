@@ -213,28 +213,91 @@ local function check_matlab_available()
   return true
 end
 
+-- Parse workspace variables from MATLAB output
+local function parse_workspace_variables()
+  local pane = tmux.get_server_pane()
+  if not pane then
+    return nil
+  end
+
+  -- Run whos command and capture output
+  tmux.run('whos', true, false)
+  vim.wait(300)  -- Wait for MATLAB to process
+
+  -- Capture pane content
+  local output = tmux.execute('capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -50')
+  if not output then
+    return nil
+  end
+
+  local variables = {}
+  -- Parse whos output format:
+  -- Name      Size            Bytes  Class     Attributes
+  -- var1      1x1                 8  double
+  for line in output:gmatch('[^\r\n]+') do
+    -- Match variable lines (skip header and empty lines)
+    local name, size, bytes, class = line:match('^%s*([%w_]+)%s+([%dx]+)%s+(%d+)%s+(%w+)')
+    if name and name ~= 'Name' then
+      table.insert(variables, {
+        name = name,
+        size = size,
+        bytes = bytes,
+        class = class
+      })
+    end
+  end
+
+  return variables
+end
+
 -- Show variables window
 function M.show_variables()
   if not check_matlab_available() then
     return
   end
 
-  -- Trigger MATLAB command to display variables
-  tmux.run('whos', false, false)
-
   local content = {
     'MATLAB Variables',
     '═══════════════',
     '',
-    'Variables in workspace:',
-    '(Check MATLAB pane for current variables)',
-    '',
-    'Tip: Use the REPL window to inspect variables',
-    '',
-    'Press q, <Esc>, or <C-c> to close'
+    'Loading workspace variables...',
   }
 
   M.create_window('variables', 'Variables', content)
+
+  -- Update with actual variables after a delay
+  vim.defer_fn(function()
+    local variables = parse_workspace_variables()
+
+    local updated_content = {
+      'MATLAB Variables',
+      '═══════════════',
+      '',
+    }
+
+    if variables and #variables > 0 then
+      table.insert(updated_content, string.format('%-20s %-12s %-10s %s', 'Name', 'Size', 'Bytes', 'Class'))
+      table.insert(updated_content, string.rep('─', 60))
+
+      for _, var in ipairs(variables) do
+        table.insert(updated_content, string.format('%-20s %-12s %-10s %s',
+          var.name, var.size, var.bytes, var.class))
+      end
+    else
+      table.insert(updated_content, 'No variables in workspace')
+    end
+
+    table.insert(updated_content, '')
+    table.insert(updated_content, 'Press r to refresh, q to close')
+
+    M.update_window('variables', updated_content)
+
+    -- Add refresh keymap
+    local buf = M.buffers['variables']
+    if buf and vim.api.nvim_buf_is_valid(buf) then
+      vim.keymap.set('n', 'r', M.show_variables, { buffer = buf, noremap = true, silent = true })
+    end
+  end, 400)
 end
 
 -- Show call stack window
@@ -390,6 +453,70 @@ function M.toggle_window(name)
   end
 end
 
+-- Create debug control bar
+function M.show_control_bar()
+  local ok, debug_module = pcall(require, 'matlab.debug')
+  if not ok then
+    utils.notify('Failed to load debug module.', vim.log.levels.ERROR)
+    return
+  end
+
+  local is_active = debug_module.debug_active
+  local status_icon = is_active and '🔴' or '⚪'
+  local status_text = is_active and 'DEBUGGING' or 'STOPPED'
+
+  local content = {
+    '╔════════════════════════════════════════════════════════════════════════════╗',
+    string.format('║ %s MATLAB Debug Controls - %s%s║',
+      status_icon, status_text, string.rep(' ', 55 - #status_text)),
+    '╠════════════════════════════════════════════════════════════════════════════╣',
+    '║                                                                            ║',
+    '║  [F5] Continue   [F10] Step Over   [F11] Step Into   [F12] Step Out       ║',
+    '║                                                                            ║',
+    '║  [b] Toggle Breakpoint   [B] Clear All Breakpoints                        ║',
+    '║  [s] Start Debug         [q] Stop Debug                                   ║',
+    '║                                                                            ║',
+    '║  [v] Variables  [c] Call Stack  [p] Breakpoints  [r] REPL  [a] Show All   ║',
+    '║                                                                            ║',
+    '╚════════════════════════════════════════════════════════════════════════════╝',
+  }
+
+  local win, buf = M.create_window('controls', 'Debug Controls', content)
+  if not win or not buf then
+    return
+  end
+
+  -- Custom config for control bar (top of screen)
+  M.config.controls = { position = 'top', size = 0.3 }
+
+  -- Set keymaps for control bar
+  local opts = { buffer = buf, noremap = true, silent = true }
+
+  -- Debug stepping
+  vim.keymap.set('n', '<F5>', debug_module.continue_debug, opts)
+  vim.keymap.set('n', '<F10>', debug_module.step_over, opts)
+  vim.keymap.set('n', '<F11>', debug_module.step_into, opts)
+  vim.keymap.set('n', '<F12>', debug_module.step_out, opts)
+
+  -- Breakpoint management
+  vim.keymap.set('n', 'b', debug_module.toggle_breakpoint, opts)
+  vim.keymap.set('n', 'B', debug_module.clear_breakpoints, opts)
+
+  -- Debug session
+  vim.keymap.set('n', 's', debug_module.start_debug, opts)
+  vim.keymap.set('n', 'q', function()
+    debug_module.stop_debug()
+    M.close_window('controls')
+  end, opts)
+
+  -- Window management
+  vim.keymap.set('n', 'v', M.show_variables, opts)
+  vim.keymap.set('n', 'c', M.show_callstack, opts)
+  vim.keymap.set('n', 'p', M.show_breakpoints, opts)
+  vim.keymap.set('n', 'r', M.show_repl, opts)
+  vim.keymap.set('n', 'a', M.show_all, opts)
+end
+
 -- Update all open windows with current debug state
 function M.update_all()
   for name, win in pairs(M.windows) do
@@ -399,6 +526,11 @@ function M.update_all()
         show_fn()
       end
     end
+  end
+
+  -- Update control bar if it's open
+  if M.windows.controls and vim.api.nvim_win_is_valid(M.windows.controls) then
+    M.show_control_bar()
   end
 end
 

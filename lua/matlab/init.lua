@@ -8,6 +8,7 @@ local commands = require('matlab.commands')
 local cells = require('matlab.cells')
 local workspace = require('matlab.workspace')
 local debug_module = require('matlab.debug')
+local debug_ui = require('matlab.debug_ui')
 
 -- Use centralized notification system
 local notify = utils.notify
@@ -31,8 +32,9 @@ function M.setup(opts)
   -- Initialize configuration
   config.setup(opts)
 
-  -- Initialize debugging module
+  -- Initialize debugging module and UI
   debug_module.setup()
+  debug_ui.setup()
 
   -- Show load message if minimal notifications are disabled
   if not config.get('minimal_notifications') then
@@ -149,6 +151,36 @@ function M.setup(opts)
 
   vim.api.nvim_create_user_command('MatlabDebugEval', function()
     debug_module.eval_expression()
+  end, {})
+
+  -- Debug UI commands
+  vim.api.nvim_create_user_command('MatlabDebugUI', function()
+    debug_ui.show_control_bar()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugUIVariables', function()
+    debug_ui.show_variables()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugUICallStack', function()
+    debug_ui.show_callstack()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugUIBreakpoints', function()
+    debug_ui.show_breakpoints()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugUIRepl', function()
+    debug_ui.show_repl()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugUIShowAll', function()
+    debug_ui.show_all()
+    vim.defer_fn(debug_ui.show_control_bar, 50)
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugUIClose', function()
+    debug_ui.close_all()
   end, {})
 
   -- Config inspection command

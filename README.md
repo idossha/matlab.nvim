@@ -111,7 +111,7 @@ require('matlab').setup({
   -- Behavior options
   auto_start = true,                -- Auto-start MATLAB when opening a .m file
   default_mappings = true,          -- Enable default keymappings
-  force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist
+  force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist (adds -nodisplay flag)
   
 
   -- Debug configuration
@@ -385,9 +385,51 @@ matlab.nvim includes basic debugging support using MATLAB's built-in debugging c
 | `:MatlabDebugShowBreakpoints` | Show all breakpoints in MATLAB pane | `<Leader>mdp` |
 | `:MatlabDebugEval` | Evaluate expression in debug context | `<Leader>mdx` |
 
+### Debug UI Commands
+
+The plugin provides a full debug UI interface similar to VSCode/DAP-UI:
+
+| Command | Description |
+|---------|-------------|
+| `:MatlabDebugUI` | Show debug control bar with buttons and keybindings |
+| `:MatlabDebugUIVariables` | Show workspace variables in a floating window |
+| `:MatlabDebugUICallStack` | Show call stack in a floating window |
+| `:MatlabDebugUIBreakpoints` | Show breakpoints in a floating window |
+| `:MatlabDebugUIRepl` | Show interactive REPL window |
+| `:MatlabDebugUIShowAll` | Show all debug windows at once |
+| `:MatlabDebugUIClose` | Close all debug UI windows |
+
+#### Debug Control Bar Features
+
+The debug control bar (`:MatlabDebugUI`) provides:
+
+- **Visual Status**: Shows whether debugging is active (🔴 DEBUGGING) or stopped (⚪ STOPPED)
+- **F-key Shortcuts**: F5=Continue, F10=Step Over, F11=Step Into, F12=Step Out
+- **Quick Actions**:
+  - `b` - Toggle breakpoint
+  - `B` - Clear all breakpoints
+  - `s` - Start debug
+  - `q` - Stop debug and close control bar
+- **Window Management**:
+  - `v` - Variables window
+  - `c` - Call stack window
+  - `p` - Breakpoints window
+  - `r` - REPL window
+  - `a` - Show all windows
+
+#### Auto-Updating Variables Window
+
+The variables window (`:MatlabDebugUIVariables`) automatically:
+- Parses and displays workspace variables with their size, bytes, and class
+- Updates when you step/continue through code
+- Press `r` to manually refresh
+- Press `q` to close
+
 ### Visual Indicators
 
-- **Breakpoints**: Red circle (●) in the sign column with highlighted line
+- **Breakpoints**: Red circle (●) in the sign column with full-line red highlighting (DiffDelete)
+- **Current Debug Line**: Blue/cyan arrow (▶) in the sign column with full-line highlighting (DiffText)
+- The current debug line automatically updates as you step through code
 - Debug output appears in the MATLAB tmux pane
 
 ### How It Works

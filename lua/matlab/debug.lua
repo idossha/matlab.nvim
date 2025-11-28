@@ -9,6 +9,8 @@ local utils = require('matlab.utils')
 -- Debug state
 M.debug_active = false
 M.current_file = nil
+M.current_line = nil
+M.current_bufnr = nil
 M.breakpoints = {}  -- { [bufnr] = { [line] = boolean } }
 
 -- Sign configuration
@@ -39,6 +41,85 @@ local function is_matlab_file()
   return true
 end
 
+-- Helper: clear current debug line sign
+local function clear_debug_line_sign()
+  if M.current_bufnr and M.current_line then
+    vim.fn.sign_unplace(M.sign_group, {
+      buffer = M.current_bufnr,
+      id = 999999  -- Use specific ID for debug line
+    })
+  end
+end
+
+-- Helper: update current debug line sign
+local function update_debug_line_sign(bufnr, line)
+  -- Clear previous debug line
+  clear_debug_line_sign()
+
+  -- Set new debug line
+  if bufnr and line and vim.api.nvim_buf_is_valid(bufnr) then
+    M.current_bufnr = bufnr
+    M.current_line = line
+
+    vim.fn.sign_place(999999, M.sign_group, 'matlab_debug_line', bufnr, {
+      lnum = line,
+      priority = 20  -- Higher priority than breakpoints
+    })
+
+    -- Move cursor to the debug line
+    local wins = vim.fn.win_findbuf(bufnr)
+    if #wins > 0 then
+      vim.api.nvim_win_set_cursor(wins[1], {line, 0})
+    end
+  end
+end
+
+-- Helper: parse dbstack output and update current line
+local function parse_and_update_location()
+  if not M.debug_active then
+    return
+  end
+
+  -- Get the tmux pane content to parse dbstack output
+  local pane = tmux.get_server_pane()
+  if not pane then
+    return
+  end
+
+  -- Capture recent output from MATLAB pane
+  local output = tmux.execute('capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -100')
+
+  if not output then
+    return
+  end
+
+  -- Parse dbstack output for current file and line
+  -- Format: "In <filename> (line <number>)"
+  -- Or: "> In <filename> (line <number>)"
+  local filename, line = output:match('> In ([^%(]+)%(line (%d+)%)')
+  if not filename then
+    filename, line = output:match('In ([^%(]+)%(line (%d+)%)')
+  end
+
+  if filename and line then
+    filename = vim.trim(filename)
+    line = tonumber(line)
+
+    -- Find buffer with matching filename
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_valid(bufnr) then
+        local bufname = vim.api.nvim_buf_get_name(bufnr)
+        local buf_filename = vim.fn.fnamemodify(bufname, ':t:r')
+
+        if buf_filename == filename then
+          update_debug_line_sign(bufnr, line)
+          return
+        end
+      end
+    end
+  end
+end
+
 -- Helper: get current debug location and move cursor
 local function move_to_debug_location()
   if not validate_context(true) then
@@ -46,13 +127,10 @@ local function move_to_debug_location()
   end
 
   -- Use dbstack to show current location in MATLAB pane
-  tmux.run('dbstack', false, false)
+  tmux.run('dbstack', true, false)
 
-  -- Note: Automatic cursor movement would require capturing and parsing tmux output
-  -- For now, we show the location in MATLAB pane
-  -- Future enhancement: parse dbstack output and move cursor automatically
-
-  utils.log('Debug location shown in MATLAB pane', 'DEBUG')
+  -- Wait a bit for output, then parse and update location
+  vim.defer_fn(parse_and_update_location, 200)
 end
 
 -- Helper: update breakpoint sign
@@ -80,14 +158,14 @@ function M.setup_signs()
   vim.fn.sign_define('matlab_breakpoint', {
     text = '●',
     texthl = 'DiagnosticError',
-    linehl = '',
-    numhl = ''
+    linehl = 'DiffDelete',  -- Full line red highlighting
+    numhl = 'DiagnosticError'
   })
 
   vim.fn.sign_define('matlab_debug_line', {
     text = '▶',
     texthl = 'DiagnosticInfo',
-    linehl = 'CursorLine',
+    linehl = 'DiffText',  -- Full line blue/cyan highlighting for current position
     numhl = 'DiagnosticInfo'
   })
 
@@ -164,9 +242,22 @@ function M.stop_debug()
     tmux.run('dbquit', false, false)
   end
 
+  -- Clear debug line sign
+  clear_debug_line_sign()
+
   M.debug_active = false
   M.current_file = nil
+  M.current_line = nil
+  M.current_bufnr = nil
   utils.notify('Debug stopped', vim.log.levels.INFO)
+end
+
+-- Helper: update debug UI if available
+local function update_debug_ui()
+  local ok, debug_ui = pcall(require, 'matlab.debug_ui')
+  if ok and debug_ui then
+    vim.defer_fn(debug_ui.update_all, 100)
+  end
 end
 
 -- Continue execution (dbcont)
@@ -183,6 +274,9 @@ function M.continue_debug()
 
   -- Schedule cursor movement to breakpoint location after a short delay
   vim.defer_fn(move_to_debug_location, 500)
+
+  -- Update debug UI windows
+  vim.defer_fn(update_debug_ui, 600)
 end
 
 -- Step over (dbstep)
@@ -196,6 +290,9 @@ function M.step_over()
 
   -- Schedule cursor movement after stepping
   vim.defer_fn(move_to_debug_location, 300)
+
+  -- Update debug UI windows
+  vim.defer_fn(update_debug_ui, 400)
 end
 
 -- Step into (dbstep in)
@@ -209,6 +306,9 @@ function M.step_into()
 
   -- Schedule cursor movement after stepping
   vim.defer_fn(move_to_debug_location, 300)
+
+  -- Update debug UI windows
+  vim.defer_fn(update_debug_ui, 400)
 end
 
 -- Step out (dbstep out)
@@ -222,6 +322,9 @@ function M.step_out()
 
   -- Schedule cursor movement after stepping
   vim.defer_fn(move_to_debug_location, 300)
+
+  -- Update debug UI windows
+  vim.defer_fn(update_debug_ui, 400)
 end
 
 -- Toggle breakpoint
