@@ -389,15 +389,15 @@ matlab.nvim includes basic debugging support using MATLAB's built-in debugging c
 
 The plugin provides a full debug UI interface similar to VSCode/DAP-UI:
 
-| Command | Description |
-|---------|-------------|
-| `:MatlabDebugUI` | Show debug control bar with buttons and keybindings |
-| `:MatlabDebugUIVariables` | Show workspace variables in a floating window |
-| `:MatlabDebugUICallStack` | Show call stack in a floating window |
-| `:MatlabDebugUIBreakpoints` | Show breakpoints in a floating window |
-| `:MatlabDebugUIRepl` | Show interactive REPL window |
-| `:MatlabDebugUIShowAll` | Show all debug windows at once |
-| `:MatlabDebugUIClose` | Close all debug UI windows |
+| Command | Description | Default Mapping |
+|---------|-------------|-----------------|
+| `:MatlabDebugUI` | Show debug control bar with buttons and keybindings | `<Leader>mdu` |
+| `:MatlabDebugUIVariables` | Show workspace variables in a floating window | `<Leader>mdV` |
+| `:MatlabDebugUICallStack` | Show call stack in a floating window | `<Leader>mdC` |
+| `:MatlabDebugUIBreakpoints` | Show breakpoints in a floating window | `<Leader>mdP` |
+| `:MatlabDebugUIRepl` | Show interactive REPL window | `<Leader>mdR` |
+| `:MatlabDebugUIShowAll` | Show all debug windows at once | `<Leader>mdA` |
+| `:MatlabDebugUIClose` | Close all debug UI windows | `<Leader>mdQ` |
 
 #### Debug Control Bar Features
 
@@ -468,6 +468,7 @@ You can customize the debug key mappings in your setup:
 ```lua
 require('matlab').setup({
   mappings = {
+    -- Basic debug mappings
     debug_start = 'ds',
     debug_stop = 'de',
     debug_continue = 'dc',
@@ -480,6 +481,14 @@ require('matlab').setup({
     debug_show_stack = 'dk',
     debug_show_breakpoints = 'dp',
     debug_eval = 'dx',
+    -- Debug UI mappings
+    debug_ui = 'du',
+    debug_ui_variables = 'dV',
+    debug_ui_callstack = 'dC',
+    debug_ui_breakpoints = 'dP',
+    debug_ui_repl = 'dR',
+    debug_ui_show_all = 'dA',
+    debug_ui_close = 'dQ',
   }
 })
 ```
