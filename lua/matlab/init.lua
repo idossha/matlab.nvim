@@ -146,6 +146,10 @@ function M.setup(opts)
     debug_module.eval_expression()
   end, {})
 
+  vim.api.nvim_create_user_command('MatlabDebugUpdateLine', function()
+    debug_module.update_current_line()
+  end, {})
+
   -- Debug UI commands
   vim.api.nvim_create_user_command('MatlabDebugUI', function()
     debug_ui.show_control_bar()

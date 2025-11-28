@@ -485,6 +485,11 @@ function M.get_status()
   return 'DEBUG: ' .. (M.current_file or '')
 end
 
+-- Manually update current line (useful for testing/debugging)
+function M.update_current_line()
+  move_to_debug_location()
+end
+
 -- Setup autocmds
 local function setup_autocmds()
   local group = vim.api.nvim_create_augroup('MatlabDebug', { clear = true })
