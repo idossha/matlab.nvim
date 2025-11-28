@@ -64,6 +64,14 @@ M.defaults = {
     debug_show_callstack = 'dk',    -- Show call stack in MATLAB pane
     debug_show_breakpoints = 'dp',  -- Show breakpoints in MATLAB pane
     debug_eval = 'dx',              -- Evaluate expression
+    -- Debug UI mappings
+    debug_ui = 'du',                -- Show debug control bar
+    debug_ui_variables = 'dV',      -- Show variables window (auto-updating)
+    debug_ui_callstack = 'dC',      -- Show call stack window
+    debug_ui_breakpoints = 'dP',    -- Show breakpoints window
+    debug_ui_repl = 'dR',           -- Show REPL window
+    debug_ui_show_all = 'dA',       -- Show all debug windows
+    debug_ui_close = 'dQ',          -- Close all debug UI windows
   }
 }
 
