@@ -16,8 +16,10 @@ M.config = {
   sidebar_position = 'right', -- 'left' or 'right'
 }
 
--- Temp file for workspace data
+-- Temp files for workspace data
 M.workspace_file = '/tmp/matlab_nvim_workspace.txt'
+M.helper_script = '/tmp/matlab_nvim_ws.m'
+M.helper_initialized = false
 
 -- Load configuration
 function M.load_config()
@@ -206,29 +208,55 @@ local function parse_workspace_file()
   return variables
 end
 
--- Request workspace update from MATLAB (silently)
+-- Initialize helper script (creates a .m file that MATLAB can run)
+local function init_helper_script()
+  if M.helper_initialized then
+    return
+  end
+  
+  -- Write helper MATLAB script
+  local script_content = string.format([[
+%%matlab_nvim_ws - Helper script for matlab.nvim workspace updates
+%%This file is auto-generated. Do not edit.
+try
+    fid=fopen('%s','w');
+    if fid>0
+        fprintf(fid,'%%s',evalc('whos'));
+        fclose(fid);
+    end
+catch
+end
+]], M.workspace_file)
+  
+  local file = io.open(M.helper_script, 'w')
+  if file then
+    file:write(script_content)
+    file:close()
+    M.helper_initialized = true
+  end
+end
+
+-- Request workspace update from MATLAB
 function M.request_workspace_update()
   local pane = tmux.get_server_pane()
   if not pane then
     return
   end
   
-  -- Write workspace to temp file silently using tmux send-keys directly
-  -- This bypasses shell escaping issues with quotes
-  local target = pane
-  local cmd = string.format(
-    "try,fid=fopen('%s','w');fprintf(fid,'%%s',evalc('whos'));fclose(fid);catch,end",
-    M.workspace_file
-  )
+  -- Ensure helper script exists
+  init_helper_script()
   
-  -- Send command character by character using tmux literal mode
+  -- Run the helper script (shows clean "run('/tmp/matlab_nvim_ws.m')" in console)
+  -- Using run() executes script without echoing its contents
+  local cmd = string.format("run('%s')", M.helper_script)
+  
   local tmux_cmd = string.format(
     "send-keys -t %s -l %s",
-    vim.fn.shellescape(target),
+    vim.fn.shellescape(pane),
     vim.fn.shellescape(cmd)
   )
   tmux.execute(tmux_cmd)
-  tmux.execute(string.format("send-keys -t %s Enter", vim.fn.shellescape(target)))
+  tmux.execute(string.format("send-keys -t %s Enter", vim.fn.shellescape(pane)))
 end
 
 -- Format workspace for display

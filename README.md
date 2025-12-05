@@ -156,12 +156,22 @@ plot(x, y);
 - **Breakpoints**: Red circle (●) with full-line highlighting
 - **Current line**: Blue arrow (▶) with full-line highlighting
 
+### Debug Sidebar
+
+Toggle with `<Leader>mdu` or `:MatlabDebugUI`. Shows call stack, breakpoints, and workspace variables.
+
+| Key | Action |
+|-----|--------|
+| `q` | Close sidebar |
+| `r` | Refresh display |
+| `w` | Update workspace from MATLAB |
+| `<CR>` | Jump to location under cursor |
+
 ### Debug Tips
 
 - Files auto-save when starting debug session
 - Breakpoints persist within Neovim session
 - Use MATLAB commands directly in tmux pane (`whos`, `dbstack`, etc.)
-- Press `r` in debug sidebar to refresh, `w` to update workspace
 
 ## Troubleshooting
 

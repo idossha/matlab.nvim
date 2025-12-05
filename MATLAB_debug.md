@@ -78,10 +78,10 @@ dbstop in myfile at 33 if strcmp(status, 'error')
 ### Debug Sidebar Keybindings
 | Key | Action |
 |-----|--------|
-| `r` | Refresh content |
-| `w` | Update workspace from MATLAB |
 | `q` | Close sidebar |
-| `<CR>` | Jump to location |
+| `r` | Refresh display |
+| `w` | Update workspace from MATLAB |
+| `<CR>` | Jump to location under cursor |
 
 ## MATLAB Commands Used
 
