@@ -52,6 +52,13 @@ local function update_debug_ui()
   end
 end
 
+-- Helper: refresh workspace pane if open (for debug step updates)
+local function refresh_workspace_if_open()
+  if tmux.workspace_pane_exists() then
+    tmux.refresh_workspace()
+  end
+end
+
 -- Helper: clear current debug line sign
 local function clear_debug_line_sign()
   if M.current_bufnr and M.current_line and vim.api.nvim_buf_is_valid(M.current_bufnr) then
@@ -364,7 +371,7 @@ function M.continue_debug()
   -- Continue execution
   -- IMPORTANT: Use skip_interrupt=true to avoid sending Ctrl+C before dbcont
   -- Sending Ctrl+C interrupts the debug session and can cause errors
-  tmux.run('dbcont', true, false)
+  tmux.run('dbcont', true, true)
   utils.notify('Continuing...', vim.log.levels.INFO)
 
   -- Schedule cursor movement to breakpoint location after a short delay
@@ -372,6 +379,9 @@ function M.continue_debug()
 
   -- Update debug UI windows
   vim.defer_fn(update_debug_ui, 600)
+
+  -- Refresh workspace pane to show updated variables
+  vim.defer_fn(refresh_workspace_if_open, 700)
 end
 
 -- Step over (dbstep)
@@ -381,13 +391,16 @@ function M.step_over()
   end
 
   -- Use skip_interrupt=true to avoid interrupting the debug session
-  tmux.run('dbstep', true, false)
+  tmux.run('dbstep', true, true)
 
   -- Schedule cursor movement after stepping
   vim.defer_fn(move_to_debug_location, 300)
 
   -- Update debug UI windows
   vim.defer_fn(update_debug_ui, 400)
+
+  -- Refresh workspace pane to show updated variables
+  vim.defer_fn(refresh_workspace_if_open, 500)
 end
 
 -- Step into (dbstep in)
@@ -397,13 +410,16 @@ function M.step_into()
   end
 
   -- Use skip_interrupt=true to avoid interrupting the debug session
-  tmux.run('dbstep in', true, false)
+  tmux.run('dbstep in', true, true)
 
   -- Schedule cursor movement after stepping
   vim.defer_fn(move_to_debug_location, 300)
 
   -- Update debug UI windows
   vim.defer_fn(update_debug_ui, 400)
+
+  -- Refresh workspace pane to show updated variables
+  vim.defer_fn(refresh_workspace_if_open, 500)
 end
 
 -- Step out (dbstep out)
@@ -413,13 +429,16 @@ function M.step_out()
   end
 
   -- Use skip_interrupt=true to avoid interrupting the debug session
-  tmux.run('dbstep out', true, false)
+  tmux.run('dbstep out', true, true)
 
   -- Schedule cursor movement after stepping
   vim.defer_fn(move_to_debug_location, 300)
 
   -- Update debug UI windows
   vim.defer_fn(update_debug_ui, 400)
+
+  -- Refresh workspace pane to show updated variables
+  vim.defer_fn(refresh_workspace_if_open, 500)
 end
 
 -- Toggle breakpoint
