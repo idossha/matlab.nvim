@@ -16,9 +16,9 @@ M.config = {
   sidebar_position = 'right', -- 'left' or 'right'
 }
 
--- Temp files for workspace data
-M.workspace_file = '/tmp/matlab_nvim_workspace.txt'
-M.helper_script = '/tmp/matlab_nvim_ws.m'
+-- Temp files for workspace data (hidden files to avoid clutter)
+M.workspace_file = '/tmp/.nvim_mws.dat'
+M.helper_script = '/tmp/.nvim_mws.m'
 M.helper_initialized = false
 
 -- Load configuration
@@ -246,9 +246,9 @@ function M.request_workspace_update()
   -- Ensure helper script exists
   init_helper_script()
   
-  -- Run the helper script (shows clean "run('/tmp/matlab_nvim_ws.m')" in console)
-  -- Using run() executes script without echoing its contents
-  local cmd = string.format("run('%s')", M.helper_script)
+  -- Run the helper script silently using evalc to suppress all output
+  -- The evalc wrapper captures any output, and the trailing semicolon suppresses the evalc result
+  local cmd = string.format("evalc(\"run('%s')\");", M.helper_script)
   
   local tmux_cmd = string.format(
     "send-keys -t %s -l %s",
