@@ -94,6 +94,33 @@ local function update_debug_line_sign(bufnr, line)
   end
 end
 
+-- Helper: check if debug session has ended by looking at prompt
+local function check_debug_session_ended(output)
+  if not output then
+    return false
+  end
+
+  local lines = vim.split(output, '\n')
+  
+  -- Look at the last few lines for the prompt
+  for i = #lines, math.max(1, #lines - 5), -1 do
+    local l = lines[i]
+    
+    -- If we see K>> prompt, we're still in debug mode
+    if l:match('K>>') then
+      return false
+    end
+    
+    -- If we see normal >> prompt (without K), debug session ended
+    -- Make sure it's at the start of a line (the actual prompt)
+    if l:match('^>>%s*$') or l:match('^%s*>>%s*$') then
+      return true
+    end
+  end
+  
+  return false
+end
+
 -- Helper: parse dbstack output and update current line
 local function parse_and_update_location()
   if not M.debug_active then
@@ -111,6 +138,16 @@ local function parse_and_update_location()
   local ok, output = pcall(tmux.execute, 'capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -30')
   if not ok or not output then
     utils.log('Failed to capture tmux pane output', 'DEBUG')
+    return false
+  end
+
+  -- Check if debug session has ended (returned to normal >> prompt)
+  if check_debug_session_ended(output) then
+    utils.log('Debug session ended, cleaning up', 'DEBUG')
+    -- Schedule stop_debug to clean up properly (including line indicator)
+    vim.schedule(function()
+      M.stop_debug()
+    end)
     return false
   end
 
