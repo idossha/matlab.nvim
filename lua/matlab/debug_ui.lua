@@ -214,11 +214,12 @@ function M.request_workspace_update()
   end
   
   -- Use evalc to silently capture whos output and write to temp file
+  -- Disable shell escaping to preserve semicolons that suppress output
   local matlab_cmd = string.format(
-    "fid=fopen('%s','w');fprintf(fid,'%%s',evalc('whos'));fclose(fid);",
+    "fid=fopen('%s','w');if fid>0;fprintf(fid,'%%s',evalc('whos'));fclose(fid);end;clear fid;",
     M.workspace_file
   )
-  tmux.run(matlab_cmd, true, true)
+  tmux.run(matlab_cmd, true, true, false)  -- false = disable shell escaping
 end
 
 -- Format workspace for display
