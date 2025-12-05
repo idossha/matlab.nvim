@@ -91,21 +91,20 @@ function M.setup(opts)
     workspace.load(args.args ~= '' and args.args or nil)
   end, { nargs = '?' })
 
-  -- Workspace tmux pane commands
+  -- Workspace pane command (now integrated into debug UI)
   vim.api.nvim_create_user_command('MatlabToggleWorkspacePane', function()
-    tmux.toggle_workspace_pane()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabOpenWorkspacePane', function()
-    tmux.open_workspace_pane()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabCloseWorkspacePane', function()
-    tmux.close_workspace_pane()
+    local debug_ui = require('matlab.debug_ui')
+    debug_ui.toggle_sidebar()
   end, {})
 
   vim.api.nvim_create_user_command('MatlabRefreshWorkspace', function()
-    tmux.refresh_workspace()
+    local debug_ui = require('matlab.debug_ui')
+    if debug_ui.is_open() then
+      debug_ui.refresh_with_workspace()
+    else
+      -- Fallback to showing whos in MATLAB pane
+      tmux.run('whos', true, true)
+    end
   end, {})
 
   -- Debug commands
@@ -140,11 +139,6 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('MatlabDebugClearBreakpoints', function()
     debug_module.clear_breakpoints()
   end, {})
-
-  -- Removed: Redundant with Debug UI versions
-  -- vim.api.nvim_create_user_command('MatlabDebugShowVariables', ...)
-  -- vim.api.nvim_create_user_command('MatlabDebugShowStack', ...)
-  -- vim.api.nvim_create_user_command('MatlabDebugShowBreakpoints', ...)
 
   vim.api.nvim_create_user_command('MatlabDebugEval', function()
     debug_module.eval_expression()

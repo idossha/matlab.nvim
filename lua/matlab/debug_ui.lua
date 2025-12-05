@@ -8,12 +8,16 @@ local utils = require('matlab.utils')
 M.windows = {}
 M.buffers = {}
 M.initialized = false
+M.workspace_data = {}  -- Cached workspace variables
 
 -- Configuration
 M.config = {
   sidebar_width = 40,
   sidebar_position = 'right', -- 'left' or 'right'
 }
+
+-- Temp file for workspace data
+M.workspace_file = '/tmp/matlab_nvim_workspace.txt'
 
 -- Load configuration
 function M.load_config()
@@ -164,6 +168,89 @@ local function format_breakpoints(breakpoints)
   return lines
 end
 
+-- Parse workspace data from temp file
+local function parse_workspace_file()
+  local file = io.open(M.workspace_file, 'r')
+  if not file then
+    return {}
+  end
+  
+  local content = file:read('*all')
+  file:close()
+  
+  if not content or content == '' then
+    return {}
+  end
+  
+  local variables = {}
+  local in_header = false
+  
+  for line in content:gmatch('[^\r\n]+') do
+    -- Check for header line
+    if line:match('Name%s+Size%s+Bytes%s+Class') then
+      in_header = true
+    elseif in_header and line:match('^%s*%S') then
+      -- Parse variable line: Name, Size, Bytes, Class
+      local name, size, bytes, class = line:match('^%s*(%S+)%s+(%S+)%s+(%d+)%s+(%S+)')
+      if name then
+        table.insert(variables, {
+          name = name,
+          size = size,
+          bytes = bytes,
+          class = class
+        })
+      end
+    end
+  end
+  
+  return variables
+end
+
+-- Request workspace update from MATLAB (silently)
+function M.request_workspace_update()
+  local pane = tmux.get_server_pane()
+  if not pane then
+    return
+  end
+  
+  -- Use evalc to silently capture whos output and write to temp file
+  local matlab_cmd = string.format(
+    "fid=fopen('%s','w');fprintf(fid,'%%s',evalc('whos'));fclose(fid);",
+    M.workspace_file
+  )
+  tmux.run(matlab_cmd, true, true)
+end
+
+-- Format workspace for display
+local function format_workspace()
+  local lines = { '── Workspace ──', '' }
+  
+  local vars = parse_workspace_file()
+  
+  if #vars == 0 then
+    table.insert(lines, '  (empty)')
+  else
+    -- Header
+    table.insert(lines, string.format('  %-12s %-10s %s', 'Name', 'Size', 'Class'))
+    table.insert(lines, '  ' .. string.rep('─', 34))
+    
+    -- Variables (limit to avoid UI overflow)
+    local max_vars = 20
+    for i, var in ipairs(vars) do
+      if i > max_vars then
+        table.insert(lines, string.format('  ... and %d more', #vars - max_vars))
+        break
+      end
+      table.insert(lines, string.format('  %-12s %-10s %s', 
+        var.name:sub(1, 12), 
+        var.size:sub(1, 10), 
+        var.class:sub(1, 10)))
+    end
+  end
+  
+  return lines
+end
+
 -- Create or get the sidebar buffer
 function M.get_sidebar_buffer()
   if M.buffers.sidebar and vim.api.nvim_buf_is_valid(M.buffers.sidebar) then
@@ -177,6 +264,7 @@ function M.get_sidebar_buffer()
   local opts = { buffer = buf, noremap = true, silent = true }
   vim.keymap.set('n', 'q', M.close_sidebar, opts)
   vim.keymap.set('n', 'r', M.refresh, opts)
+  vim.keymap.set('n', 'w', M.refresh_with_workspace, opts)
   vim.keymap.set('n', '<CR>', M.jump_to_location, opts)
   
   return buf
@@ -249,22 +337,32 @@ function M.refresh()
   vim.list_extend(lines, format_breakpoints(bps))
   table.insert(lines, '')
   
+  -- Workspace
+  vim.list_extend(lines, format_workspace())
+  table.insert(lines, '')
+  
   -- Help
   table.insert(lines, '── Keys ──')
-  table.insert(lines, '  r = refresh')
-  table.insert(lines, '  q = close')
-  table.insert(lines, '  <CR> = jump to location')
-  table.insert(lines, '')
-  table.insert(lines, 'Use <Leader>mW for workspace')
+  table.insert(lines, '  r = refresh | w = update workspace')
+  table.insert(lines, '  q = close  | <CR> = jump to location')
   
   set_buffer_content(buf, lines)
+end
+
+-- Refresh with workspace update (requests fresh data from MATLAB)
+function M.refresh_with_workspace()
+  M.request_workspace_update()
+  -- Wait for MATLAB to write the file, then refresh display
+  vim.defer_fn(function()
+    M.refresh()
+  end, 400)
 end
 
 -- Open the debug sidebar
 function M.open_sidebar()
   -- Don't create duplicate
   if M.windows.sidebar and vim.api.nvim_win_is_valid(M.windows.sidebar) then
-    M.refresh()
+    M.refresh_with_workspace()
     return
   end
 
@@ -283,8 +381,8 @@ function M.open_sidebar()
   -- Go back to previous window
   vim.cmd('wincmd p')
   
-  -- Initial refresh
-  M.refresh()
+  -- Initial refresh with workspace data
+  M.refresh_with_workspace()
 end
 
 -- Close the sidebar
@@ -313,7 +411,7 @@ end
 function M.update_all()
   if M.is_open() then
     vim.schedule(function()
-      M.refresh()
+      M.refresh_with_workspace()
     end)
   end
 end

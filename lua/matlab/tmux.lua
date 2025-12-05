@@ -5,7 +5,6 @@ local utils = require('matlab.utils')
 
 -- Store the server pane ID
 M.server_pane = nil
-M.workspace_pane = nil
 
 -- Use centralized notification system
 M.notify = utils.notify
@@ -392,20 +391,12 @@ function M.start_server(auto_start, startup_command)
     local mlcmd = 'clear && ' .. M.build_matlab_command(executable, startup_cmd, env_vars)
     
     -- Create tmux split with the MATLAB command
-    local split_flags = ""
-    
     -- Set pane direction based on configuration
     local direction = config.get('tmux_pane_direction')
-    if direction == 'right' then
-      split_flags = "-h" -- horizontal split (side by side)
-    else
-      split_flags = "-v" -- vertical split (top/bottom)
-    end
+    local split_flags = direction == 'right' and "-h" or "-v"
     
-    -- Add -d flag if we don't want to focus the new pane
-    if not config.get('tmux_pane_focus') then
-      split_flags = split_flags .. "d"
-    end
+    -- Always use -d flag to keep cursor in the current pane (Neovim)
+    split_flags = split_flags .. "d"
     
     local cmd = 'split-window ' .. split_flags .. ' -PF "#{session_id}:#{window_id}.#{pane_id}" ' .. vim.fn.shellescape(mlcmd)
     
@@ -451,13 +442,7 @@ function M.start_server(auto_start, startup_command)
         -- Execute the resize command
         M.execute(resize_cmd)
       end
-    end, 500) -- 500ms delay should be sufficient
-
-    -- Zoom current pane if we don't want the MATLAB pane to be visible
-    if not config.get('tmux_pane_focus') then
-      M.notify('Zooming current pane', vim.log.levels.DEBUG)
-      M.execute('resize-pane -Z')
-    end
+    end, 500)
   else
     M.notify('MATLAB server pane already exists', vim.log.levels.DEBUG)
   end
@@ -469,132 +454,10 @@ function M.stop_server()
     return
   end
 
-  -- Close workspace pane if it exists
-  M.close_workspace_pane()
-
   if M.get_server_pane() then
     M.notify('Stopping MATLAB server.', vim.log.levels.INFO, true)
     M.run('quit')
     M.server_pane = nil
-  end
-end
-
--- Check if workspace pane exists
-function M.workspace_pane_exists()
-  if not M.workspace_pane then
-    return false
-  end
-
-  local ok, result = pcall(M.execute, 'list-panes -a -F "#{pane_id}"')
-  if not ok or not result then
-    return false
-  end
-
-  -- Extract the numeric part of the pane ID (e.g., "42" from "%42")
-  local pane_id = M.workspace_pane:match('%%(%d+)')
-  if pane_id then
-    -- Search for "%42" as plain text in the result
-    local pattern = '%' .. pane_id
-    return result:find(pattern, 1, true) ~= nil
-  end
-
-  return false
-end
-
--- Temp file for workspace data
-M.workspace_file = '/tmp/matlab_nvim_workspace.txt'
-
--- Refresh workspace pane with current MATLAB workspace variables
-function M.refresh_workspace()
-  if not M.exists() or not M.get_server_pane() then
-    M.notify('MATLAB pane not available.', vim.log.levels.ERROR)
-    return
-  end
-
-  -- If workspace pane is open, silently capture whos to temp file and display there
-  if M.workspace_pane_exists() then
-    -- Use evalc to silently capture whos output and write to temp file
-    -- This runs in MATLAB without printing to the MATLAB pane
-    local matlab_cmd = string.format(
-      "fid=fopen('%s','w');fprintf(fid,'%%s',evalc('whos'));fclose(fid);",
-      M.workspace_file
-    )
-    M.run(matlab_cmd, true, true)
-    
-    -- After a short delay, display the temp file in workspace pane
-    vim.defer_fn(function()
-      if M.workspace_pane_exists() then
-        local display_cmd = string.format(
-          "send-keys -t %s 'clear && echo \"MATLAB Workspace\" && echo \"═══════════════════════════════════════════════════\" && cat %s 2>/dev/null || echo \"No variables in workspace\"' Enter",
-          vim.fn.shellescape(M.workspace_pane),
-          M.workspace_file
-        )
-        M.execute(display_cmd)
-      end
-    end, 400)
-  else
-    -- Just run whos in MATLAB pane if workspace pane isn't open
-    M.run('whos', true, true)
-  end
-end
-
--- Open workspace pane (shows MATLAB workspace, updates on debug steps and manual refresh)
-function M.open_workspace_pane()
-  if not M.exists() then
-    return
-  end
-
-  if not M.get_server_pane() then
-    M.notify('MATLAB pane not available. Start MATLAB first.', vim.log.levels.ERROR)
-    return
-  end
-
-  if M.workspace_pane_exists() then
-    -- Just refresh if already open
-    M.refresh_workspace()
-    return
-  end
-
-  -- Create a clean workspace pane (just a shell)
-  -- Use -d flag to keep focus in the current pane
-  local cmd = 'split-window -d -t ' .. vim.fn.shellescape(M.server_pane) .. ' -v -p 30 -PF "#{pane_id}"'
-  
-  local result = M.execute(cmd)
-  M.workspace_pane = result:gsub('%s+', '')
-  
-  if M.workspace_pane_exists() then
-    -- Show initial header and populate with workspace data
-    vim.defer_fn(function()
-      M.execute('send-keys -t ' .. vim.fn.shellescape(M.workspace_pane) .. 
-        ' "clear && echo \'MATLAB Workspace\' && echo \'═══════════════════════════════════════════════════\'" Enter')
-      
-      -- Populate with initial workspace data
-      vim.defer_fn(function()
-        M.refresh_workspace()
-      end, 300)
-    end, 100)
-    M.notify('Workspace pane opened', vim.log.levels.INFO)
-  else
-    M.notify('Failed to open workspace pane', vim.log.levels.ERROR)
-    M.workspace_pane = nil
-  end
-end
-
--- Close workspace pane
-function M.close_workspace_pane()
-  if M.workspace_pane and M.workspace_pane_exists() then
-    M.execute('kill-pane -t ' .. vim.fn.shellescape(M.workspace_pane))
-    M.workspace_pane = nil
-    M.notify('Workspace pane closed', vim.log.levels.INFO)
-  end
-end
-
--- Toggle workspace pane
-function M.toggle_workspace_pane()
-  if M.workspace_pane_exists() then
-    M.close_workspace_pane()
-  else
-    M.open_workspace_pane()
   end
 end
 
