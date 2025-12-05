@@ -91,12 +91,6 @@ function M.setup(opts)
     workspace.load(args.args ~= '' and args.args or nil)
   end, { nargs = '?' })
 
-  -- Workspace pane command (now integrated into debug UI)
-  vim.api.nvim_create_user_command('MatlabToggleWorkspacePane', function()
-    local debug_ui = require('matlab.debug_ui')
-    debug_ui.toggle_sidebar()
-  end, {})
-
   vim.api.nvim_create_user_command('MatlabRefreshWorkspace', function()
     local debug_ui = require('matlab.debug_ui')
     if debug_ui.is_open() then

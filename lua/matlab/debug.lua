@@ -287,11 +287,10 @@ function M.start_debug()
 
   -- Change to file's directory in MATLAB
   local cd_cmd = string.format("cd '%s'", filepath)
-  tmux.run(cd_cmd, false, false)
+  tmux.run(cd_cmd, true, false)
 
-  -- Clear existing debug state in MATLAB
-  tmux.run('dbclear all', false, false)
-  tmux.run('dbquit', false, false)
+  -- Clear existing breakpoints (dbquit not needed - only errors if not in debug mode)
+  tmux.run('dbclear all', true, false)
 
   -- Restore breakpoints
   M.restore_breakpoints()

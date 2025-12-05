@@ -2,40 +2,33 @@
 
 ## Overview
 
-matlab.nvim provides **basic debugging support** using MATLAB's native debugging commands. The plugin integrates MATLAB's debugger with Neovim's interface through tmux, offering breakpoint management and step-through execution without external dependencies.
+matlab.nvim provides debugging support using MATLAB's native debugging commands. The plugin integrates MATLAB's debugger with Neovim through tmux.
 
 ## Architecture
 
-- **Backend**: Uses MATLAB's built-in debugger (`dbstop`, `dbcont`, `dbstep`, etc.)
-- **Interface**: Neovim signs, commands, and debug UI windows
+- **Backend**: MATLAB's built-in debugger (`dbstop`, `dbcont`, `dbstep`, etc.)
+- **Interface**: Neovim signs, commands, and debug sidebar
 - **Execution**: All debug operations run in the tmux MATLAB pane
-- **No Dependencies**: Pure MATLAB commands, no external debuggers required
 
 ## Key Features
 
 ### Breakpoint Management
 - **Visual indicators**: Red circle (●) for breakpoints, blue arrow (▶) for current line
 - **Interactive toggling**: Set/clear breakpoints with `<Leader>mdb`
-- **Persistence**: Breakpoints maintained across sessions
+- **Persistence**: Breakpoints maintained within session
 - **Synchronization**: Neovim breakpoints sync with MATLAB debugger
 
 ### Execution Control
-- **Start/Stop**: Full session control with `<Leader>mds` / `<Leader>mde`
-- **Stepping**: Step over (`<Leader>mdo`), into (`<Leader>mdi`), out (`<Leader>mdt`)
+- **Start/Stop**: `<Leader>mds` / `<Leader>mdq`
+- **Stepping**: Step over (`<Leader>mdn`), into (`<Leader>mdi`), out (`<Leader>mdo`)
 - **Continue**: Run to next breakpoint with `<Leader>mdc`
 - **Global F-keys**: During debugging, F5/F10/F11/F12 work from ANY buffer
 
-### Inspection
-- **Variables**: Show workspace with `<Leader>mdv` (executes `whos`)
-- **Call Stack**: Display stack with `<Leader>mdk` (executes `dbstack`)
-- **Breakpoints**: List all with `<Leader>mdp` (executes `dbstatus`)
-- **Evaluation**: Execute expressions with `<Leader>mdx`
-- **Workspace Pane**: Live-updating workspace view: `:MatlabToggleWorkspacePane`
-
 ### Debug Sidebar
-- **Toggle Sidebar**: `:MatlabDebugUI` - Unified sidebar showing variables, call stack, and breakpoints
-- **Event-driven**: Updates automatically on debug actions (step, continue, breakpoint changes)
+- **Toggle**: `:MatlabDebugUI` or `<Leader>mdu`
+- **Shows**: Variables, call stack, and breakpoints
 - **Navigation**: Press `<CR>` on stack frames or breakpoints to jump to location
+- **Refresh**: Press `r` to refresh, `w` to update workspace
 
 ## Workflow
 
@@ -45,31 +38,16 @@ matlab.nvim provides **basic debugging support** using MATLAB's native debugging
 3. Set breakpoints: `<Leader>mdb` on desired lines
 4. Start debugging: `<Leader>mds` or `F5`
 5. Step through code: `F10` (over) / `F11` (into) / `F12` (out)
-6. Inspect state: `<Leader>mdv` / `<Leader>mdk` or use `:MatlabDebugUIShowAll`
-7. Stop debugging: `Shift+F5` or `<Leader>mde`
+6. Inspect state via debug sidebar: `<Leader>mdu`
+7. Stop debugging: `Shift+F5` or `<Leader>mdq`
 
 ### Conditional Breakpoints
 
-For conditional breakpoints, use MATLAB's native commands directly in the tmux pane:
+Use MATLAB's native commands directly in the tmux pane:
 
-```matlab
-dbstop in filename at lineno if condition
-```
-
-**Examples:**
 ```matlab
 dbstop in myfile at 22 if x > 5
 dbstop in myfile at 33 if strcmp(status, 'error')
-dbstop in myfile at 44 if length(data) > 10
-```
-
-This gives you full access to MATLAB's conditional breakpoint syntax without plugin complexity.
-
-### Debug Session Lifecycle
-```
-Start Server → Set Breakpoints → Start Debug → Step/Continue → Inspect → Stop Debug
-     ↓              ↓                    ↓              ↓            ↓         ↓
-:MatlabStartServer  <Leader>mdb       <Leader>mds    <Leader>mdc   <Leader>mdv :MatlabDebugStop
 ```
 
 ## Commands & Mappings
@@ -88,19 +66,6 @@ Start Server → Set Breakpoints → Start Debug → Step/Continue → Inspect �
 | `<Leader>mde` | `:MatlabDebugEval` | Evaluate expression |
 | `<Leader>mdu` | `:MatlabDebugUI` | Toggle debug sidebar |
 
-### Workspace Commands (`<Leader>m` + key)
-| Mapping | Command | Description |
-|---------|---------|-------------|
-| `<Leader>mw` | `:MatlabWorkspace` | Show workspace (whos) |
-| `<Leader>mW` | `:MatlabToggleWorkspacePane` | Toggle workspace tmux pane |
-
-### Debug Sidebar Keybindings
-| Key | Action |
-|-----|--------|
-| `r` | Refresh content |
-| `q` | Close sidebar |
-| `<CR>` | Jump to location |
-
 ### Global F-Keys (Active During Debug Session)
 | Key | Action |
 |-----|--------|
@@ -110,11 +75,17 @@ Start Server → Set Breakpoints → Start Debug → Step/Continue → Inspect �
 | `F12` | Step Out |
 | `Shift+F5` | Stop Debug |
 
-**Note**: F-keys work from ANY buffer during an active debug session!
+### Debug Sidebar Keybindings
+| Key | Action |
+|-----|--------|
+| `r` | Refresh content |
+| `w` | Update workspace from MATLAB |
+| `q` | Close sidebar |
+| `<CR>` | Jump to location |
 
 ## MATLAB Commands Used
 
-The plugin translates Neovim commands to these MATLAB debugging commands:
+The plugin sends these commands to MATLAB:
 
 - `dbstop in file at line` - Set breakpoint
 - `dbclear file at line` - Clear specific breakpoint
@@ -128,26 +99,14 @@ The plugin translates Neovim commands to these MATLAB debugging commands:
 - `dbquit` - Exit debug mode
 - `whos` - Show workspace variables
 
-## Implementation Notes
-
-- **File Management**: Automatically saves modified files before debugging
-- **Directory Handling**: Changes MATLAB working directory to file location
-- **State Synchronization**: Breakpoints persist between Neovim and MATLAB
-- **Error Handling**: Validates MATLAB pane existence and debug state
-- **No GUI Dependency**: Works in CLI mode, prevents GUI opening during debugging
-
 ## Limitations
 
-- No conditional breakpoints via UI (use MATLAB commands directly - see above)
+- No conditional breakpoints via UI (use MATLAB commands directly)
 - No watch expressions
-- No advanced debugging features (memory inspection, performance profiling)
 - Requires tmux environment
 
 ## Troubleshooting
 
 **Breakpoints not working**: Ensure line contains executable code (not comments/empty)
 **Commands fail**: Verify MATLAB server is running (`:MatlabStartServer`)
-**No output**: Check tmux MATLAB pane for debug information
-**Lost breakpoints**: Use `:MatlabDebugUIBreakpoints` to verify MATLAB state
 **Debug line not updating**: Run `:MatlabDebugUpdateLine` to manually refresh
-**Figures not showing**: Ensure `DISPLAY` is set in your config's `environment` table
