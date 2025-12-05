@@ -34,8 +34,8 @@ map(prefix .. (mappings.run or 'r'), 'MatlabRun', 'MATLAB: Run script')
 map(prefix .. (mappings.run_cell or 'c'), 'MatlabRunCell', 'MATLAB: Run cell')
 map(prefix .. (mappings.run_to_cell or 'C'), 'MatlabRunToCell', 'MATLAB: Run to cell')
 map(prefix .. (mappings.doc or 'h'), 'MatlabDoc', 'MATLAB: Documentation')
-map(prefix .. (mappings.workspace or 'w'), 'MatlabWorkspace', 'MATLAB: Show workspace')
-map(prefix .. (mappings.workspace_pane or 'W'), 'MatlabToggleWorkspacePane', 'MATLAB: Toggle workspace pane')
+map(prefix .. (mappings.workspace or 'w'), 'MatlabWorkspace', 'MATLAB: Show workspace (whos in main pane)')
+map(prefix .. (mappings.workspace_pane or 'W'), 'MatlabToggleWorkspacePane', 'MATLAB: Toggle workspace monitor pane')
 map(prefix .. (mappings.clear_workspace or 'x'), 'MatlabClearWorkspace', 'MATLAB: Clear workspace')
 map(prefix .. (mappings.toggle_cell_fold or 'f'), 'MatlabToggleCellFold', 'MATLAB: Toggle cell fold')
 map(prefix .. (mappings.open_in_gui or 'g'), 'MatlabOpenInGUI', 'MATLAB: Open in GUI')
@@ -73,8 +73,8 @@ vim.api.nvim_buf_create_user_command(0, 'MatlabKeymaps', function()
     '  ' .. p .. 'c  - Run cell',
     '  ' .. p .. 'C  - Run to cell',
     '  ' .. p .. 'h  - Documentation',
-    '  ' .. p .. 'w  - Show workspace (whos)',
-    '  ' .. p .. 'W  - Toggle workspace pane',
+    '  ' .. p .. 'w  - Show workspace (main pane)',
+    '  ' .. p .. 'W  - Toggle workspace monitor pane',
     '  ' .. p .. 'x  - Clear workspace',
     '  ' .. p .. 'f  - Toggle cell fold',
     '  ' .. p .. 'g  - Open in GUI',

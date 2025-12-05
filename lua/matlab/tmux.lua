@@ -114,7 +114,7 @@ end
 function M.open_pane()
   local pane = M.get_server_pane()
   if pane then
-    return M.execute('select-pane -t .' .. pane)
+    return M.execute('select-pane -t ' .. pane)
   end
   return nil
 end
@@ -512,11 +512,33 @@ function M.refresh_workspace()
   end
 
   M.run('whos', true, false)
+  M.notify('Workspace refreshed (check MATLAB pane)', vim.log.levels.INFO)
 end
 
--- Open workspace pane (simple split showing workspace, no auto-refresh)
+-- Update workspace pane with current workspace information
+function M.update_workspace_pane()
+  if not M.workspace_pane_exists() then
+    return
+  end
+
+  -- Clear the workspace pane and show updated status
+  vim.defer_fn(function()
+    M.execute('send-keys -t ' .. vim.fn.shellescape(M.workspace_pane) .. ' "clear" Enter')
+    vim.defer_fn(function()
+      local timestamp = os.date('%H:%M:%S')
+      M.execute('send-keys -t ' .. vim.fn.shellescape(M.workspace_pane) ..
+        ' "echo MATLAB Workspace Monitor && echo ======================== && echo Last updated: ' .. timestamp .. '" Enter')
+
+      -- Run whos to refresh workspace info (output goes to main MATLAB pane)
+      M.run('whos', true, true)  -- skip_interrupt=true, skip_output=true
+    end, 100)
+  end, 50)
+end
+
+-- Open workspace pane (creates separate tmux pane for workspace display)
 function M.open_workspace_pane()
   if not M.exists() then
+    M.notify('Not in a tmux session.', vim.log.levels.ERROR)
     return
   end
 
@@ -526,24 +548,23 @@ function M.open_workspace_pane()
   end
 
   if M.workspace_pane_exists() then
-    -- Just refresh if already open
-    M.refresh_workspace()
+    -- Just update if already open
+    M.update_workspace_pane()
     return
   end
 
-  -- Create a simple pane that shows whos output once
-  -- User can manually refresh with :MatlabRefreshWorkspace
+  -- Create a vertical split pane below the main MATLAB pane
   local cmd = 'split-window -t ' .. vim.fn.shellescape(M.server_pane) .. ' -v -p 30 -PF "#{pane_id}"'
-  
+
   local result = M.execute(cmd)
   M.workspace_pane = result:gsub('%s+', '')
-  
+
   if M.workspace_pane_exists() then
-    -- Run whos in the main MATLAB pane and capture to workspace pane
+    -- Initialize the workspace pane with header
     vim.defer_fn(function()
-      M.execute('send-keys -t ' .. vim.fn.shellescape(M.workspace_pane) .. 
-        ' "echo \'MATLAB Workspace (use :MatlabRefreshWorkspace to update)\' && echo \'\'" Enter')
-      M.refresh_workspace()
+      M.execute('send-keys -t ' .. vim.fn.shellescape(M.workspace_pane) ..
+        ' "echo MATLAB Workspace && echo ================" Enter')
+      M.update_workspace_pane()
     end, 200)
     M.notify('Workspace pane opened', vim.log.levels.INFO)
   else
