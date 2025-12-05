@@ -104,6 +104,10 @@ function M.setup(opts)
     tmux.close_workspace_pane()
   end, {})
 
+  vim.api.nvim_create_user_command('MatlabRefreshWorkspace', function()
+    tmux.refresh_workspace()
+  end, {})
+
   -- Debug commands
   vim.api.nvim_create_user_command('MatlabDebugStart', function()
     debug_module.start_debug()
@@ -150,34 +154,38 @@ function M.setup(opts)
     debug_module.update_current_line()
   end, {})
 
-  -- Debug UI commands
+  -- Debug UI commands (unified sidebar)
   vim.api.nvim_create_user_command('MatlabDebugUI', function()
-    debug_ui.show_control_bar()
+    debug_ui.toggle_sidebar()
   end, {})
 
-  vim.api.nvim_create_user_command('MatlabDebugUIVariables', function()
-    debug_ui.show_variables()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugUICallStack', function()
-    debug_ui.show_callstack()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugUIBreakpoints', function()
-    debug_ui.show_breakpoints()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugUIRepl', function()
-    debug_ui.show_repl()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugUIShowAll', function()
-    debug_ui.show_all()
-    vim.defer_fn(debug_ui.show_control_bar, 50)
+  vim.api.nvim_create_user_command('MatlabDebugUIOpen', function()
+    debug_ui.open_sidebar()
   end, {})
 
   vim.api.nvim_create_user_command('MatlabDebugUIClose', function()
-    debug_ui.close_all()
+    debug_ui.close_sidebar()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugUIRefresh', function()
+    debug_ui.refresh()
+  end, {})
+
+  -- Legacy aliases for compatibility
+  vim.api.nvim_create_user_command('MatlabDebugUIVariables', function()
+    debug_ui.open_sidebar()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugUICallStack', function()
+    debug_ui.open_sidebar()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugUIBreakpoints', function()
+    debug_ui.open_sidebar()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabDebugUIShowAll', function()
+    debug_ui.open_sidebar()
   end, {})
 
   -- Config inspection command

@@ -32,12 +32,10 @@ matlab.nvim provides **basic debugging support** using MATLAB's native debugging
 - **Evaluation**: Execute expressions with `<Leader>mdx`
 - **Workspace Pane**: Live-updating workspace view: `:MatlabToggleWorkspacePane`
 
-### Debug UI
-- **Control Bar**: `:MatlabDebugUI` - Visual control panel with keybindings
-- **Variables Window**: `:MatlabDebugUIVariables` - Floating variables display
-- **Call Stack Window**: `:MatlabDebugUICallStack` - Stack trace viewer
-- **Breakpoints Window**: `:MatlabDebugUIBreakpoints` - Breakpoints list
-- **REPL Window**: `:MatlabDebugUIRepl` - Interactive command input
+### Debug Sidebar
+- **Toggle Sidebar**: `:MatlabDebugUI` - Unified sidebar showing variables, call stack, and breakpoints
+- **Event-driven**: Updates automatically on debug actions (step, continue, breakpoint changes)
+- **Navigation**: Press `<CR>` on stack frames or breakpoints to jump to location
 
 ## Workflow
 
@@ -89,23 +87,26 @@ Start Server → Set Breakpoints → Start Debug → Step/Continue → Inspect �
 | `:MatlabDebugClearBreakpoints` | `<Leader>mdd` | Clear all breakpoints |
 | `:MatlabDebugEval` | `<Leader>mdx` | Evaluate expression |
 
-### Debug UI Commands
-| Command | Default Mapping | Description |
-|---------|-----------------|-------------|
-| `:MatlabDebugUI` | `<Leader>mdu` | Show debug control bar |
-| `:MatlabDebugUIVariables` | `<Leader>mdv` | Show variables window |
-| `:MatlabDebugUICallStack` | `<Leader>mdk` | Show call stack window |
-| `:MatlabDebugUIBreakpoints` | `<Leader>mdp` | Show breakpoints window |
-| `:MatlabDebugUIRepl` | `<Leader>mdr` | Show REPL window |
-| `:MatlabDebugUIShowAll` | `<Leader>mda` | Show all debug windows |
-| `:MatlabDebugUIClose` | `<Leader>mdQ` | Close all debug UI |
-
-### Workspace Pane
+### Debug Sidebar Commands
 | Command | Description |
 |---------|-------------|
-| `:MatlabToggleWorkspacePane` | Toggle live workspace viewer tmux pane |
-| `:MatlabOpenWorkspacePane` | Open workspace viewer pane |
-| `:MatlabCloseWorkspacePane` | Close workspace viewer pane |
+| `:MatlabDebugUI` | Toggle debug sidebar (shows variables, stack, breakpoints) |
+| `:MatlabDebugUIOpen` | Open debug sidebar |
+| `:MatlabDebugUIClose` | Close debug sidebar |
+| `:MatlabDebugUIRefresh` | Manually refresh sidebar content |
+
+### Sidebar Keybindings
+| Key | Action |
+|-----|--------|
+| `r` | Refresh content |
+| `q` | Close sidebar |
+| `<CR>` | Jump to location (for stack frames/breakpoints) |
+
+### Workspace Commands
+| Command | Description |
+|---------|-------------|
+| `:MatlabRefreshWorkspace` | Run `whos` in MATLAB pane |
+| `:MatlabToggleWorkspacePane` | Toggle workspace tmux pane |
 
 ### Global F-Keys (Active During Debug Session)
 | Key | Action |

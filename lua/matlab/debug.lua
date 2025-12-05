@@ -314,6 +314,9 @@ function M.start_debug()
 
   -- Update current line indicator after starting
   vim.defer_fn(move_to_debug_location, 800)
+  
+  -- Update debug UI
+  vim.defer_fn(update_debug_ui, 900)
 end
 
 -- Stop debugging
@@ -337,6 +340,9 @@ function M.stop_debug()
   M.current_line = nil
   M.current_bufnr = nil
   utils.notify('Debug stopped', vim.log.levels.INFO)
+  
+  -- Update debug UI
+  update_debug_ui()
 end
 
 -- Helper: update debug UI if available
@@ -445,6 +451,9 @@ function M.toggle_breakpoint()
     update_sign(bufnr, line, 'set')
     utils.notify('Breakpoint set: line ' .. line, vim.log.levels.INFO)
   end
+  
+  -- Update debug UI
+  update_debug_ui()
 end
 
 
@@ -465,6 +474,9 @@ function M.clear_breakpoints()
 
   M.breakpoints = {}
   utils.notify('All breakpoints cleared', vim.log.levels.INFO)
+  
+  -- Update debug UI
+  update_debug_ui()
 end
 
 
