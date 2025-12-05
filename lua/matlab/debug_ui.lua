@@ -16,9 +16,9 @@ M.config = {
   sidebar_position = 'right', -- 'left' or 'right'
 }
 
--- Temp files for workspace data (hidden files to avoid clutter)
-M.workspace_file = '/tmp/.nvim_mws.dat'
-M.helper_script = '/tmp/.nvim_mws.m'
+-- Temp files for workspace data
+M.workspace_file = '/tmp/nvim_mws.dat'
+M.helper_script = '/tmp/nvim_mws.m'
 M.helper_initialized = false
 
 -- Load configuration
