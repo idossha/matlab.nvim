@@ -490,9 +490,11 @@ function M.workspace_pane_exists()
     return false
   end
 
+  -- Extract the numeric part of the pane ID (e.g., "42" from "%42")
   local pane_id = M.workspace_pane:match('%%(%d+)')
   if pane_id then
-    local pattern = '%%' .. pane_id
+    -- Search for "%42" as plain text in the result
+    local pattern = '%' .. pane_id
     return result:find(pattern, 1, true) ~= nil
   end
 
