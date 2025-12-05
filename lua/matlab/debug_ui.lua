@@ -213,13 +213,22 @@ function M.request_workspace_update()
     return
   end
   
-  -- Write workspace to temp file silently
-  -- Using try-end block which doesn't produce output even without trailing semicolon
-  local matlab_cmd = string.format(
+  -- Write workspace to temp file silently using tmux send-keys directly
+  -- This bypasses shell escaping issues with quotes
+  local target = pane
+  local cmd = string.format(
     "try,fid=fopen('%s','w');fprintf(fid,'%%s',evalc('whos'));fclose(fid);catch,end",
     M.workspace_file
   )
-  tmux.run(matlab_cmd, true, true)
+  
+  -- Send command character by character using tmux literal mode
+  local tmux_cmd = string.format(
+    "send-keys -t %s -l %s",
+    vim.fn.shellescape(target),
+    vim.fn.shellescape(cmd)
+  )
+  tmux.execute(tmux_cmd)
+  tmux.execute(string.format("send-keys -t %s Enter", vim.fn.shellescape(target)))
 end
 
 -- Format workspace for display
