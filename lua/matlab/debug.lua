@@ -42,6 +42,16 @@ local function is_matlab_file()
   return true
 end
 
+-- Helper: update debug UI if available
+local function update_debug_ui()
+  local ok, debug_ui = pcall(require, 'matlab.debug_ui')
+  if ok and debug_ui and debug_ui.update_all then
+    vim.defer_fn(function()
+      debug_ui.update_all()
+    end, 100)
+  end
+end
+
 -- Helper: clear current debug line sign
 local function clear_debug_line_sign()
   if M.current_bufnr and M.current_line and vim.api.nvim_buf_is_valid(M.current_bufnr) then
@@ -343,14 +353,6 @@ function M.stop_debug()
   
   -- Update debug UI
   update_debug_ui()
-end
-
--- Helper: update debug UI if available
-local function update_debug_ui()
-  local ok, debug_ui = pcall(require, 'matlab.debug_ui')
-  if ok and debug_ui then
-    vim.defer_fn(debug_ui.update_all, 100)
-  end
 end
 
 -- Continue execution (dbcont)

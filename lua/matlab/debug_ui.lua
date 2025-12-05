@@ -371,7 +371,9 @@ end
 -- Update all (called from debug module on events)
 function M.update_all()
   if M.is_open() then
-    vim.schedule(M.refresh)
+    vim.schedule(function()
+      M.refresh()
+    end)
   end
 end
 
