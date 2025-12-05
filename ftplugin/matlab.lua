@@ -1,4 +1,5 @@
 -- ftplugin/matlab.lua
+-- Key mappings for MATLAB files
 
 -- Only load this plugin once per buffer
 if vim.b.did_ftplugin_matlab_nvim then
@@ -6,191 +7,97 @@ if vim.b.did_ftplugin_matlab_nvim then
 end
 vim.b.did_ftplugin_matlab_nvim = true
 
-local config_status, config = pcall(require, 'matlab.config')
-if not config_status then
-  vim.notify("MATLAB: Failed to load matlab.config module. Check your installation.", vim.log.levels.ERROR)
+local config_ok, config = pcall(require, 'matlab.config')
+if not config_ok then
   return
 end
 
-local utils_status, utils = pcall(require, 'matlab.utils')
-if not utils_status then
-  vim.notify("MATLAB: Failed to load matlab.utils module. Check your installation.", vim.log.levels.ERROR)
+-- Check if mappings are enabled
+if not config.get('default_mappings') then
   return
 end
 
--- Use centralized logging
-utils.log("MATLAB ftplugin loading for buffer: " .. vim.api.nvim_buf_get_name(0), "DEBUG")
+local mappings = config.get('mappings') or {}
+local prefix = mappings.prefix or '<Leader>m'
+local debug_prefix = prefix .. (mappings.debug_prefix or 'd')
 
--- Get mappings config with better error handling
-local function get_safe_mappings()
-  local user_mappings = {}
+-- Helper function to create buffer-local mapping
+local function map(lhs, cmd, desc)
+  vim.keymap.set('n', lhs, '<Cmd>' .. cmd .. '<CR>', { buffer = true, desc = desc, silent = true })
+end
+
+-- ============================================================================
+-- General MATLAB Commands (<Leader>m + key)
+-- ============================================================================
+
+map(prefix .. (mappings.run or 'r'), 'MatlabRun', 'MATLAB: Run script')
+map(prefix .. (mappings.run_cell or 'c'), 'MatlabRunCell', 'MATLAB: Run cell')
+map(prefix .. (mappings.run_to_cell or 'C'), 'MatlabRunToCell', 'MATLAB: Run to cell')
+map(prefix .. (mappings.doc or 'h'), 'MatlabDoc', 'MATLAB: Documentation')
+map(prefix .. (mappings.workspace or 'w'), 'MatlabWorkspace', 'MATLAB: Show workspace')
+map(prefix .. (mappings.workspace_pane or 'W'), 'MatlabToggleWorkspacePane', 'MATLAB: Toggle workspace pane')
+map(prefix .. (mappings.clear_workspace or 'x'), 'MatlabClearWorkspace', 'MATLAB: Clear workspace')
+map(prefix .. (mappings.toggle_cell_fold or 'f'), 'MatlabToggleCellFold', 'MATLAB: Toggle cell fold')
+map(prefix .. (mappings.open_in_gui or 'g'), 'MatlabOpenInGUI', 'MATLAB: Open in GUI')
+
+-- ============================================================================
+-- Debug Commands (<Leader>md + key)
+-- ============================================================================
+
+map(debug_prefix .. (mappings.debug_start or 's'), 'MatlabDebugStart', 'MATLAB Debug: Start')
+map(debug_prefix .. (mappings.debug_stop or 'q'), 'MatlabDebugStop', 'MATLAB Debug: Stop')
+map(debug_prefix .. (mappings.debug_continue or 'c'), 'MatlabDebugContinue', 'MATLAB Debug: Continue')
+map(debug_prefix .. (mappings.debug_step_over or 'n'), 'MatlabDebugStepOver', 'MATLAB Debug: Step over')
+map(debug_prefix .. (mappings.debug_step_into or 'i'), 'MatlabDebugStepInto', 'MATLAB Debug: Step into')
+map(debug_prefix .. (mappings.debug_step_out or 'o'), 'MatlabDebugStepOut', 'MATLAB Debug: Step out')
+map(debug_prefix .. (mappings.debug_breakpoint or 'b'), 'MatlabDebugToggleBreakpoint', 'MATLAB Debug: Toggle breakpoint')
+map(debug_prefix .. (mappings.debug_clear_bp or 'B'), 'MatlabDebugClearBreakpoints', 'MATLAB Debug: Clear breakpoints')
+map(debug_prefix .. (mappings.debug_eval or 'e'), 'MatlabDebugEval', 'MATLAB Debug: Evaluate')
+map(debug_prefix .. (mappings.debug_ui or 'u'), 'MatlabDebugUI', 'MATLAB Debug: Toggle sidebar')
+
+-- ============================================================================
+-- Help command to show all mappings
+-- ============================================================================
+
+vim.api.nvim_buf_create_user_command(0, 'MatlabKeymaps', function()
+  local leader = vim.g.mapleader == ' ' and '<Space>' or (vim.g.mapleader or '\\')
+  local p = leader .. 'm'
+  local dp = p .. 'd'
   
-  -- Try to get user mappings safely
-  local status, result = pcall(function()
-    return config.get('mappings')
-  end)
-  
-  if status and type(result) == 'table' then
-    user_mappings = result
-    utils.log("Successfully loaded user mappings", "DEBUG")
-  else
-    utils.log("Failed to load user mappings, using defaults", "DEBUG")
-  end
-  
-  -- Default mappings as fallback
-  local default_mappings = {
-    prefix = '<Leader>m',
-    run = 'r',
-    run_cell = 'c',
-    run_to_cell = 't',
-    doc = 'h',
-    toggle_workspace = 'w',
-    show_workspace = 'W',
-    clear_workspace = 'x',
-    save_workspace = 's',
-    load_workspace = 'l',
-    toggle_cell_fold = 'f',
-    toggle_all_cell_folds = 'F',
-    open_in_gui = 'g',
-    -- Debug mappings
-    debug_start = 's',
-    debug_stop = 'q',
-    debug_continue = 'c',
-    debug_step_over = 'o',
-    debug_step_into = 'i',
-    debug_step_out = 't',
-    debug_toggle_breakpoint = 'b',
-    debug_clear_breakpoints = 'B',
-    debug_eval = 'e',
-    -- Debug UI mappings
-    debug_ui = 'u',
-    debug_ui_variables = 'v',
-    debug_ui_callstack = 'k',
-    debug_ui_breakpoints = 'p',
-    debug_ui_repl = 'r',
-    debug_ui_show_all = 'a',
-    debug_ui_close = 'Q',
+  local lines = {
+    'MATLAB Key Mappings',
+    '═══════════════════════════════════════',
+    '',
+    'General (' .. p .. ' + key):',
+    '  ' .. p .. 'r  - Run script',
+    '  ' .. p .. 'c  - Run cell',
+    '  ' .. p .. 'C  - Run to cell',
+    '  ' .. p .. 'h  - Documentation',
+    '  ' .. p .. 'w  - Show workspace (whos)',
+    '  ' .. p .. 'W  - Toggle workspace pane',
+    '  ' .. p .. 'x  - Clear workspace',
+    '  ' .. p .. 'f  - Toggle cell fold',
+    '  ' .. p .. 'g  - Open in GUI',
+    '',
+    'Debug (' .. dp .. ' + key):',
+    '  ' .. dp .. 's  - Start debug',
+    '  ' .. dp .. 'q  - Stop debug',
+    '  ' .. dp .. 'c  - Continue',
+    '  ' .. dp .. 'n  - Step over (next)',
+    '  ' .. dp .. 'i  - Step into',
+    '  ' .. dp .. 'o  - Step out',
+    '  ' .. dp .. 'b  - Toggle breakpoint',
+    '  ' .. dp .. 'B  - Clear all breakpoints',
+    '  ' .. dp .. 'e  - Evaluate expression',
+    '  ' .. dp .. 'u  - Toggle debug sidebar',
+    '',
+    'Global F-keys (during debug):',
+    '  F5      - Continue / Start',
+    '  F10     - Step over',
+    '  F11     - Step into',
+    '  F12     - Step out',
+    '  Shift+F5 - Stop debug',
   }
   
-  -- Merge with defaults
-  for k, v in pairs(default_mappings) do
-    if user_mappings[k] == nil then
-      user_mappings[k] = v
-    end
-  end
-  
-  return user_mappings
-end
-
--- Should we set up mappings?
-local should_setup_mappings = true
-local status, result = pcall(function() 
-  return config.get('default_mappings') 
-end)
-
-if status then
-  should_setup_mappings = result
-end
-
-utils.log("Should set up mappings: " .. tostring(should_setup_mappings), "DEBUG")
-
-if should_setup_mappings then
-  local mappings = get_safe_mappings()
-  local prefix = mappings.prefix or '<Leader>m'
-  
-  utils.log("Setting up MATLAB mappings with prefix: " .. prefix, "DEBUG")
-  
-  -- Helper function to create a mapping with proper error handling
-  local function safe_map(lhs, rhs, desc)
-    local status, error = pcall(function()
-      vim.keymap.set('n', lhs, rhs, {buffer = true, desc = desc})
-    end)
-    
-    if status then
-      utils.log("Set mapping: " .. lhs .. " -> " .. rhs, "DEBUG")
-    else
-      utils.notify("Failed to set mapping: " .. lhs .. " - " .. tostring(error), vim.log.levels.ERROR, true)
-    end
-  end
-  
-  -- Get the actual prefix (Neovim handles <Leader> expansion internally)
-  local actual_prefix = prefix
-  
-  -- Set all the mappings using the correct prefix
-  -- Run commands
-  safe_map(actual_prefix .. mappings.run, '<Cmd>MatlabRun<CR>', 'Run MATLAB script')
-  safe_map(actual_prefix .. mappings.run_cell, '<Cmd>MatlabRunCell<CR>', 'Run current MATLAB cell')
-  safe_map(actual_prefix .. mappings.run_to_cell, '<Cmd>MatlabRunToCell<CR>', 'Run to current MATLAB cell')
-
-  -- Documentation
-  safe_map(actual_prefix .. mappings.doc, '<Cmd>MatlabDoc<CR>', 'Show MATLAB documentation')
-
-  -- Workspace
-  safe_map(actual_prefix .. mappings.toggle_workspace, '<Cmd>MatlabWorkspace<CR>', 'Show MATLAB workspace (whos)')
-  safe_map(actual_prefix .. mappings.clear_workspace, '<Cmd>MatlabClearWorkspace<CR>', 'Clear MATLAB workspace')
-  safe_map(actual_prefix .. mappings.save_workspace, '<Cmd>MatlabSaveWorkspace<CR>', 'Save MATLAB workspace')
-  safe_map(actual_prefix .. mappings.load_workspace, '<Cmd>MatlabLoadWorkspace<CR>', 'Load MATLAB workspace')
-
-  -- Cell folding
-  safe_map(actual_prefix .. mappings.toggle_cell_fold, '<Cmd>MatlabToggleCellFold<CR>', 'Toggle current MATLAB cell fold')
-  safe_map(actual_prefix .. mappings.toggle_all_cell_folds, '<Cmd>MatlabToggleAllCellFolds<CR>', 'Toggle all MATLAB cell folds')
-
-  -- Open in MATLAB GUI
-  safe_map(actual_prefix .. mappings.open_in_gui, '<Cmd>MatlabOpenInGUI<CR>', 'Open in MATLAB GUI')
-
-  -- Debug mappings
-  safe_map(actual_prefix .. mappings.debug_start, '<Cmd>MatlabDebugStart<CR>', 'Start MATLAB debugging session')
-  safe_map(actual_prefix .. mappings.debug_stop, '<Cmd>MatlabDebugStop<CR>', 'Stop MATLAB debugging session')
-  safe_map(actual_prefix .. mappings.debug_continue, '<Cmd>MatlabDebugContinue<CR>', 'Continue MATLAB debugging')
-  safe_map(actual_prefix .. mappings.debug_step_over, '<Cmd>MatlabDebugStepOver<CR>', 'Step over in MATLAB debugging')
-  safe_map(actual_prefix .. mappings.debug_step_into, '<Cmd>MatlabDebugStepInto<CR>', 'Step into in MATLAB debugging')
-  safe_map(actual_prefix .. mappings.debug_step_out, '<Cmd>MatlabDebugStepOut<CR>', 'Step out in MATLAB debugging')
-  safe_map(actual_prefix .. mappings.debug_toggle_breakpoint, '<Cmd>MatlabDebugToggleBreakpoint<CR>', 'Toggle breakpoint in MATLAB debugging')
-  safe_map(actual_prefix .. mappings.debug_clear_breakpoints, '<Cmd>MatlabDebugClearBreakpoints<CR>', 'Clear all breakpoints in MATLAB debugging')
-  safe_map(actual_prefix .. mappings.debug_eval, '<Cmd>MatlabDebugEval<CR>', 'Evaluate expression in MATLAB')
-
-  -- Debug UI mappings
-  safe_map(actual_prefix .. mappings.debug_ui, '<Cmd>MatlabDebugUI<CR>', 'Show MATLAB debug control bar')
-  safe_map(actual_prefix .. mappings.debug_ui_variables, '<Cmd>MatlabDebugUIVariables<CR>', 'Show MATLAB variables window (auto-updating)')
-  safe_map(actual_prefix .. mappings.debug_ui_callstack, '<Cmd>MatlabDebugUICallStack<CR>', 'Show MATLAB call stack window')
-  safe_map(actual_prefix .. mappings.debug_ui_breakpoints, '<Cmd>MatlabDebugUIBreakpoints<CR>', 'Show MATLAB breakpoints window')
-  safe_map(actual_prefix .. mappings.debug_ui_repl, '<Cmd>MatlabDebugUIRepl<CR>', 'Show MATLAB REPL window')
-  safe_map(actual_prefix .. mappings.debug_ui_show_all, '<Cmd>MatlabDebugUIShowAll<CR>', 'Show all MATLAB debug windows')
-  safe_map(actual_prefix .. mappings.debug_ui_close, '<Cmd>MatlabDebugUIClose<CR>', 'Close all MATLAB debug UI windows')
-
-  -- Always add a fallback mapping that doesn't depend on leader
-  safe_map(',mr', '<Cmd>MatlabRun<CR>', 'Run MATLAB script (fallback)')
-  
-  -- Create a command to list all mappings
-  vim.api.nvim_buf_create_user_command(0, 'MatlabKeymaps', function()
-    local lines = {"MATLAB key mappings:"}
-    
-    -- Display prefix in a user-friendly way
-    local display_prefix = vim.g.mapleader == " " and "Space" .. prefix:gsub("<Leader>", "") or prefix
-    
-    table.insert(lines, "- " .. display_prefix .. mappings.run .. " : Run MATLAB script")
-    table.insert(lines, "- " .. display_prefix .. mappings.run_cell .. " : Run current MATLAB cell")
-    table.insert(lines, "- " .. display_prefix .. mappings.run_to_cell .. " : Run to current MATLAB cell")
-    table.insert(lines, "- " .. display_prefix .. mappings.doc .. " : Show documentation")
-    table.insert(lines, "- " .. display_prefix .. mappings.toggle_workspace .. " : Show workspace (whos)")
-    table.insert(lines, "- " .. display_prefix .. mappings.open_in_gui .. " : Open in MATLAB GUI")
-    table.insert(lines, "- " .. display_prefix .. mappings.debug_toggle_breakpoint .. " : Toggle breakpoint")
-    table.insert(lines, "")
-    table.insert(lines, "Fallback mapping: ,mr : Run MATLAB script")
-    
-    vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
-  end, {})
-  
-  -- Check if the mappings were successfully set (only log, don't notify)
-  vim.defer_fn(function()
-    local keymap_count = 0
-    for _, map in ipairs(vim.api.nvim_buf_get_keymap(0, 'n')) do
-      if map.desc and map.desc:find("MATLAB") then
-        keymap_count = keymap_count + 1
-      end
-    end
-    utils.log("Verified " .. keymap_count .. " MATLAB mappings were set", "DEBUG")
-  end, 100)
-end
-
-utils.log("MATLAB ftplugin setup complete", "DEBUG")
+  vim.notify(table.concat(lines, '\n'), vim.log.levels.INFO)
+end, {})

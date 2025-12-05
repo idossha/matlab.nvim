@@ -154,38 +154,9 @@ function M.setup(opts)
     debug_module.update_current_line()
   end, {})
 
-  -- Debug UI commands (unified sidebar)
+  -- Debug UI commands
   vim.api.nvim_create_user_command('MatlabDebugUI', function()
     debug_ui.toggle_sidebar()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugUIOpen', function()
-    debug_ui.open_sidebar()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugUIClose', function()
-    debug_ui.close_sidebar()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugUIRefresh', function()
-    debug_ui.refresh()
-  end, {})
-
-  -- Legacy aliases for compatibility
-  vim.api.nvim_create_user_command('MatlabDebugUIVariables', function()
-    debug_ui.open_sidebar()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugUICallStack', function()
-    debug_ui.open_sidebar()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugUIBreakpoints', function()
-    debug_ui.open_sidebar()
-  end, {})
-
-  vim.api.nvim_create_user_command('MatlabDebugUIShowAll', function()
-    debug_ui.open_sidebar()
   end, {})
 
   -- Config inspection command

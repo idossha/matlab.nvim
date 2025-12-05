@@ -74,50 +74,43 @@ Start Server → Set Breakpoints → Start Debug → Step/Continue → Inspect �
 
 ## Commands & Mappings
 
-### Debug Commands
-| Command | Default Mapping | Description |
-|---------|-----------------|-------------|
-| `:MatlabDebugStart` | `<Leader>mds` / `F5` | Start debugging session |
-| `:MatlabDebugStop` | `<Leader>mde` / `Shift+F5` | Stop debugging session |
-| `:MatlabDebugContinue` | `<Leader>mdc` / `F5` | Continue to next breakpoint |
-| `:MatlabDebugStepOver` | `<Leader>mdo` / `F10` | Step over (execute line) |
-| `:MatlabDebugStepInto` | `<Leader>mdi` / `F11` | Step into function |
-| `:MatlabDebugStepOut` | `<Leader>mdt` / `F12` | Step out of function |
-| `:MatlabDebugToggleBreakpoint` | `<Leader>mdb` | Toggle breakpoint at cursor |
-| `:MatlabDebugClearBreakpoints` | `<Leader>mdd` | Clear all breakpoints |
-| `:MatlabDebugEval` | `<Leader>mdx` | Evaluate expression |
+### Debug Commands (`<Leader>md` + key)
+| Mapping | Command | Description |
+|---------|---------|-------------|
+| `<Leader>mds` | `:MatlabDebugStart` | Start debugging session |
+| `<Leader>mdq` | `:MatlabDebugStop` | Stop debugging session |
+| `<Leader>mdc` | `:MatlabDebugContinue` | Continue to next breakpoint |
+| `<Leader>mdn` | `:MatlabDebugStepOver` | Step over (next line) |
+| `<Leader>mdi` | `:MatlabDebugStepInto` | Step into function |
+| `<Leader>mdo` | `:MatlabDebugStepOut` | Step out of function |
+| `<Leader>mdb` | `:MatlabDebugToggleBreakpoint` | Toggle breakpoint |
+| `<Leader>mdB` | `:MatlabDebugClearBreakpoints` | Clear all breakpoints |
+| `<Leader>mde` | `:MatlabDebugEval` | Evaluate expression |
+| `<Leader>mdu` | `:MatlabDebugUI` | Toggle debug sidebar |
 
-### Debug Sidebar Commands
-| Command | Description |
-|---------|-------------|
-| `:MatlabDebugUI` | Toggle debug sidebar (shows variables, stack, breakpoints) |
-| `:MatlabDebugUIOpen` | Open debug sidebar |
-| `:MatlabDebugUIClose` | Close debug sidebar |
-| `:MatlabDebugUIRefresh` | Manually refresh sidebar content |
+### Workspace Commands (`<Leader>m` + key)
+| Mapping | Command | Description |
+|---------|---------|-------------|
+| `<Leader>mw` | `:MatlabWorkspace` | Show workspace (whos) |
+| `<Leader>mW` | `:MatlabToggleWorkspacePane` | Toggle workspace tmux pane |
 
-### Sidebar Keybindings
+### Debug Sidebar Keybindings
 | Key | Action |
 |-----|--------|
 | `r` | Refresh content |
 | `q` | Close sidebar |
-| `<CR>` | Jump to location (for stack frames/breakpoints) |
-
-### Workspace Commands
-| Command | Description |
-|---------|-------------|
-| `:MatlabRefreshWorkspace` | Run `whos` in MATLAB pane |
-| `:MatlabToggleWorkspacePane` | Toggle workspace tmux pane |
+| `<CR>` | Jump to location |
 
 ### Global F-Keys (Active During Debug Session)
 | Key | Action |
 |-----|--------|
-| `F5` | Continue (or Start if not debugging) |
+| `F5` | Continue (or Start) |
 | `F10` | Step Over |
 | `F11` | Step Into |
 | `F12` | Step Out |
-| `Shift+F5` | Stop Debugging |
+| `Shift+F5` | Stop Debug |
 
-**Note**: F-keys work from ANY buffer during an active debug session - no need to focus the debug bar!
+**Note**: F-keys work from ANY buffer during an active debug session!
 
 ## MATLAB Commands Used
 

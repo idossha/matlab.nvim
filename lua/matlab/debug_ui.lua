@@ -66,43 +66,6 @@ local function set_window_options(win)
   vim.wo[win].winfixwidth = true
 end
 
--- Parse workspace variables from MATLAB pane
-function M.get_variables()
-  local pane = tmux.get_server_pane()
-  if not pane then
-    return {}
-  end
-
-  -- Capture current pane output
-  local ok, output = pcall(tmux.execute, 'capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -40')
-  if not ok or not output then
-    return {}
-  end
-
-  local lines = vim.split(output, '\n')
-  local variables = {}
-  local seen = {}
-
-  -- Search backwards for whos output
-  for i = #lines, 1, -1 do
-    local line = lines[i]
-    
-    -- Stop at prompt
-    if line:match('^[K]?>>') and #variables > 0 then
-      break
-    end
-    
-    -- Match variable line
-    local name, size, bytes, class = line:match('^%s*([%w_]+)%s+([%dx]+)%s+(%d+)%s+(%w+)')
-    if name and name ~= 'Name' and not seen[name] then
-      seen[name] = true
-      table.insert(variables, 1, { name = name, size = size, bytes = bytes, class = class })
-    end
-  end
-
-  return variables
-end
-
 -- Parse call stack from MATLAB pane
 function M.get_callstack()
   local pane = tmux.get_server_pane()
@@ -168,25 +131,6 @@ function M.get_breakpoints()
   end)
 
   return breakpoints
-end
-
--- Format variables for display
-local function format_variables(variables)
-  local lines = { '── Variables ──', '' }
-  
-  if #variables == 0 then
-    table.insert(lines, '  (empty workspace)')
-  else
-    table.insert(lines, string.format('  %-16s %-10s %s', 'Name', 'Size', 'Class'))
-    table.insert(lines, '  ' .. string.rep('─', 36))
-    
-    for _, var in ipairs(variables) do
-      table.insert(lines, string.format('  %-16s %-10s %s', 
-        var.name:sub(1, 16), var.size, var.class))
-    end
-  end
-  
-  return lines
 end
 
 -- Format call stack for display
@@ -295,11 +239,6 @@ function M.refresh()
   table.insert(lines, string.rep('═', 38))
   table.insert(lines, '')
   
-  -- Variables
-  local vars = M.get_variables()
-  vim.list_extend(lines, format_variables(vars))
-  table.insert(lines, '')
-  
   -- Call Stack
   local stack = M.get_callstack()
   vim.list_extend(lines, format_callstack(stack))
@@ -315,6 +254,8 @@ function M.refresh()
   table.insert(lines, '  r = refresh')
   table.insert(lines, '  q = close')
   table.insert(lines, '  <CR> = jump to location')
+  table.insert(lines, '')
+  table.insert(lines, 'Use <Leader>mW for workspace')
   
   set_buffer_content(buf, lines)
 end
@@ -386,13 +327,5 @@ function M.setup()
   M.load_config()
   M.initialized = true
 end
-
--- Legacy compatibility - map old functions to new ones
-M.show_variables = M.open_sidebar
-M.show_callstack = M.open_sidebar
-M.show_breakpoints = M.open_sidebar
-M.show_control_bar = M.open_sidebar
-M.show_all = M.open_sidebar
-M.close_all = M.close_sidebar
 
 return M
