@@ -14,8 +14,9 @@ M.current_bufnr = nil
 M.breakpoints = {}  -- { [bufnr] = { [line] = boolean } }
 M.global_keymaps_set = false
 
--- Sign configuration
-M.sign_group = 'matlab_debug'
+-- Sign configuration (separate groups to avoid conflicts)
+M.sign_group_bp = 'matlab_breakpoints'
+M.sign_group_line = 'matlab_debug_line'
 M.signs_defined = false
 
 -- Helper: validate prerequisites
@@ -56,7 +57,7 @@ end
 -- Helper: clear current debug line sign
 local function clear_debug_line_sign()
   if M.current_bufnr and M.current_line and vim.api.nvim_buf_is_valid(M.current_bufnr) then
-    pcall(vim.fn.sign_unplace, M.sign_group, {
+    pcall(vim.fn.sign_unplace, M.sign_group_line, {
       buffer = M.current_bufnr,
       id = 999999  -- Use specific ID for debug line
     })
@@ -74,7 +75,7 @@ local function update_debug_line_sign(bufnr, line)
     M.current_line = line
 
     -- Safely place sign
-    pcall(vim.fn.sign_place, 999999, M.sign_group, 'matlab_debug_line', bufnr, {
+    pcall(vim.fn.sign_place, 999999, M.sign_group_line, 'matlab_debug_line', bufnr, {
       lnum = line,
       priority = 20  -- Higher priority than breakpoints
     })
@@ -222,18 +223,23 @@ local function move_to_debug_location()
 end
 
 -- Helper: update breakpoint sign
+-- Uses line number as sign ID for precise control
 local function update_sign(bufnr, line, action)
   if not vim.api.nvim_buf_is_valid(bufnr) then
     return
   end
 
+  -- Use line number as sign ID (unique per line, avoids conflicts with debug line ID 999999)
+  local sign_id = line
+
   if action == 'set' then
-    vim.fn.sign_place(0, M.sign_group, 'matlab_breakpoint', bufnr, {
+    vim.fn.sign_place(sign_id, M.sign_group_bp, 'matlab_breakpoint', bufnr, {
       lnum = line,
       priority = 10
     })
   elseif action == 'clear' then
-    vim.fn.sign_unplace(M.sign_group, { buffer = bufnr, lnum = line })
+    -- Clear only the specific sign by ID, not all signs at the line
+    vim.fn.sign_unplace(M.sign_group_bp, { buffer = bufnr, id = sign_id })
   end
 end
 
@@ -467,10 +473,10 @@ function M.clear_breakpoints()
 
   tmux.run('dbclear all', false, false)
 
-  -- Clear signs safely
+  -- Clear only breakpoint signs (not debug line signs)
   for bufnr, _ in pairs(M.breakpoints) do
     if vim.api.nvim_buf_is_valid(bufnr) then
-      pcall(vim.fn.sign_unplace, M.sign_group, { buffer = bufnr })
+      pcall(vim.fn.sign_unplace, M.sign_group_bp, { buffer = bufnr })
     end
   end
 
