@@ -501,6 +501,9 @@ function M.workspace_pane_exists()
   return false
 end
 
+-- Temp file for workspace data
+M.workspace_file = '/tmp/matlab_nvim_workspace.txt'
+
 -- Refresh workspace pane with current MATLAB workspace variables
 function M.refresh_workspace()
   if not M.exists() or not M.get_server_pane() then
@@ -508,26 +511,27 @@ function M.refresh_workspace()
     return
   end
 
-  -- If workspace pane is open, update it with whos output
+  -- If workspace pane is open, silently capture whos to temp file and display there
   if M.workspace_pane_exists() then
-    local matlab_pane_id = M.server_pane:match('%%(%d+)')
-    if matlab_pane_id then
-      -- Send whos to MATLAB, then capture and display in workspace pane
-      M.run('whos', true, true)
-      
-      -- After a short delay, capture MATLAB output and display in workspace pane
-      vim.defer_fn(function()
-        if M.workspace_pane_exists() then
-          -- Clear the workspace pane and display fresh whos output
-          local capture_and_display = string.format(
-            "send-keys -t %s 'clear && echo \"MATLAB Workspace\" && echo \"═══════════════════════════════════════════════════\" && tmux capture-pane -t %%%s -p | grep -A 100 \"Name.*Size.*Bytes.*Class\" | head -50 || echo \"No variables in workspace\"' Enter",
-            vim.fn.shellescape(M.workspace_pane),
-            matlab_pane_id
-          )
-          M.execute(capture_and_display)
-        end
-      end, 300)
-    end
+    -- Use evalc to silently capture whos output and write to temp file
+    -- This runs in MATLAB without printing to the MATLAB pane
+    local matlab_cmd = string.format(
+      "fid=fopen('%s','w');fprintf(fid,'%%s',evalc('whos'));fclose(fid);",
+      M.workspace_file
+    )
+    M.run(matlab_cmd, true, true)
+    
+    -- After a short delay, display the temp file in workspace pane
+    vim.defer_fn(function()
+      if M.workspace_pane_exists() then
+        local display_cmd = string.format(
+          "send-keys -t %s 'clear && echo \"MATLAB Workspace\" && echo \"═══════════════════════════════════════════════════\" && cat %s 2>/dev/null || echo \"No variables in workspace\"' Enter",
+          vim.fn.shellescape(M.workspace_pane),
+          M.workspace_file
+        )
+        M.execute(display_cmd)
+      end
+    end, 400)
   else
     -- Just run whos in MATLAB pane if workspace pane isn't open
     M.run('whos', true, true)
