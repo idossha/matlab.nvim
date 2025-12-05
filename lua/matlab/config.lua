@@ -12,7 +12,6 @@ M.defaults = {
   minimal_notifications = true, -- Only show important notifications (server start/stop and errors)
   tmux_pane_direction = 'right', -- Position of the tmux pane ('right', 'below')
   tmux_pane_focus = true,       -- Make tmux pane visible when created
-  force_nogui_with_breakpoints = true, -- Prevent MATLAB GUI from opening when breakpoints exist
 
   -- Environment variables to set before starting MATLAB
   environment = {},       -- Table of environment variables: {VAR_NAME = 'value', ANOTHER_VAR = 'another_value'}

@@ -224,29 +224,53 @@ local function parse_workspace_variables()
 
   -- Run whos command and capture output
   tmux.run('whos', true, false)
-  vim.defer_fn(function() end, 300)  -- Brief delay for MATLAB to process
 
-  -- Capture pane content with error handling
-  local ok, output = pcall(tmux.execute, 'capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -50')
+  -- Wait for MATLAB to process and then capture
+  local ok, output = pcall(function()
+    -- Small delay to let MATLAB process
+    vim.wait(300, function() return false end)
+    return tmux.execute('capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -30')
+  end)
+  
   if not ok or not output then
     utils.log('Failed to capture pane output for variables', 'DEBUG')
     return nil
   end
 
+  -- Split into lines and find the most recent whos output
+  local lines = vim.split(output, '\n')
   local variables = {}
-  -- Parse whos output format:
-  -- Name      Size            Bytes  Class     Attributes
-  -- var1      1x1                 8  double
-  for line in output:gmatch('[^\r\n]+') do
-    -- Match variable lines (skip header and empty lines)
+  local seen_names = {}  -- Track seen variable names to avoid duplicates
+  local in_whos_output = false
+  local header_found = false
+  
+  -- Search from bottom to top to find the most recent whos output
+  for i = #lines, 1, -1 do
+    local line = lines[i]
+    
+    -- Detect the header line of whos output
+    if line:match('^%s*Name%s+Size%s+Bytes%s+Class') then
+      header_found = true
+      in_whos_output = true
+      break  -- Found the header, now we can stop and use collected variables
+    end
+    
+    -- Match variable lines (before we find header, searching backwards)
+    -- Format: "  varname      1x1                 8  double"
     local name, size, bytes, class = line:match('^%s*([%w_]+)%s+([%dx]+)%s+(%d+)%s+(%w+)')
-    if name and name ~= 'Name' then
-      table.insert(variables, {
+    if name and name ~= 'Name' and not seen_names[name] then
+      seen_names[name] = true
+      table.insert(variables, 1, {  -- Insert at beginning since we're going backwards
         name = name,
         size = size,
         bytes = bytes,
         class = class
       })
+    end
+    
+    -- Stop if we hit a prompt line (K>> or >>)
+    if line:match('^[K]?>>') and #variables > 0 then
+      break
     end
   end
 
@@ -474,13 +498,15 @@ function M.show_control_bar()
     string.format('║ %s MATLAB Debug Controls - %s%s║',
       status_icon, status_text, string.rep(' ', 55 - #status_text)),
     '╠════════════════════════════════════════════════════════════════════════════╣',
+    '║  F-keys work GLOBALLY during debug session (from any buffer)               ║',
     '║                                                                            ║',
-    '║  [F5] Continue   [F10] Step Over   [F11] Step Into   [F12] Step Out       ║',
+    '║  [F5] Continue/Start  [F10] Step Over  [F11] Step Into  [F12] Step Out     ║',
+    '║  [Shift+F5] Stop Debug                                                     ║',
     '║                                                                            ║',
-    '║  [b] Toggle Breakpoint   [B] Clear All Breakpoints                        ║',
-    '║  [s] Start Debug         [q] Stop Debug                                   ║',
+    '║  [b] Toggle Breakpoint   [B] Clear All Breakpoints                         ║',
+    '║  [s] Start Debug         [q] Stop Debug & Close Bar                        ║',
     '║                                                                            ║',
-    '║  [v] Variables  [c] Call Stack  [p] Breakpoints  [r] REPL  [a] Show All   ║',
+    '║  [v] Variables  [c] Call Stack  [p] Breakpoints  [r] REPL  [a] Show All    ║',
     '║                                                                            ║',
     '╚════════════════════════════════════════════════════════════════════════════╝',
   }

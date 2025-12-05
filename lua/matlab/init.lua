@@ -16,21 +16,8 @@ local notify = utils.notify
 
 -- Setup function
 function M.setup(opts)
-  -- Set default options
-  local defaults = {
-    force_nogui_with_breakpoints = true, -- Prevent GUI from opening when breakpoints exist
-  }
-  
-  -- Merge with user options
-  opts = opts or {}
-  for k, v in pairs(defaults) do
-    if opts[k] == nil then
-      opts[k] = v
-    end
-  end
-  
   -- Initialize configuration
-  config.setup(opts)
+  config.setup(opts or {})
 
   -- Initialize debugging module and UI
   debug_module.setup()
@@ -103,6 +90,19 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('MatlabLoadWorkspace', function(args)
     workspace.load(args.args ~= '' and args.args or nil)
   end, { nargs = '?' })
+
+  -- Workspace tmux pane commands
+  vim.api.nvim_create_user_command('MatlabToggleWorkspacePane', function()
+    tmux.toggle_workspace_pane()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabOpenWorkspacePane', function()
+    tmux.open_workspace_pane()
+  end, {})
+
+  vim.api.nvim_create_user_command('MatlabCloseWorkspacePane', function()
+    tmux.close_workspace_pane()
+  end, {})
 
   -- Debug commands
   vim.api.nvim_create_user_command('MatlabDebugStart', function()

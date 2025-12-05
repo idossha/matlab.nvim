@@ -12,6 +12,7 @@ M.current_file = nil
 M.current_line = nil
 M.current_bufnr = nil
 M.breakpoints = {}  -- { [bufnr] = { [line] = boolean } }
+M.global_keymaps_set = false
 
 -- Sign configuration
 M.sign_group = 'matlab_debug'
@@ -94,36 +95,62 @@ local function parse_and_update_location()
     return false
   end
 
-  -- Capture recent output from MATLAB pane (reduced from 200 to 50 lines for efficiency)
-  local ok, output = pcall(tmux.execute, 'capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -50')
+  -- Capture recent output from MATLAB pane
+  local ok, output = pcall(tmux.execute, 'capture-pane -t ' .. vim.fn.shellescape(pane) .. ' -p -S -30')
   if not ok or not output then
     utils.log('Failed to capture tmux pane output', 'DEBUG')
     return false
   end
 
   -- Parse dbstack output for current file and line
-  -- Try multiple patterns to be more robust:
-  -- Pattern 1: "> In <filename> (line <number>)"
-  -- Pattern 2: "In <filename> (line <number>)" at the top of stack
-  -- Pattern 3: "K>> " prompt followed by file info
+  -- MATLAB dbstack output looks like:
+  -- > In filename (line X)
+  --   In caller (line Y)
+  -- The ">" indicates the current frame
 
   local filename, line
 
-  -- Try pattern with ">" indicator (most recent stack frame)
-  filename, line = output:match('> In ([^%(]+)%(line (%d+)%)')
-
-  -- If not found, try to find the first "In ... (line ...)" after K>> prompt
-  if not filename then
-    -- Look for the dbstack output - usually appears after K>>
-    local stack_section = output:match('K>>.-\n(.-)\n[^\n]*K>>')
-    if stack_section then
-      filename, line = stack_section:match('In ([^%(]+)%(line (%d+)%)')
+  -- Split output into lines and find the most recent dbstack output
+  local lines = vim.split(output, '\n')
+  
+  -- Search from bottom to top to find the most recent debug location
+  for i = #lines, 1, -1 do
+    local l = lines[i]
+    
+    -- Pattern 1: "> In filename (line X)" - current stack frame indicator
+    local f, ln = l:match('^>%s*In%s+([^%(]+)%(line%s+(%d+)%)')
+    if f and ln then
+      filename = f
+      line = ln
+      break
+    end
+    
+    -- Pattern 2: "In filename (line X)" without ">" but right after K>>
+    -- Check if previous line contains K>>
+    if i > 1 then
+      local prev_line = lines[i-1]
+      if prev_line:match('K>>') then
+        f, ln = l:match('^%s*In%s+([^%(]+)%(line%s+(%d+)%)')
+        if f and ln then
+          filename = f
+          line = ln
+          break
+        end
+      end
     end
   end
-
-  -- Last resort: find any "In ... (line ...)" pattern
+  
+  -- Fallback: try to find any "In filename (line X)" in the last few lines
   if not filename then
-    filename, line = output:match('In ([^%(]+)%(line (%d+)%)')
+    for i = #lines, math.max(1, #lines - 10), -1 do
+      local l = lines[i]
+      local f, ln = l:match('In%s+([^%(]+)%(line%s+(%d+)%)')
+      if f and ln then
+        filename = f
+        line = ln
+        break
+      end
+    end
   end
 
   if filename and line then
@@ -167,7 +194,7 @@ local function move_to_debug_location()
   tmux.run('dbstack', true, false)
 
   -- Single deferred call with intelligent retry
-  local max_retries = 2
+  local max_retries = 3
   local retry_count = 0
 
   local function attempt_parse()
@@ -175,12 +202,12 @@ local function move_to_debug_location()
 
     if not success and retry_count < max_retries then
       retry_count = retry_count + 1
-      vim.defer_fn(attempt_parse, 200)  -- Retry after 200ms
+      vim.defer_fn(attempt_parse, 250)  -- Retry after 250ms
     end
   end
 
   -- Initial attempt after giving MATLAB time to respond
-  vim.defer_fn(attempt_parse, 300)
+  vim.defer_fn(attempt_parse, 400)
 end
 
 -- Helper: update breakpoint sign
@@ -279,7 +306,11 @@ function M.start_debug()
   end
 
   M.debug_active = true
-  utils.notify('Debug started: ' .. filename, vim.log.levels.INFO)
+  
+  -- Set global F-key mappings for debugging
+  M.set_global_keymaps()
+  
+  utils.notify('Debug started: ' .. filename .. ' (F5:Continue F10:Step F11:Into F12:Out)', vim.log.levels.INFO)
 
   -- Update current line indicator after starting
   vim.defer_fn(move_to_debug_location, 800)
@@ -297,6 +328,9 @@ function M.stop_debug()
 
   -- Clear debug line sign
   clear_debug_line_sign()
+
+  -- Remove global F-key mappings
+  M.remove_global_keymaps()
 
   M.debug_active = false
   M.current_file = nil
@@ -506,6 +540,71 @@ function M.get_status()
   end
 
   return 'DEBUG: ' .. (M.current_file or '')
+end
+
+-- Set global debug keymaps (F-keys work from any buffer during debug session)
+function M.set_global_keymaps()
+  if M.global_keymaps_set then
+    return
+  end
+
+  local opts = { noremap = true, silent = true, desc = 'MATLAB Debug' }
+
+  -- F5: Continue
+  vim.keymap.set('n', '<F5>', function()
+    if M.debug_active then
+      M.continue_debug()
+    else
+      M.start_debug()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'MATLAB Debug: Continue/Start' }))
+
+  -- F10: Step Over
+  vim.keymap.set('n', '<F10>', function()
+    if M.debug_active then
+      M.step_over()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'MATLAB Debug: Step Over' }))
+
+  -- F11: Step Into
+  vim.keymap.set('n', '<F11>', function()
+    if M.debug_active then
+      M.step_into()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'MATLAB Debug: Step Into' }))
+
+  -- F12: Step Out
+  vim.keymap.set('n', '<F12>', function()
+    if M.debug_active then
+      M.step_out()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'MATLAB Debug: Step Out' }))
+
+  -- Shift+F5: Stop debugging
+  vim.keymap.set('n', '<S-F5>', function()
+    if M.debug_active then
+      M.stop_debug()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'MATLAB Debug: Stop' }))
+
+  M.global_keymaps_set = true
+  utils.log('Global debug keymaps set', 'DEBUG')
+end
+
+-- Remove global debug keymaps
+function M.remove_global_keymaps()
+  if not M.global_keymaps_set then
+    return
+  end
+
+  pcall(vim.keymap.del, 'n', '<F5>')
+  pcall(vim.keymap.del, 'n', '<F10>')
+  pcall(vim.keymap.del, 'n', '<F11>')
+  pcall(vim.keymap.del, 'n', '<F12>')
+  pcall(vim.keymap.del, 'n', '<S-F5>')
+
+  M.global_keymaps_set = false
+  utils.log('Global debug keymaps removed', 'DEBUG')
 end
 
 -- Manually update current line (useful for testing/debugging)

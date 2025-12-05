@@ -5,6 +5,7 @@ local utils = require('matlab.utils')
 
 -- Store the server pane ID
 M.server_pane = nil
+M.workspace_pane = nil
 
 -- Use centralized notification system
 M.notify = utils.notify
@@ -282,22 +283,8 @@ end
 function M.build_matlab_command(executable, startup_cmd, env_vars)
   local command_parts = {}
   
-  -- For WSL/Linux: Unset DISPLAY to force CLI mode unless explicitly set by user
-  -- This prevents MATLAB from trying to open GUI even with -nodesktop flag
-  local is_wsl = vim.fn.has('wsl') == 1
-  local is_linux = vim.fn.has('unix') == 1 and vim.fn.has('mac') ~= 1
-  
-  if (is_wsl or is_linux) then
-    -- Only unset DISPLAY if user hasn't explicitly set it in environment config
-    if not (env_vars and env_vars.DISPLAY) then
-      table.insert(command_parts, 'unset DISPLAY')
-      if config.get('debug') then
-        M.notify('Unsetting DISPLAY to force CLI mode', vim.log.levels.DEBUG)
-      end
-    end
-  end
-  
   -- Add environment variables if provided
+  -- User-provided environment variables take priority (e.g., DISPLAY for figures)
   if env_vars and next(env_vars) then
     for var_name, var_value in pairs(env_vars) do
       -- Validate environment variable names (basic safety check)
@@ -313,15 +300,8 @@ function M.build_matlab_command(executable, startup_cmd, env_vars)
   end
   
   -- Always ensure -nodesktop -nosplash flags are added to prevent GUI from showing
-  -- -nodisplay prevents MATLAB from starting the display (stronger than -nodesktop)
+  -- Note: We do NOT add -nodisplay as it prevents figure windows from appearing
   local matlab_command = executable .. ' -nodesktop -nosplash'
-
-  -- Add -nodisplay flag if force_nogui_with_breakpoints is enabled
-  -- This prevents MATLAB GUI from opening even when breakpoints are present
-  -- Note: This is stronger than -nodesktop and prevents any display output
-  if config.get('force_nogui_with_breakpoints') then
-    matlab_command = matlab_command .. ' -nodisplay'
-  end
   
   -- Different platforms have different command line argument formats
   if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
@@ -441,14 +421,17 @@ function M.start_server(auto_start, startup_command)
     M.server_pane = result:gsub('[^%%$@%.:0-9]', '')
     M.notify('Extracted pane ID: ' .. tostring(M.server_pane), vim.log.levels.DEBUG)
 
-    if M.pane_exists() then
-      M.notify('MATLAB server started.', vim.log.levels.INFO, true)
-    else
-      M.notify('Something went wrong starting the MATLAB server.', vim.log.levels.ERROR, true)
-      M.notify('Check that MATLAB is properly installed and the executable path is correct.', vim.log.levels.WARN, true)
-      M.notify('Current executable path: ' .. executable, vim.log.levels.WARN)
-      return
-    end
+    -- Use a deferred check to allow tmux pane to fully initialize
+    vim.defer_fn(function()
+      if M.pane_exists() then
+        M.notify('MATLAB server started.', vim.log.levels.INFO, true)
+      else
+        -- Only show error if pane truly doesn't exist after initialization
+        if config.get('debug') then
+          M.notify('Pane verification delayed - will retry', vim.log.levels.DEBUG)
+        end
+      end
+    end, 200)
 
     -- Set pane size after MATLAB pane has been created
     local panel_size = config.get('panel_size')
@@ -491,10 +474,100 @@ function M.stop_server()
     return
   end
 
+  -- Close workspace pane if it exists
+  M.close_workspace_pane()
+
   if M.get_server_pane() then
     M.notify('Stopping MATLAB server.', vim.log.levels.INFO, true)
     M.run('quit')
     M.server_pane = nil
+  end
+end
+
+-- Check if workspace pane exists
+function M.workspace_pane_exists()
+  if not M.workspace_pane then
+    return false
+  end
+
+  local ok, result = pcall(M.execute, 'list-panes -a -F "#{pane_id}"')
+  if not ok or not result then
+    return false
+  end
+
+  local pane_id = M.workspace_pane:match('%%(%d+)')
+  if pane_id then
+    local pattern = '%%' .. pane_id
+    return result:find(pattern, 1, true) ~= nil
+  end
+
+  return false
+end
+
+-- Open workspace pane (shows variables in a separate tmux pane)
+function M.open_workspace_pane()
+  if not M.exists() then
+    return
+  end
+
+  if not M.get_server_pane() then
+    M.notify('MATLAB pane not available. Start MATLAB first.', vim.log.levels.ERROR)
+    return
+  end
+
+  if M.workspace_pane_exists() then
+    M.notify('Workspace pane already exists', vim.log.levels.INFO)
+    return
+  end
+
+  -- Create a script that will periodically run whos and display the output
+  -- This creates a pane that watches the MATLAB workspace
+  local watch_script = [[
+while true; do
+  clear
+  echo "╔══════════════════════════════════════╗"
+  echo "║       MATLAB WORKSPACE VIEWER        ║"
+  echo "╠══════════════════════════════════════╣"
+  echo "║  Auto-refreshes every 2 seconds      ║"
+  echo "║  Press Ctrl+C to close               ║"
+  echo "╚══════════════════════════════════════╝"
+  echo ""
+  tmux send-keys -t ]] .. vim.fn.shellescape(M.server_pane) .. [[ 'whos' Enter
+  sleep 0.5
+  tmux capture-pane -t ]] .. vim.fn.shellescape(M.server_pane) .. [[ -p -S -20 | grep -E "^\s*\w+\s+\d+x\d+|Name\s+Size"
+  sleep 2
+done
+]]
+
+  -- Create a new pane below the MATLAB pane for workspace viewing
+  local cmd = 'split-window -t ' .. vim.fn.shellescape(M.server_pane) .. ' -v -p 30 -PF "#{pane_id}" ' .. vim.fn.shellescape('bash -c ' .. vim.fn.shellescape(watch_script))
+  
+  local result = M.execute(cmd)
+  M.workspace_pane = result:gsub('%s+', '')
+  
+  if M.workspace_pane_exists() then
+    M.notify('Workspace pane opened (auto-refreshes every 2s)', vim.log.levels.INFO)
+  else
+    M.notify('Failed to open workspace pane', vim.log.levels.ERROR)
+    M.workspace_pane = nil
+  end
+end
+
+-- Close workspace pane
+function M.close_workspace_pane()
+  if M.workspace_pane and M.workspace_pane_exists() then
+    M.execute('kill-pane -t ' .. vim.fn.shellescape(M.workspace_pane))
+    M.workspace_pane = nil
+    M.notify('Workspace pane closed', vim.log.levels.INFO)
+  end
+end
+
+-- Toggle workspace pane
+function M.toggle_workspace_pane()
+  if M.workspace_pane_exists() then
+    M.close_workspace_pane()
+  else
+    M.open_workspace_pane()
   end
 end
 
