@@ -46,9 +46,9 @@ end
 local function update_debug_ui()
   local ok, debug_ui = pcall(require, 'matlab.debug_ui')
   if ok and debug_ui and debug_ui.update_all then
-    vim.defer_fn(function()
+    vim.schedule(function()
       debug_ui.update_all()
-    end, 100)
+    end)
   end
 end
 
@@ -213,12 +213,12 @@ local function move_to_debug_location()
 
     if not success and retry_count < max_retries then
       retry_count = retry_count + 1
-      vim.defer_fn(attempt_parse, 250)  -- Retry after 250ms
+      vim.defer_fn(attempt_parse, 100)  -- Retry after 100ms
     end
   end
 
   -- Initial attempt after giving MATLAB time to respond
-  vim.defer_fn(attempt_parse, 400)
+  vim.defer_fn(attempt_parse, 150)
 end
 
 -- Helper: update breakpoint sign
@@ -323,10 +323,10 @@ function M.start_debug()
   utils.notify('Debug started: ' .. filename .. ' (F5:Continue F10:Step F11:Into F12:Out)', vim.log.levels.INFO)
 
   -- Update current line indicator after starting
-  vim.defer_fn(move_to_debug_location, 800)
+  vim.defer_fn(move_to_debug_location, 50)
   
   -- Update debug UI
-  vim.defer_fn(update_debug_ui, 900)
+  vim.defer_fn(update_debug_ui, 400)
 end
 
 -- Stop debugging
@@ -368,10 +368,10 @@ function M.continue_debug()
   utils.notify('Continuing...', vim.log.levels.INFO)
 
   -- Schedule cursor movement to breakpoint location after a short delay
-  vim.defer_fn(move_to_debug_location, 500)
+  vim.defer_fn(move_to_debug_location, 50)
 
   -- Update debug UI windows (includes workspace)
-  vim.defer_fn(update_debug_ui, 600)
+  vim.defer_fn(update_debug_ui, 100)
 end
 
 -- Step over (dbstep)
@@ -384,10 +384,10 @@ function M.step_over()
   tmux.run('dbstep', true, true)
 
   -- Schedule cursor movement after stepping
-  vim.defer_fn(move_to_debug_location, 300)
+  vim.defer_fn(move_to_debug_location, 100)
 
   -- Update debug UI windows (includes workspace)
-  vim.defer_fn(update_debug_ui, 400)
+  vim.defer_fn(update_debug_ui, 200)
 end
 
 -- Step into (dbstep in)
@@ -400,10 +400,10 @@ function M.step_into()
   tmux.run('dbstep in', true, true)
 
   -- Schedule cursor movement after stepping
-  vim.defer_fn(move_to_debug_location, 300)
+  vim.defer_fn(move_to_debug_location, 100)
 
   -- Update debug UI windows (includes workspace)
-  vim.defer_fn(update_debug_ui, 400)
+  vim.defer_fn(update_debug_ui, 200)
 end
 
 -- Step out (dbstep out)
@@ -416,10 +416,10 @@ function M.step_out()
   tmux.run('dbstep out', true, true)
 
   -- Schedule cursor movement after stepping
-  vim.defer_fn(move_to_debug_location, 300)
+  vim.defer_fn(move_to_debug_location, 100)
 
   -- Update debug UI windows (includes workspace)
-  vim.defer_fn(update_debug_ui, 400)
+  vim.defer_fn(update_debug_ui, 200)
 end
 
 -- Toggle breakpoint

@@ -382,7 +382,7 @@ function M.refresh_with_workspace()
   -- Wait for MATLAB to write the file, then refresh display
   vim.defer_fn(function()
     M.refresh()
-  end, 400)
+  end, 200)
 end
 
 -- Open the debug sidebar
