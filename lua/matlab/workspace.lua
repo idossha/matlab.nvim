@@ -9,12 +9,12 @@ function M.show()
     vim.notify('MATLAB server not running', vim.log.levels.ERROR)
     return
   end
-  tmux.run('whos')
+  tmux.run('whos', true, true)
 end
 
 -- Clear all variables in the workspace
 function M.clear()
-  tmux.run('clear all')
+  tmux.run('clear all', true, true)
 end
 
 -- Save the workspace to a file

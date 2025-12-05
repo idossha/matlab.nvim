@@ -96,9 +96,7 @@ function M.doc()
     return
   end
 
-  local r = tmux.run('help ' .. vim.fn.expand('<cword>'))
-  tmux.open_pane()
-  return r
+  return tmux.run('help ' .. vim.fn.expand('<cword>'), true, true)
 end
 
 return M

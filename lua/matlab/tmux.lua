@@ -144,11 +144,6 @@ function M.run(command, skip_interrupt, skip_output, use_shell_escape)
     local r = M.execute(send_cmd)
     M.execute("send-keys -t " .. vim.fn.shellescape(target) .. " Enter")
     
-    -- If not skipping output, open the pane to show results
-    if not skip_output then
-      M.open_pane()
-    end
-    
     return r
   else
     vim.ui.select({'Yes', 'No'}, {
@@ -511,7 +506,7 @@ function M.refresh_workspace()
     return
   end
 
-  M.run('whos', true, false)
+  M.run('whos', true, true)
 end
 
 -- Open workspace pane (simple split showing workspace, no auto-refresh)
@@ -533,7 +528,8 @@ function M.open_workspace_pane()
 
   -- Create a simple pane that shows whos output once
   -- User can manually refresh with :MatlabRefreshWorkspace
-  local cmd = 'split-window -t ' .. vim.fn.shellescape(M.server_pane) .. ' -v -p 30 -PF "#{pane_id}"'
+  -- Use -d flag to keep focus in the current pane (don't switch to new pane)
+  local cmd = 'split-window -d -t ' .. vim.fn.shellescape(M.server_pane) .. ' -v -p 30 -PF "#{pane_id}"'
   
   local result = M.execute(cmd)
   M.workspace_pane = result:gsub('%s+', '')
