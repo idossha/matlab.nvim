@@ -235,13 +235,8 @@ local function format_workspace()
     table.insert(lines, string.format('  %-12s %-10s %s', 'Name', 'Size', 'Class'))
     table.insert(lines, '  ' .. string.rep('─', 34))
     
-    -- Variables (limit to avoid UI overflow)
-    local max_vars = 20
-    for i, var in ipairs(vars) do
-      if i > max_vars then
-        table.insert(lines, string.format('  ... and %d more', #vars - max_vars))
-        break
-      end
+    -- All variables (scrollable)
+    for _, var in ipairs(vars) do
       table.insert(lines, string.format('  %-12s %-10s %s', 
         var.name:sub(1, 12), 
         var.size:sub(1, 10), 
@@ -340,12 +335,6 @@ function M.refresh()
   
   -- Workspace
   vim.list_extend(lines, format_workspace())
-  table.insert(lines, '')
-  
-  -- Help
-  table.insert(lines, '── Keys ──')
-  table.insert(lines, '  r = refresh | w = update workspace')
-  table.insert(lines, '  q = close  | <CR> = jump to location')
   
   set_buffer_content(buf, lines)
 end
