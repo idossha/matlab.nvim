@@ -255,7 +255,7 @@ function M.refresh()
   table.insert(lines, '  q = close')
   table.insert(lines, '  <CR> = jump to location')
   table.insert(lines, '')
-  table.insert(lines, '<Leader>mW = refresh workspace')
+  table.insert(lines, 'Use <Leader>mW for workspace')
   
   set_buffer_content(buf, lines)
 end

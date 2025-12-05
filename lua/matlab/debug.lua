@@ -42,21 +42,13 @@ local function is_matlab_file()
   return true
 end
 
--- Helper: update debug UI and workspace pane if available
+-- Helper: update debug UI if available
 local function update_debug_ui()
   local ok, debug_ui = pcall(require, 'matlab.debug_ui')
   if ok and debug_ui and debug_ui.update_all then
     vim.defer_fn(function()
       debug_ui.update_all()
     end, 100)
-  end
-
-  -- Also update workspace pane if it exists
-  local ok2, tmux = pcall(require, 'matlab.tmux')
-  if ok2 and tmux and tmux.update_workspace_pane then
-    vim.defer_fn(function()
-      tmux.update_workspace_pane()
-    end, 200)
   end
 end
 

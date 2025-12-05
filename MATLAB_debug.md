@@ -91,8 +91,8 @@ Start Server → Set Breakpoints → Start Debug → Step/Continue → Inspect �
 ### Workspace Commands (`<Leader>m` + key)
 | Mapping | Command | Description |
 |---------|---------|-------------|
-| `<Leader>mw` | `:MatlabWorkspace` | Show workspace |
-| `<Leader>mW` | `:MatlabRefreshWorkspace` | Refresh workspace (whos) |
+| `<Leader>mw` | `:MatlabWorkspace` | Show workspace (whos) |
+| `<Leader>mW` | `:MatlabToggleWorkspacePane` | Toggle workspace tmux pane |
 
 ### Debug Sidebar Keybindings
 | Key | Action |
