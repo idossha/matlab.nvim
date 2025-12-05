@@ -501,14 +501,37 @@ function M.workspace_pane_exists()
   return false
 end
 
--- Refresh workspace in MATLAB pane (runs whos command)
+-- Refresh workspace pane with current MATLAB workspace variables
 function M.refresh_workspace()
   if not M.exists() or not M.get_server_pane() then
     M.notify('MATLAB pane not available.', vim.log.levels.ERROR)
     return
   end
 
-  M.run('whos', true, true)
+  -- If workspace pane is open, update it with whos output
+  if M.workspace_pane_exists() then
+    local matlab_pane_id = M.server_pane:match('%%(%d+)')
+    if matlab_pane_id then
+      -- Send whos to MATLAB, then capture and display in workspace pane
+      M.run('whos', true, true)
+      
+      -- After a short delay, capture MATLAB output and display in workspace pane
+      vim.defer_fn(function()
+        if M.workspace_pane_exists() then
+          -- Clear the workspace pane and display fresh whos output
+          local capture_and_display = string.format(
+            "send-keys -t %s 'clear && echo \"MATLAB Workspace\" && echo \"═══════════════════════════════════════════════════\" && tmux capture-pane -t %%%s -p | grep -A 100 \"Name.*Size.*Bytes.*Class\" | head -50 || echo \"No variables in workspace\"' Enter",
+            vim.fn.shellescape(M.workspace_pane),
+            matlab_pane_id
+          )
+          M.execute(capture_and_display)
+        end
+      end, 300)
+    end
+  else
+    -- Just run whos in MATLAB pane if workspace pane isn't open
+    M.run('whos', true, true)
+  end
 end
 
 -- Open workspace pane (shows MATLAB workspace, updates on debug steps and manual refresh)
@@ -528,35 +551,24 @@ function M.open_workspace_pane()
     return
   end
 
-  -- Extract the pane ID for use in the watch command
-  local matlab_pane_id = M.server_pane:match('%%(%d+)')
-  if not matlab_pane_id then
-    M.notify('Could not extract MATLAB pane ID', vim.log.levels.ERROR)
-    return
-  end
-
-  -- Create a workspace pane that watches the MATLAB pane output
-  -- Uses watch to auto-refresh the display every 1 second (just the display, not sending commands)
-  -- The actual whos command is sent by:
-  -- 1. Opening the pane (initial whos)
-  -- 2. Debug step commands (auto whos after each step)
-  -- 3. Manual :MatlabRefreshWorkspace command
-  local watch_script = string.format([[
-watch -t -n 1 "echo '═══════════════════════════════════════════════════════'; echo '  MATLAB Workspace'; echo '  Refresh: :MatlabRefreshWorkspace | Close: :MatlabToggleWorkspacePane'; echo '═══════════════════════════════════════════════════════'; echo ''; tmux capture-pane -t '%%%s' -p | grep -A 100 'Name.*Size.*Bytes.*Class' | head -50 || tmux capture-pane -t '%%%s' -p | tail -30"
-]], matlab_pane_id, matlab_pane_id)
-
-  -- Create the workspace pane with the watch script
+  -- Create a clean workspace pane (just a shell)
   -- Use -d flag to keep focus in the current pane
-  local cmd = 'split-window -d -t ' .. vim.fn.shellescape(M.server_pane) .. ' -v -p 30 -PF "#{pane_id}" ' .. vim.fn.shellescape(watch_script)
+  local cmd = 'split-window -d -t ' .. vim.fn.shellescape(M.server_pane) .. ' -v -p 30 -PF "#{pane_id}"'
   
   local result = M.execute(cmd)
   M.workspace_pane = result:gsub('%s+', '')
   
   if M.workspace_pane_exists() then
-    -- Send initial whos command to populate the workspace
+    -- Show initial header and populate with workspace data
     vim.defer_fn(function()
-      M.refresh_workspace()
-    end, 300)
+      M.execute('send-keys -t ' .. vim.fn.shellescape(M.workspace_pane) .. 
+        ' "clear && echo \'MATLAB Workspace\' && echo \'═══════════════════════════════════════════════════\'" Enter')
+      
+      -- Populate with initial workspace data
+      vim.defer_fn(function()
+        M.refresh_workspace()
+      end, 300)
+    end, 100)
     M.notify('Workspace pane opened', vim.log.levels.INFO)
   else
     M.notify('Failed to open workspace pane', vim.log.levels.ERROR)
