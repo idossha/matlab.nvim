@@ -1,6 +1,4 @@
-# matlab.nvim
-
-A modern Neovim plugin for MATLAB integration with tmux.
+**matlab.nvim** is a modern Neovim plugin for MATLAB integration with tmux.
 
 Inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab-vim), rewritten in Lua for Neovim.
 
