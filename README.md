@@ -8,16 +8,15 @@ Inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab
 
 ## Features
 
-- 🚀 Launch MATLAB console in a tmux split
-- ▶️ Run MATLAB scripts and cells directly from Neovim
-- 📁 Execute code cells (sections between `%%` comments)
-- 🔍 Fold/unfold MATLAB cell sections
-- 📚 Access MATLAB documentation for functions
-- 💾 Save and load MATLAB workspace files
-- 🐛 Native MATLAB debugger integration
-- 🔴 Visual breakpoint indicators
-- ⏯️ Step-through execution (over, into, out)
-- 📊 Debug sidebar with variables, call stack, breakpoints
+- Launch MATLAB console in a tmux split
+- Run MATLAB scripts and cells directly from Neovim
+- Fold/unfold MATLAB cell sections
+- Access MATLAB documentation for functions
+- Save and load MATLAB workspace files
+- Native MATLAB debugger integration
+- Visual breakpoint inicators
+- tep-through execution (over, into, out)
+- Debug siebar with variables, call stack, breakpoints
 
 ## Requirements
 
