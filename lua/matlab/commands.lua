@@ -90,6 +90,14 @@ function M.open_in_gui()
   vim.fn.jobstart(cmd)
 end
 
+-- Run all tests using runtests(pwd)
+function M.run_tests()
+  if not tmux.exists() then
+    return
+  end
+  tmux.run('runtests(pwd)')
+end
+
 -- Show documentation for the word under cursor
 function M.doc()
   if not tmux.exists() then
