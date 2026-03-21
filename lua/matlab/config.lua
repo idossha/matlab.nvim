@@ -39,6 +39,7 @@ M.defaults = {
     clear_workspace = 'x',  -- <Leader>mx - Clear workspace
     toggle_cell_fold = 'f', -- <Leader>mf - Toggle cell fold
     open_in_gui = 'g',      -- <Leader>mg - Open in MATLAB GUI
+    run_tests = 'T',        -- <Leader>mT - Run all tests
 
     -- Debug commands (<Leader>md + key)
     debug_prefix = 'd',     -- Makes <Leader>md the debug prefix

@@ -90,6 +90,13 @@ function M.open_in_gui()
   vim.fn.jobstart(cmd)
 end
 
+-- Run all tests using matlab -batch 'runtests(pwd)'
+function M.run_tests()
+  local executable = require('matlab.config').get('executable')
+  local cmd = executable .. " -batch 'runtests(pwd)'"
+  vim.cmd('split | terminal ' .. cmd)
+end
+
 -- Show documentation for the word under cursor
 function M.doc()
   if not tmux.exists() then
