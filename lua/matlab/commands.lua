@@ -76,13 +76,13 @@ function M.open_in_gui()
   -- Build a system command to open the file directly in MATLAB
   local cmd
   if vim.fn.has('mac') == 1 then
-    cmd = executable .. ' -r "edit ' .. filepath .. '"'
+    cmd = executable .. ' -desktop -r "edit ' .. filepath .. '"'
   elseif vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
-    cmd = executable .. ' /r "edit ' .. filepath .. '"'
+    cmd = executable .. ' /desktop /r "edit ' .. filepath .. '"'
   else -- Linux/WSL
     -- Note: This opens in GUI mode (doesn't use -nodesktop flag)
     -- DISPLAY will be inherited from the parent environment, not from the tmux pane
-    cmd = executable .. ' -r "edit ' .. filepath .. '"'
+    cmd = executable .. ' -desktop -r "edit ' .. filepath .. '"'
   end
   
   -- Execute the command in the background
