@@ -38,6 +38,7 @@ map(prefix .. (mappings.workspace or 'w'), 'MatlabWorkspace', 'MATLAB: Show work
 map(prefix .. (mappings.clear_workspace or 'x'), 'MatlabClearWorkspace', 'MATLAB: Clear workspace')
 map(prefix .. (mappings.toggle_cell_fold or 'f'), 'MatlabToggleCellFold', 'MATLAB: Toggle cell fold')
 map(prefix .. (mappings.open_in_gui or 'g'), 'MatlabOpenInGUI', 'MATLAB: Open in GUI')
+map(prefix .. (mappings.run_tests or 'T'), 'MatlabRunTests', 'MATLAB: Run all tests')
 
 -- ============================================================================
 -- Debug Commands (<Leader>md + key)
@@ -76,6 +77,7 @@ vim.api.nvim_buf_create_user_command(0, 'MatlabKeymaps', function()
     '  ' .. p .. 'x  - Clear workspace',
     '  ' .. p .. 'f  - Toggle cell fold',
     '  ' .. p .. 'g  - Open in GUI',
+    '  ' .. p .. 'T  - Run all tests',
     '',
     'Debug (' .. dp .. ' + key):',
     '  ' .. dp .. 's  - Start debug',

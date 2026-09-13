@@ -1,0 +1,24 @@
+# One dependency-free suite: no MATLAB license, GUI, or heavyweight build job.
+name: Tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  headless:
+    runs-on: ubuntu-24.04
+    # Local suite takes about a second; cap package installation/network stalls.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Install Neovim
+        run: sudo apt-get update && sudo apt-get install -y neovim
+      - name: Run headless regression suite
+        env:
+          NVIM_LOG_FILE: ${{ runner.temp }}/nvim.log
+        run: nvim --headless -u NONE -l tests/run.lua
+      - name: Check patch whitespace
+        run: git diff --check HEAD^

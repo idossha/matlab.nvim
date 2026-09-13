@@ -73,16 +73,11 @@ function M.pane_exists()
   end
 
   -- Extract just the pane ID portion (e.g., %41 from $0:@12.%41)
-  local pane_id = M.server_pane:match('%%(%d+)')
-  if not pane_id then
-    -- Try alternative format
-    pane_id = M.server_pane:match('%%(%d+)$')
-  end
-
-  if pane_id then
-    -- Escape the % for pattern matching
-    local pattern = '%%' .. pane_id
-    return result:find(pattern, 1, true) ~= nil  -- true = plain text search, more reliable
+  local pane_id = M.server_pane:match('(%%%d+)$')
+  for line in result:gmatch('[^\r\n]+') do
+    if line == pane_id then
+      return true
+    end
   end
 
   return false
@@ -128,17 +123,9 @@ function M.run(command, skip_interrupt, skip_output, use_shell_escape)
       M.execute("send-keys -t " .. vim.fn.shellescape(target) .. " C-c")
     end
 
-    local cmd = vim.fn.escape(command, '"')
-
-    -- Use shell escaping by default, but allow disabling it for commands with special characters
-    local use_shell_escape = use_shell_escape ~= false  -- default to true
-    local send_cmd
-    if use_shell_escape then
-      send_cmd = "send-keys -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(cmd)
-    else
-      -- Send without shell escaping - may work better for commands with special characters
-      send_cmd = "send-keys -t " .. vim.fn.shellescape(target) .. " '" .. cmd .. "'"
-    end
+    -- Shell quoting preserves MATLAB quotes/metacharacters; -l prevents tmux
+    -- interpreting code as key names. Legacy escape flags no longer alter text.
+    local send_cmd = "send-keys -l -t " .. vim.fn.shellescape(target) .. " " .. vim.fn.shellescape(command)
 
     local r = M.execute(send_cmd)
     M.execute("send-keys -t " .. vim.fn.shellescape(target) .. " Enter")
@@ -150,7 +137,7 @@ function M.run(command, skip_interrupt, skip_output, use_shell_escape)
     }, function(choice)
       if choice == 'Yes' then
         -- Start server and run current command
-        M.start_server(false, vim.fn.escape(command, '"'))
+        M.start_server(false, command)
         -- Dismiss the "Press ENTER to continue" message
         M.execute('send-keys Enter')
       end
@@ -276,6 +263,15 @@ end
 -- Build platform-specific MATLAB startup command
 function M.build_matlab_command(executable, startup_cmd, env_vars)
   local command_parts = {}
+
+  -- TemporaryValue avoids changing preferences in future desktop sessions.
+  -- Keep this before user code, which may itself encounter a breakpoint.
+  if config.get('suppress_editor_on_breakpoint') then
+    startup_cmd = 'try; matlab_nvim_settings = settings; '
+      .. 'matlab_nvim_settings.matlab.editor.OpenFileAtBreakpoint.TemporaryValue = false; '
+      .. "catch; warning('matlab.nvim: Cannot suppress the MATLAB editor. Disable automatic opening at breakpoints in MATLAB Editor/Debugger preferences.'); "
+      .. 'end; clear matlab_nvim_settings; ' .. startup_cmd
+  end
   
   -- Add environment variables if provided
   -- User-provided environment variables take priority (e.g., DISPLAY for figures)
@@ -293,9 +289,9 @@ function M.build_matlab_command(executable, startup_cmd, env_vars)
     end
   end
   
-  -- Always ensure -nodesktop -nosplash flags are added to prevent GUI from showing
+  -- Hide the desktop; editor opening at breakpoints is a separate setting above.
   -- Note: We do NOT add -nodisplay as it prevents figure windows from appearing
-  local matlab_command = executable .. ' -nodesktop -nosplash'
+  local matlab_command = vim.fn.shellescape(executable) .. ' -nodesktop -nosplash'
   
   -- Different platforms have different command line argument formats
   if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
@@ -375,7 +371,7 @@ function M.start_server(auto_start, startup_command)
     -- Create new pane, start matlab in it and save its id
     local project_root = M.get_project_root()
     M.notify('Project root: ' .. project_root, vim.log.levels.DEBUG)
-    local startup_cmd = 'cd ' .. vim.fn.shellescape(project_root) .. ';'
+    local startup_cmd = "cd('" .. project_root:gsub("'", "''") .. "');"
     
     -- Add command to startup if provided
     if startup_command then

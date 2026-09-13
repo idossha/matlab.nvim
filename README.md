@@ -1,8 +1,9 @@
 **matlab.nvim** is a modern Neovim plugin for MATLAB integration with tmux.
 
-Inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab-vim), rewritten in Lua for Neovim.
+**Contributions are welcome!** See [CONTRIBUTIONS.md](CONTRIBUTIONS.md).
 
-**Contributions are welcome!**
+Project docs: [architecture](docs/ARCHITECTURE.md), [decisions](docs/DECISIONS.md),
+[testing](docs/TESTING.md), [roadmap](docs/ROADMAP.md), and [release checks](docs/RELEASING.md).
 
 ![Demo of Neovim MATLAB Plugin](docs/example.gif)
 
@@ -14,13 +15,13 @@ Inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab
 - Access MATLAB documentation for functions
 - Save and load MATLAB workspace files
 - Native MATLAB debugger integration
-- Visual breakpoint inicators
-- tep-through execution (over, into, out)
-- Debug siebar with variables, call stack, breakpoints
+- Visual breakpoint indicators
+- Step-through execution (over, into, out)
+- Debug sidebar with variables, call stack, breakpoints
 
 ## Requirements
 
-- **Neovim**: 0.7.0 or later
+- **Neovim**: 0.9.0 or later
 - **tmux**: Must be installed and running
 - **MATLAB**: Any recent version
 
@@ -57,13 +58,14 @@ require('matlab').setup({
   executable = 'matlab',
 
   -- Tmux pane configuration
-  panel_size = 50,
+  panel_size = 50, -- Example override; see lua/matlab/config.lua for defaults
   panel_size_type = 'percentage',
   tmux_pane_direction = 'right',
   tmux_pane_focus = true,
 
   -- Behavior
   auto_start = true,
+  suppress_editor_on_breakpoint = true,
   default_mappings = true,
   minimal_notifications = true,
 
@@ -122,53 +124,8 @@ plot(x, y);
 
 ## Debugging
 
-### Quick Start
-
-1. Set breakpoints: `<Leader>mdb`
-2. Start debugging: `<Leader>mds` (or `F5`)
-3. Step through code:
-   - `<Leader>mdc` or `F5` - Continue to next breakpoint
-   - `<Leader>mdn` or `F10` - Step over
-   - `<Leader>mdi` or `F11` - Step into
-   - `<Leader>mdo` or `F12` - Step out
-4. Stop debugging: `<Leader>mdq` (or `Shift+F5`)
-
-### Debug Commands
-
-| Key | Command | Description |
-|-----|---------|-------------|
-| `<Leader>mds` | `:MatlabDebugStart` | Start debugging |
-| `<Leader>mdq` | `:MatlabDebugStop` | Stop debugging |
-| `<Leader>mdc` | `:MatlabDebugContinue` | Continue execution |
-| `<Leader>mdn` | `:MatlabDebugStepOver` | Step over line |
-| `<Leader>mdi` | `:MatlabDebugStepInto` | Step into function |
-| `<Leader>mdo` | `:MatlabDebugStepOut` | Step out of function |
-| `<Leader>mdb` | `:MatlabDebugToggleBreakpoint` | Toggle breakpoint |
-| `<Leader>mdB` | `:MatlabDebugClearBreakpoints` | Clear all breakpoints |
-| `<Leader>mde` | `:MatlabDebugEval` | Evaluate expression |
-| `<Leader>mdu` | `:MatlabDebugUI` | Toggle debug sidebar |
-
-### Visual Indicators
-
-- **Breakpoints**: Red circle (●) with full-line highlighting
-- **Current line**: Blue arrow (▶) with full-line highlighting
-
-### Debug Sidebar
-
-Toggle with `<Leader>mdu` or `:MatlabDebugUI`. Shows call stack, breakpoints, and workspace variables.
-
-| Key | Action |
-|-----|--------|
-| `q` | Close sidebar |
-| `r` | Refresh display |
-| `w` | Update workspace from MATLAB |
-| `<CR>` | Jump to location under cursor |
-
-### Debug Tips
-
-- Files auto-save when starting debug session
-- Breakpoints persist within Neovim session
-- Use MATLAB commands directly in tmux pane (`whos`, `dbstack`, etc.)
+See [Debugging](docs/DEBUGGING.md) for the breakpoint workflow, editor suppression
+while retaining plots, commands, sidebar controls, and limitations.
 
 ## Troubleshooting
 
@@ -198,5 +155,7 @@ Check configuration: `:MatlabShowConfig`
 View logs: `~/.cache/nvim/matlab_nvim.log`
 
 ## License
+
+Inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab-vim), rewritten in Lua for Neovim.
 
 MIT

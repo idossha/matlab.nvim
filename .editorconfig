@@ -1,0 +1,19 @@
+# Keep editor saves consistent with the existing Lua sources.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.md]
+# Preserve intentional Markdown hard line breaks; do not auto-reflow prose.
+trim_trailing_whitespace = false
+max_line_length = 110
+
+[*.m]
+# Match the MATLAB fixtures so editor saves do not rewrite indentation.
+indent_size = 4

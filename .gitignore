@@ -1,2 +1,5 @@
 referecnce/
 .DS_Store
+
+# Neovim diagnostics are local runtime output.
+.nvimlog

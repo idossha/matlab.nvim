@@ -8,6 +8,7 @@ M.defaults = {
   panel_size = 30,        -- Size in percentage (%) of the terminal width
   panel_size_type = 'percentage', -- 'percentage' or 'fixed' (fixed = columns)
   auto_start = true,
+  suppress_editor_on_breakpoint = true, -- Session-only; keeps figure windows available
   default_mappings = true,
   minimal_notifications = true, -- Only show important notifications (server start/stop and errors)
   tmux_pane_direction = 'right', -- Position of the tmux pane ('right', 'below')
@@ -39,6 +40,7 @@ M.defaults = {
     clear_workspace = 'x',  -- <Leader>mx - Clear workspace
     toggle_cell_fold = 'f', -- <Leader>mf - Toggle cell fold
     open_in_gui = 'g',      -- <Leader>mg - Open in MATLAB GUI
+    run_tests = 'T',        -- <Leader>mT - Run all tests
 
     -- Debug commands (<Leader>md + key)
     debug_prefix = 'd',     -- Makes <Leader>md the debug prefix

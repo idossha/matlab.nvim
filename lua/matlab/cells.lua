@@ -13,11 +13,11 @@ function M.find_current_cell()
   
   -- Search backwards for cell marker (%%...)
   while start_line > 1 do
-    start_line = start_line - 1
     local line = buffer_lines[start_line]
     if line and line:match('^%s*%%%%') then
       break
     end
+    start_line = start_line - 1
   end
   
   -- Search forwards for next cell marker (%%...)
@@ -46,7 +46,7 @@ function M.execute_current_cell()
   local start_line, end_line = M.find_current_cell()
   
   -- Get cell content
-  local lines = vim.api.nvim_buf_get_lines(0, start_line, end_line + 1, false)
+  local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
   
   -- Filter out comment-only lines and empty lines
   local code_lines = {}
@@ -90,7 +90,7 @@ function M.execute_to_cell()
   local _, end_line = M.find_current_cell()
   
   -- Get content from start to current cell
-  local lines = vim.api.nvim_buf_get_lines(0, 0, end_line + 1, false)
+  local lines = vim.api.nvim_buf_get_lines(0, 0, end_line, false)
   
   -- Filter out comment-only lines and empty lines
   local code_lines = {}
