@@ -152,7 +152,7 @@ require('matlab').setup({
 ```
 
 Check configuration: `:MatlabShowConfig`
-View logs: `~/.cache/nvim/matlab_nvim.log`  
+View logs: `~/.cache/nvim/matlab_nvim.log`
 
 Inspired by [MortenStabenau/matlab-vim](https://github.com/MortenStabenau/matlab-vim), rewritten in Lua for Neovim.
 
