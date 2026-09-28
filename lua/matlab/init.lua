@@ -60,6 +60,10 @@ function M.setup(opts)
     commands.run_tests()
   end, {})
   
+  vim.api.nvim_create_user_command('MatlabRunCurrentTest', function()
+    commands.run_current_test()
+  end, {})
+  
   -- Cell execution commands
   vim.api.nvim_create_user_command('MatlabRunCell', function()
     cells.execute_current_cell()
